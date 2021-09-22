@@ -1,0 +1,6 @@
+
+# python environment dir, any dir ending with env
+*env/
+
+# CORSIKA infiles
+**/*.in
