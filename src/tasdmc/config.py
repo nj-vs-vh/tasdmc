@@ -3,7 +3,7 @@ import yaml
 from typing import Dict, Any, Optional
 
 
-def read_config(filename: str = 'config.yaml') -> Dict:
+def read_config(filename: str) -> Dict:
     with open(filename, 'r') as f:
         config = yaml.safe_load(f)
     return config
@@ -14,10 +14,11 @@ class ConfigKeyError(Exception):
 
 
 def get_config_key(config: Dict, key: str, key_prefix: Optional[str] = None) -> Any:
-    """Utility function to read (possibly deeply nested) keys from config dict and get nice error messages
+    """Utility function to read (possibly deeply nested) key from config dict and get nice error messages
+    in case something is missing.
 
     Args:
-        config (Dict): loaded with read_config(filename)
+        config (Dict): loaded from yaml with read_config(filename)
         key (str): comma-separated list of keys from top to bottom, e.g. 'infiles.log10E.step'
         key_prefix (str): prefix added to the start of the key, e.g. for 'infiles' prefix any 'smth' key
                           becomes 'infiles.smth'

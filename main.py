@@ -12,7 +12,7 @@ def main():
 
     cfg = tasdmc.read_config(args.config)
 
-    tasdmc.generate_corsika_infiles(cfg)
+    tasdmc.generate_corsika_input_files(cfg)
 
 
 if __name__ == "__main__":

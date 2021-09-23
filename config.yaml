@@ -1,12 +1,12 @@
 verbosity:
   top_level: true
 
-infiles:
+corsika_input_files:
   particle: proton
-  outdir: infiles
-  overwrite_outdir: true
   log10E_min: 16.75  # log10(E / 1 eV)
   log10E_max: 20.55
   log10E_step: 0.1
   high_E_hadronic_interactions_model: QGSJET  # QGSJET | EPOS
   low_E_hadronic_interactions_model: FLUKA  # FLUKA | URQMD
+  outdir: infiles
+  overwrite_outdir: true
