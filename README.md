@@ -1,10 +1,8 @@
-# Telescope Array Surface Detectors Monte Carlo scripts
+# `tasdmc` - Telescope Array Surface Detectors Monte Carlo simulation
 
-Based on Ben Stokes' scripts, rewritten in Python for modularity and uniformity.
+`tasdmc` aims at providing set of scripts to run Telescope Array Surface Detectors Monte Carlo simulation in a reliable, transparent, configurable and reproducible way.
 
-WIP
-
-Usage:
+## Installation:
 
 ```bash
 # clone repo
@@ -17,12 +15,23 @@ source venv/bin/activate
 
 # install tasdmc package from source
 pip install .
-
-# run example main script
-# this uses default config name config.yaml
-python main.py
-
-# see config.yaml and create custom config based on it
-# run main script with custom config
-python main.py -c my-custom-config.yaml
 ```
+
+## Usage
+
+`tasdmc` is designed as CLI and allows several commands. But before the `tasdmc` is run, it must be configured.
+
+### Configuration files
+
+All configuration files are stored in human-readable [`.yaml`](https://yaml.org/) format. The main config file is `run.yaml`, which contains all physical parameters relevant to the simulation (primary particle, energy range, etc).
+
+Top-level keys:
+* `name` - name of the run, should be unique to avoid confusion. All files relevant to the run will be placed in the directory with this name.
+* `corsika_input_files` - controls generation of CORSIKA input
+* TBD...
+
+### Global configuration
+
+Besides per-run configs there are some global options controlled with environment variables:
+
+* `TASDMC_RUNS_DIR` controls where all the run directories are created. If not specified, `runs` directory will be created in the current working directory and used to store all the individual runs.
