@@ -5,6 +5,7 @@ import math
 import getpass
 import random
 from pathlib import Path
+import click
 
 from typing import Optional
 
@@ -293,7 +294,8 @@ def generate_corsika_cards(
             f.write(card.buf+"\n")
 
     if verbose:
-        print(
+        click.secho(
             f"PRIMARY {primary_particle_id:d} ENERGY {log10_E_primary_quantized:.1f} ({energy_id:02d}){' EPOS' if is_epos else ''}: "
-            f"{max_file_index-min_file_index+1:d} card files"
+            f"{max_file_index-min_file_index+1:d} card files",
+            dim=True,
         )

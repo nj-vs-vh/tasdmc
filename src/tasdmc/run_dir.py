@@ -1,5 +1,6 @@
 import os
 import yaml
+import click
 from pathlib import Path
 
 from .config import Config, get_config_key
@@ -25,8 +26,10 @@ def prepare_run_dir(config):
             try:
                 rd.mkdir()
                 if run_dir_idx is not None and verbose:
-                    print(
-                        f"!!!\nRun name '{run_dir_name_plain}' taken, updated to {rd.name}\n!!!"
+                    click.secho(
+                        f"Run name '{run_dir_name_plain}' taken, updated to {rd.name}",
+                        fg='red',
+                        bold=True,
                     )
                 break
             except FileExistsError:

@@ -5,6 +5,7 @@ Based on runcorsd-old/gen_infiles_primary.sh and corcard.py
 """
 
 from typing import Dict
+import click
 
 from tasdmc.config import get_config_key
 from tasdmc.run_dir import run_dir
@@ -33,7 +34,7 @@ def generate_corsika_input_files(config: Dict):
     verbose = verbosity > 0
 
     if verbose:
-        print("\nGenerating CORSIKA input files\n")
+        click.secho("\nGenerating CORSIKA input files\n", bold=True)
 
     prefix = 'corsika_input_files'
 
@@ -45,7 +46,7 @@ def generate_corsika_input_files(config: Dict):
             f'Unknown particle "{particle}", must be one of: {", ".join(PARTICLE_ID_BY_NAME.keys())}'
         )
     if verbose:
-        print(f'Primary particle: {particle} (id {particle_id})')
+        click.echo(f'Primary particle: {particle} (id {particle_id})')
 
     try:
         log10E_min = round(float(get_config_key(config, 'log10E_min', prefix)), ndigits=1)
@@ -60,7 +61,7 @@ def generate_corsika_input_files(config: Dict):
     except (ValueError, AssertionError) as e:
         raise InfilesGenerationError(str(e))
     if verbose:
-        print(f'Energy scale (log10(E / eV)): {log10E_min:.1f} ... {log10E_max:.1f}, with step {LOG10_E_STEP:.1f}')
+        click.echo(f'Energy scale (log10(E / eV)): {log10E_min:.1f} ... {log10E_max:.1f}, with step {LOG10_E_STEP:.1f}')
 
     corsika_input_files_dir = run_dir(config) / 'infiles'
     corsika_input_files_dir.mkdir()
@@ -68,7 +69,7 @@ def generate_corsika_input_files(config: Dict):
     high_E_model = get_config_key(config, 'high_E_hadronic_interactions_model', prefix)
     low_E_model = get_config_key(config, 'low_E_hadronic_interactions_model', prefix)
     if verbose:
-        print(f'Hadronic interactions models: {low_E_model}/{high_E_model}')
+        click.echo(f'Hadronic interactions models: {low_E_model}/{high_E_model}')
 
     event_number_multiplier = get_config_key(config, 'event_number_multiplier', prefix, default=1.0)
     try:
@@ -79,11 +80,11 @@ def generate_corsika_input_files(config: Dict):
             f"Event number multiplier must be non-negative float, but {event_number_multiplier} was passed"
         )
     if verbose:
-        print(f"Event numbers are multiplied by {event_number_multiplier:.2f} in each energy bin!")
+        click.echo(f"Event numbers are multiplied by {event_number_multiplier:.2f} in each energy bin!")
 
     verbose_card_generation = verbosity > 1
     if verbose_card_generation:
-        print()
+        click.echo('')
     for E_bin_i in range(1 + int((log10E_max - log10E_min) / LOG10_E_STEP)):
         generate_corsika_cards(
             primary_particle_id=particle_id,
