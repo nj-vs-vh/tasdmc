@@ -5,16 +5,14 @@
 ## Installation:
 
 ```bash
-# clone repo
-git clone https://github.com/nj-vs-vh/tasdmc.git
-cd tasdmc
 
-# create python virtual environment with venv or any other tool
+# recommended: create virtual environment for this package
+# you can use conda or venv or virtualenv or whatever
 python -m venv venv
 source venv/bin/activate
 
 # install tasdmc package from source
-pip install .
+pip install tasdmc@git+https://github.com/nj-vs-vh/tasdmc.git
 ```
 
 ## Usage
