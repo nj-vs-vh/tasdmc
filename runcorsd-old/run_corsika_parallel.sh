@@ -9,12 +9,11 @@ source corsika_env.sh
 
 cat filelist.txt | sort -R | split -l 281 - list_part
 
-for f in list_part*;
-do
-(cat $f | while read line; do 
-	echo $line;
-	./run_cor_dc2s_gea.sh $line /storage/vol2/zhezher/sdmc_ur/pro/ /storage/vol2/zhezher/sdmc_ur/gmd_p_qii4_urqmd/;
-    done;) &
+for f in list_part*; do
+	(cat $f | while read line; do
+		echo $line
+		./run_cor_dc2s_gea.sh $line /storage/vol2/zhezher/sdmc_ur/pro/ /storage/vol2/zhezher/sdmc_ur/gmd_p_qii4_urqmd/
+	done) &
 done
 
 rm list_part*
