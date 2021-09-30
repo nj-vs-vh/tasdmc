@@ -29,7 +29,9 @@ PARTICLE_ID_BY_NAME = {
 
 
 def generate_corsika_input_files(config: Dict):
-    verbose = get_config_key(config, 'verbose')
+    verbosity = get_config_key(config, 'verbosity')
+    verbose = verbosity > 0
+
     if verbose:
         print("\nGenerating CORSIKA input files\n")
 
@@ -76,8 +78,11 @@ def generate_corsika_input_files(config: Dict):
         raise InfilesGenerationError(
             f"Event number multiplier must be non-negative float, but {event_number_multiplier} was passed"
         )
-
     if verbose:
+        print(f"Event numbers are multiplied by {event_number_multiplier:.2f} in each energy bin!")
+
+    verbose_card_generation = verbosity > 1
+    if verbose_card_generation:
         print()
     for E_bin_i in range(1 + int((log10E_max - log10E_min) / LOG10_E_STEP)):
         generate_corsika_cards(
@@ -87,5 +92,5 @@ def generate_corsika_input_files(config: Dict):
             is_urqmd=low_E_model == 'URQMD',
             output_dir=corsika_input_files_dir,
             event_number_multiplier=event_number_multiplier,
-            verbose=verbose,
+            verbose=verbose_card_generation,
         )

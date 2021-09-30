@@ -1,7 +1,7 @@
 name: test-run
-append_index_if_exists: True
+append_index_if_exists: False
 
-verbose: True
+verbosity: 1
 
 corsika_input_files:
   particle: proton
@@ -9,5 +9,4 @@ corsika_input_files:
   log10E_max: 20.5
   high_E_hadronic_interactions_model: QGSJET  # QGSJET | EPOS
   low_E_hadronic_interactions_model: URQMD  # FLUKA | URQMD
-  # relative to optimal number of events in each energy bin. if omitted, value is set ot 1.0
-  event_number_multiplier: 1
+  event_number_multiplier: 0.05  # relative to BTS's number of events in each energy bin, defaults to 1.0
