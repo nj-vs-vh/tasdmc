@@ -1,5 +1,4 @@
-"""
-CORSIKA input files generation
+"""CORSIKA input files generation
 
 Based on runcorsd-old/gen_infiles_primary.sh and corcard.py
 """
@@ -7,8 +6,8 @@ Based on runcorsd-old/gen_infiles_primary.sh and corcard.py
 from typing import Dict
 import click
 
-from tasdmc.config import get_config_key
-from tasdmc.run_dir import run_dir
+from tasdmc.config import get_config_key, get_verbosity
+from tasdmc.fileio import corsika_input_files_dir
 
 from .corsika_card import generate_corsika_cards, LOG10_E_STEP, LOG10_E_MIN_POSSIBLE, LOG10_E_MAX_POSSIBLE
 
@@ -30,7 +29,7 @@ PARTICLE_ID_BY_NAME = {
 
 
 def generate_corsika_input_files(config: Dict):
-    verbosity = get_config_key(config, 'verbosity')
+    verbosity = get_verbosity(config)
     verbose = verbosity > 0
 
     if verbose:
@@ -63,9 +62,6 @@ def generate_corsika_input_files(config: Dict):
     if verbose:
         click.echo(f'Energy scale (log10(E / eV)): {log10E_min:.1f} ... {log10E_max:.1f}, with step {LOG10_E_STEP:.1f}')
 
-    corsika_input_files_dir = run_dir(config) / 'infiles'
-    corsika_input_files_dir.mkdir()
-
     high_E_model = get_config_key(config, 'high_E_hadronic_interactions_model', prefix)
     low_E_model = get_config_key(config, 'low_E_hadronic_interactions_model', prefix)
     if verbose:
@@ -79,8 +75,11 @@ def generate_corsika_input_files(config: Dict):
         raise InfilesGenerationError(
             f"Event number multiplier must be non-negative float, but {event_number_multiplier} was passed"
         )
-    if verbose:
-        click.echo(f"Event numbers are multiplied by {event_number_multiplier:.2f} in each energy bin!")
+    if verbose and event_number_multiplier != 1.0:
+        click.echo(f"Event numbers are multiplied by {event_number_multiplier:.2f} in each energy bin")
+
+    infiles_dir = corsika_input_files_dir(config)
+    infiles_dir.mkdir()
 
     verbose_card_generation = verbosity > 1
     if verbose_card_generation:
@@ -89,9 +88,9 @@ def generate_corsika_input_files(config: Dict):
         generate_corsika_cards(
             primary_particle_id=particle_id,
             log10_E_primary=log10E_min + E_bin_i * LOG10_E_STEP,
-            is_epos=high_E_model == 'EPOS',
-            is_urqmd=low_E_model == 'URQMD',
-            output_dir=corsika_input_files_dir,
+            is_epos=(high_E_model == 'EPOS'),
+            is_urqmd=(low_E_model == 'URQMD'),
+            output_dir=infiles_dir,
             event_number_multiplier=event_number_multiplier,
             verbose=verbose_card_generation,
         )

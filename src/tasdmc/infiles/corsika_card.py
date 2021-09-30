@@ -1,4 +1,4 @@
-"""Based on corcard.py script, reprposed for use as a module"""
+"""Based on corcard.py script, repurposed for use as a module"""
 
 import re
 import math

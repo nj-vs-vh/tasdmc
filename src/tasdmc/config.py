@@ -1,3 +1,5 @@
+""".yaml config files reading and accessing"""
+
 import yaml
 
 from typing import Dict, Any, Optional
@@ -54,3 +56,7 @@ def get_config_key(config: Config, key: str, key_prefix: Optional[str] = None, d
         traversed_level_keys.append(level_key)
 
     return current_value
+
+
+def get_verbosity(config):
+    return get_config_key(config, 'verbosity')

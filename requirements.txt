@@ -1,3 +1,4 @@
 click==8.0.1
 PyYAML==5.4.1
 corsika_wrapper @ git+https://github.com/fact-project/corsika_wrapper
+tqdm==4.62.3
