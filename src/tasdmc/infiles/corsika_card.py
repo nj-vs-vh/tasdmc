@@ -235,11 +235,13 @@ def generate_corsika_cards(
     log10_E_primary: float,
     is_epos: bool,
     is_urqmd: bool,
-    output_dir: Path,
+    infiles_dir: Path,
+    corsika_output_dir: Path,
     event_number_multiplier: float = 1.0,
     event_number_override: Optional[int] = None,
     fixed_theta_angle: Optional[float] = None,
     verbose: bool = False,
+    check_if_card_exist: bool = False,
 ):
     card = CorsikaCard()
     card.set_USER(getpass.getuser());
@@ -263,6 +265,8 @@ def generate_corsika_cards(
         # number of events for each energy was heuristically selected by B.T. Stokes and is used here
         min_file_index = int(0)
         max_file_index = int(par[6] * event_number_multiplier) - 1
+        # NOTE: this limitation is eliminated in the latest corsika
+        # NRREXT option may be used, files are then named DATnnnnnnnnn istead of DATnnnnnn
         if not 0 <= max_file_index <= 9999:
             raise ValueError(
                 f"Event number multiplier {event_number_multiplier} results in file index exceeding "
@@ -275,7 +279,9 @@ def generate_corsika_cards(
             raise ValueError(f"Overriden event number ({event_number_override}) exceeds 9999")
         if fixed_theta_angle is not None:
             if not (0 <= fixed_theta_angle <= 60.0):
-                raise ValueError(f"Fixed theta angle = {fixed_theta_angle:.2f}, outside allowed 0 - 60 degrees range")
+                raise ValueError(
+                    f"Fixed theta angle = {fixed_theta_angle:.2f}, outside allowed 0 - 60 degrees range"
+                )
             card.set_fixed_theta(fixed_theta_angle)
 
     if is_epos:
@@ -285,17 +291,25 @@ def generate_corsika_cards(
     if is_urqmd:
         card.replace_card("ECUTS", "0.3  0.05  0.00025  0.00025")
 
+    # directing longtitude and particle files to output directory (stdout and stderr will be there automatically)
+    # trailing slash is included manually for COSIKA to understand
+    card.replace_card("DIRECT", str(corsika_output_dir) + '/')
+
     for file_index in range(min_file_index, max_file_index+1):
         runnr = file_index*100 + energy_id
-        card_file = output_dir / f"DAT{runnr:06d}.in"
+        card_file = infiles_dir / f"DAT{runnr:06d}.in"
         card.set_RUNNR(runnr)
         card.set_SEED(*get_5_cor_seeds())  # new seeds are generated for each card
-        with open(card_file, "w") as f:
-            f.write(card.buf+"\n")
+        if check_if_card_exist and card_file.exists():
+            continue
+        else:
+            with open(card_file, "w") as f:
+                f.write(card.buf+"\n")
 
     if verbose:
         click.secho(
-            f"PRIMARY {primary_particle_id:d} ENERGY {log10_E_primary_quantized:.1f} ({energy_id:02d}){' EPOS' if is_epos else ''}: "
-            f"{max_file_index-min_file_index+1:d} card files",
+            f"PRIMARY {primary_particle_id:d} ENERGY {log10_E_primary_quantized:.1f} "
+            + f"({energy_id:02d}){' EPOS' if is_epos else ''}: "
+            + f"{max_file_index-min_file_index+1:d} card files",
             dim=True,
         )

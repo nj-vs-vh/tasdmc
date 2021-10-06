@@ -18,10 +18,13 @@ def run_dir(config: Config) -> Path:
     return RUNS_DIR / run_dir_name
 
 
-def prepare_run_dir(config):
+def prepare_run_dir(config: Config):
     verbose = get_config_key(config, 'verbosity') > 0
     if_exists = get_config_key(config, 'if_exists', default='error')
-    if if_exists == 'append_index':
+    if if_exists == 'continue':
+        if run_dir(config).exists():
+            click.secho(f"Run directory already exists, trying to continue operation", fg='red', bold=True)
+    elif if_exists == 'append_index':
         run_dir_idx = None
         run_dir_name_plain = run_dir(config).name
         while True:
@@ -40,27 +43,37 @@ def prepare_run_dir(config):
                 config['name'] = run_dir_name_plain + '-' + str(run_dir_idx)
     elif if_exists == 'overwrite':
         rd = run_dir(config)
-        shutil.rmtree(rd, ignore_errors=True)
+        try:
+            shutil.rmtree(rd)
+        except FileNotFoundError:
+            click.secho(f"Run directory existed and was overwritten", fg='red', bold=True)
         rd.mkdir()
     elif if_exists == 'error':
         rd = run_dir(config)
         try:
             rd.mkdir()
         except FileExistsError:
-            raise ValueError(f"Run name '{rd.name}' taken")
+            raise ValueError(f"Run directory '{rd.name}' already exists, pick another run name")
     else:
-        raise ValueError(f"if_exists config key must be 'overwrite', 'append_index', or 'error', but {if_exists} was passed")
+        raise ValueError(
+            "if_exists config key must be 'continue', 'overwrite', 'append_index', or 'error', "
+            + f"but {if_exists} was specified"
+        )
 
-    run_configs_dir = rd / 'configs'
-    run_configs_dir.mkdir()
+    configs_dir = run_configs_dir(config)
+    configs_dir.mkdir(exist_ok=(if_exists=='continue'))
 
-    with open(run_configs_dir / 'run.yaml', 'w') as f:
+    with open(configs_dir / 'run.yaml', 'w') as f:
         yaml.dump(config, f)
 
 
-def corsika_input_files_dir(config) -> Path:
-    return run_dir(config) / 'infiles'
+def run_configs_dir(config: Config) -> Path:
+    return run_dir(config) / 'configs'
 
 
-def corsika_output_files_dir(config) -> Path:
+def corsika_input_files_dir(config: Config) -> Path:
+    return run_dir(config) / 'corsika_input'
+
+
+def corsika_output_files_dir(config: Config) -> Path:
     return run_dir(config) / 'corsika_output'

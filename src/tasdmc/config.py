@@ -58,5 +58,9 @@ def get_config_key(config: Config, key: str, key_prefix: Optional[str] = None, d
     return current_value
 
 
-def get_verbosity(config):
+def get_verbosity(config: Config) -> int:
     return get_config_key(config, 'verbosity')
+
+
+def get_try_to_continue(config: Config) -> bool:
+    return get_config_key(config, 'if_exists') == 'continue'

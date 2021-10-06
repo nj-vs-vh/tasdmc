@@ -1,15 +1,17 @@
 name: test-run
-if_exists: overwrite  # overwrite, append_index, or error, defaults to error
-verbosity: 1
+if_exists: continue
+#  continue | overwrite | append_index | error; defaults to error
+#  use 'continue' to continue interrupted run without rerunning completed steps
+verbosity: 2
+
+corsika:
+  path: /home/njvh/Documents/Science/tools/corsika-77402/run/corsika77402Linux_QGSII_gheisha_thin
+  low_E_hadronic_interactions_model: URQMD  # FLUKA | URQMD | GHEISHA
+  high_E_hadronic_interactions_model: QGSJETII  # QGSJETII | EPOS
 
 corsika_input_files:
   particle: proton
   log10E_min: 16.5
   log10E_max: 16.5
-  high_E_hadronic_interactions_model: QGSJETII  # QGSJETII | EPOS
-  low_E_hadronic_interactions_model: URQMD  # FLUKA | URQMD
   event_number_multiplier: 0.001  # relative to BTS's number of events in each energy bin, defaults to 1.0
 
-corsika:
-  # TODO: this should be configured on per-host basis
-  path: /home/njvh/Documents/Science/tools/corsika-77402/run/corsika77402Linux_QGSII_urqmd_thin

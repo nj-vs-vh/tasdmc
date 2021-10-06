@@ -1,15 +1,15 @@
 """CORSIKA input files generation
 
-Based on runcorsd-old/gen_infiles_primary.sh and corcard.py
+Based on runcorsd-old/gen_infiles_primary.sh
 """
 
-from typing import Dict
 import click
 
 from tasdmc.config import get_config_key, get_verbosity
-from tasdmc.fileio import corsika_input_files_dir
+from tasdmc.fileio import corsika_input_files_dir, corsika_output_files_dir
 
 from .corsika_card import generate_corsika_cards, LOG10_E_STEP, LOG10_E_MIN_POSSIBLE, LOG10_E_MAX_POSSIBLE
+from ..config import Config, get_try_to_continue
 
 
 class InfilesGenerationError(Exception):
@@ -28,7 +28,7 @@ PARTICLE_ID_BY_NAME = {
 }
 
 
-def generate_corsika_input_files(config: Dict):
+def generate_corsika_input_files(config: Config):
     verbosity = get_verbosity(config)
     verbose = verbosity > 0
 
@@ -62,8 +62,8 @@ def generate_corsika_input_files(config: Dict):
     if verbose:
         click.echo(f'Energy scale (log10(E / eV)): {log10E_min:.1f} ... {log10E_max:.1f}, with step {LOG10_E_STEP:.1f}')
 
-    high_E_model = get_config_key(config, 'high_E_hadronic_interactions_model', prefix)
-    low_E_model = get_config_key(config, 'low_E_hadronic_interactions_model', prefix)
+    high_E_model = get_config_key(config, 'corsika.high_E_hadronic_interactions_model')
+    low_E_model = get_config_key(config, 'corsika.low_E_hadronic_interactions_model')
     if verbose:
         click.echo(f'Hadronic interactions models: {low_E_model}/{high_E_model}')
 
@@ -78,19 +78,25 @@ def generate_corsika_input_files(config: Dict):
     if verbose and event_number_multiplier != 1.0:
         click.echo(f"Event numbers are multiplied by {event_number_multiplier:.2f} in each energy bin")
 
+    try_to_continue = get_try_to_continue(config)
+
     infiles_dir = corsika_input_files_dir(config)
-    infiles_dir.mkdir()
+    infiles_dir.mkdir(exist_ok=try_to_continue)
+    outfiles_dir = corsika_output_files_dir(config)
 
     verbose_card_generation = verbosity > 1
     if verbose_card_generation:
-        click.echo('')
+        click.secho('\nDetailed card generation report:', dim=True)
+
     for E_bin_i in range(1 + int((log10E_max - log10E_min) / LOG10_E_STEP)):
         generate_corsika_cards(
             primary_particle_id=particle_id,
             log10_E_primary=log10E_min + E_bin_i * LOG10_E_STEP,
             is_epos=(high_E_model == 'EPOS'),
             is_urqmd=(low_E_model == 'URQMD'),
-            output_dir=infiles_dir,
+            infiles_dir=infiles_dir,
+            corsika_output_dir=outfiles_dir,
             event_number_multiplier=event_number_multiplier,
             verbose=verbose_card_generation,
+            check_if_card_exist=try_to_continue,
         )

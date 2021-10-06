@@ -5,11 +5,11 @@
 ## Installation:
 
 ```bash
-
 # recommended: create virtual environment for this package
 # you can use conda or venv or virtualenv or whatever
-python -m venv venv
-source venv/bin/activate
+# example for venv (lightweight and provided with python 3 by default):
+python -m venv taenv
+source taenv/bin/activate
 
 # install tasdmc package from source
 pip install tasdmc@git+https://github.com/nj-vs-vh/tasdmc.git
@@ -17,19 +17,23 @@ pip install tasdmc@git+https://github.com/nj-vs-vh/tasdmc.git
 
 ## Usage
 
-`tasdmc` is designed as CLI and allows several commands. But before the `tasdmc` is run, it must be configured.
+`tasdmc` is designed to be run as CLI and allows several commands. But before that, it must be configured.
 
-### Configuration files
+### Prerequisites
 
-All configuration files are stored in human-readable [`.yaml`](https://yaml.org/) format. The main config file is `run.yaml`, which contains all physical parameters relevant to the simulation (primary particle, energy range, etc).
-
-Top-level keys:
-* `name` - name of the run, should be unique to avoid confusion. All files relevant to the run will be placed in the directory with this name.
-* `corsika_input_files` - controls generation of CORSIKA input
-* TBD...
+1. CORSIKA: must be compiled following their instructions with `coconut`. Recommended build options: high energy handronic interaction model - QGSJETII-04; low energy - FLUKA; horizontal flat detector array geometry; THINning version (option 2a in v77402); compile and remove temporary files. No automatic building is provided for now, so please keep your builds and `.yaml` config files (see later) in sync manually.
+2. TBD...
 
 ### Global configuration
 
-Besides per-run configs there are some global options controlled with environment variables:
+Global configuration is done via environment variables. As usual, their `export`'s may be placed in `.bashrc` or any other activation script.
 
-* `TASDMC_RUNS_DIR` controls where all the run directories are created. If not specified, `runs` directory will be created in the current working directory and used to store all the individual runs.
+* `TASDMC_RUNS_DIR` controls where all the run directories (see later) are created. If not specified, `/current/working/directory/runs` will be created and used.
+
+### Configuration files
+
+The whole `tasdmc` run configuration is stored in human-readable [`.yaml`](https://yaml.org/) format. The main file `run.yaml` contains all physical parameters relevant to the simulation (primary particle, energy range, etc) and configuration for (almost) all the simulation steps.
+
+Thanks to the `.yaml` format, config files are almost self-explainatory. See `run.yaml` for example.
+
+Note that for each run config is copied to the run directory and is available at any point in the future.
