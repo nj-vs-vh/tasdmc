@@ -1,0 +1,4 @@
+START: machine-2u 20211006 113441 MSK
+error(1): FLUPRO variable (/full/paht/to/fluka/top/level/directory) not set!
+Something has failed, fail count = 1
+FINISH: machine-2u 20211006 113441 MSK

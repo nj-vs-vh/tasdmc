@@ -7,8 +7,9 @@ MIN_CORSIKA_LONG_FILE_LENGTH=1500
 
 # in case if something doesn't work then save the information that describes why it didn't work
 fail=0
-cmdargs_given=1
-temp_log='/tmp/'${MYNAME}'_'${USER}_${RANDOM}_'temp.log'
+cmdargs_given=1  # true | false
+# temp_log='/tmp/'${MYNAME}'_'${USER}_${RANDOM}_'temp.log'
+temp_log=temp.log
 touch $temp_log
 echo "START: "${HOSTNAME}" "$(date +"%Y%m%d %H%M%S %Z") >>$temp_log
 
@@ -457,7 +458,7 @@ if [ ! -z $outdir ]; then
 else
     cat $temp_log >&2
 fi
-rm -f $temp_log
+# rm -f $temp_log
 
 # make sure the local processing directory is clean
 test $fail -gt 0 && rm -rf $prodir_local
