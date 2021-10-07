@@ -81,7 +81,6 @@ def generate_corsika_input_files(config: Config):
     try_to_continue = get_try_to_continue(config)
 
     infiles_dir = corsika_input_files_dir(config)
-    infiles_dir.mkdir(exist_ok=try_to_continue)
     outfiles_dir = corsika_output_files_dir(config)
 
     verbose_card_generation = verbosity > 1

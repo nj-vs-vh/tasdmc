@@ -5,6 +5,7 @@ import yaml
 import click
 from pathlib import Path
 import shutil
+from functools import wraps
 
 from .config import Config, get_config_key
 
@@ -16,6 +17,18 @@ RUNS_DIR.mkdir(exist_ok=True)
 def run_dir(config: Config) -> Path:
     run_dir_name: str = get_config_key(config, 'name')
     return RUNS_DIR / run_dir_name
+
+
+def run_configs_dir(config: Config) -> Path:
+    return run_dir(config) / 'configs'
+
+
+def corsika_input_files_dir(config: Config) -> Path:
+    return run_dir(config) / 'corsika_input'
+
+
+def corsika_output_files_dir(config: Config) -> Path:
+    return run_dir(config) / 'corsika_output'
 
 
 def prepare_run_dir(config: Config):
@@ -60,20 +73,10 @@ def prepare_run_dir(config: Config):
             + f"but {if_exists} was specified"
         )
 
+    for internal_dir in (run_configs_dir, corsika_input_files_dir, corsika_output_files_dir):
+        internal_dir(config).mkdir(exist_ok=(if_exists == 'continue'))
+
     configs_dir = run_configs_dir(config)
-    configs_dir.mkdir(exist_ok=(if_exists == 'continue'))
 
     with open(configs_dir / 'run.yaml', 'w') as f:
         yaml.dump(config, f)
-
-
-def run_configs_dir(config: Config) -> Path:
-    return run_dir(config) / 'configs'
-
-
-def corsika_input_files_dir(config: Config) -> Path:
-    return run_dir(config) / 'corsika_input'
-
-
-def corsika_output_files_dir(config: Config) -> Path:
-    return run_dir(config) / 'corsika_output'
