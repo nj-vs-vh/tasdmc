@@ -15,7 +15,7 @@ source taenv/bin/activate
 git clone https://github.com/nj-vs-vh/tasdmc.git
 cd tasdmc
 source tasdmc_env.sh  # global package configuration, see below
-pip install .
+python setup.py install
 ```
 
 ## Usage

@@ -1,25 +1,36 @@
 from setuptools import setup, find_packages, Extension
+from setuptools.command.install import install
+from distutils.command.clean import clean
 
 import subprocess
 import os
 from pathlib import Path
 
 
-# TODO: MAKE THIS PART EXECUTE ONLY ON INSTALL AND RUN make clean ON UNINSTALL
-
-CUR_DIR = Path(__file__).parent.resolve()
-extensions_source_dir = CUR_DIR / 'src/extensions'
+package_root = Path(__file__).parent.resolve()
+extensions_source_dir = package_root / 'src/extensions'
 tasdmc_lib_dir = os.environ.get('TASDMC_LIB_DIR')
 if tasdmc_lib_dir is None:
     raise EnvironmentError("TASDMC_LIB_DIR envirnoment variable must be set before installing the package!")
-subprocess.run(f"cd {extensions_source_dir} && make install", shell=True)  # building libs
 tasdmc_ext_module = Extension(
     "tasdmc.tasdmc_ext",
-    sources=[str(CUR_DIR / 'src/tasdmc_ext.c')],
+    sources=[str(package_root / 'src/tasdmc_ext.c')],
     library_dirs=[str(tasdmc_lib_dir)],
     libraries=['corsika_split_th'],
     extra_compile_args=[f'-I{extensions_source_dir}'],
 )
+
+
+class InstallWithExternalLibs(install):
+    def run(self):
+        subprocess.run(f"cd {extensions_source_dir} && make install", shell=True)
+        install.run(self)
+
+
+class CleanWithExternalLibs(clean):
+    def run(self):
+        subprocess.run(f"cd {extensions_source_dir} && make clean", shell=True)
+        clean.run(self)
 
 
 with open('requirements.txt', 'r') as f:
@@ -38,5 +49,9 @@ setup(
     install_requires=requirements,
     entry_points={
         'console_scripts': ['tasdmc=tasdmc.cli:cli'],
+    },
+    cmdclass={
+        'install': InstallWithExternalLibs,
+        'clean': CleanWithExternalLibs,
     },
 )
