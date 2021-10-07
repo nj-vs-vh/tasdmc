@@ -3,4 +3,12 @@
 # python environment dir, any dir ending with env
 *env/
 
+# build/installation artefacts
+lib/
+src/extensions/bin
+build/
+*.egg-info
+dist/
+
+# default dir for runs data
 runs

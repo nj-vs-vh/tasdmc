@@ -9,7 +9,7 @@ import shutil
 from .config import Config, get_config_key
 
 
-RUNS_DIR = os.environ.get("TASDMC_RUNS_DIR") or Path(os.getcwd()) / 'runs'
+RUNS_DIR = Path(os.environ.get("TASDMC_RUNS_DIR")) or Path(os.getcwd()) / 'runs'
 RUNS_DIR.mkdir(exist_ok=True)
 
 

@@ -7,7 +7,7 @@ import click
 from pathlib import Path
 from typing import Dict
 
-from tasdmc.simulation.corsika_output_files import CorsikaOutputFiles
+from .corsika_output_files import CorsikaOutputFiles
 
 from ..fileio import corsika_input_files_dir, corsika_output_files_dir
 from ..config import get_config_key, get_try_to_continue, get_verbosity

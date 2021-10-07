@@ -12,7 +12,10 @@ python -m venv taenv
 source taenv/bin/activate
 
 # install tasdmc package from source
-pip install tasdmc@git+https://github.com/nj-vs-vh/tasdmc.git
+git clone https://github.com/nj-vs-vh/tasdmc.git
+cd tasdmc
+source tasdmc_env.sh  # global package configuration, see below
+pip install .
 ```
 
 ## Usage
@@ -28,7 +31,10 @@ pip install tasdmc@git+https://github.com/nj-vs-vh/tasdmc.git
 
 Global configuration is done via environment variables. As usual, their `export`'s may be placed in `.bashrc` or any other activation script.
 
+* `TASDMC_LIB_DIR` controls where C extension libraries will be placed. For now `tasdmc` do not install libraries system-wide so this variable must be set, and `LD_LIBRARY_PATH` must be updated to contain it (`export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TASDMC_LIB_DIR`).
 * `TASDMC_RUNS_DIR` controls where all the run directories (see later) are created. If not specified, `/current/working/directory/runs` will be created and used.
+
+An example of all these variables combined in a single script can be found in `tasdmc_env.sh`.
 
 ### Configuration files
 
