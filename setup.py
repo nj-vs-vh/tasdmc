@@ -13,7 +13,7 @@ setup(
     packages=find_packages(where='src'),
     package_dir={"": "src"},
     install_requires=requirements,
-    entry_points = {
+    entry_points={
         'console_scripts': ['tasdmc=tasdmc.cli:cli'],
-    }
+    },
 )

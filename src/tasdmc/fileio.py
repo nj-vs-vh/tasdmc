@@ -61,7 +61,7 @@ def prepare_run_dir(config: Config):
         )
 
     configs_dir = run_configs_dir(config)
-    configs_dir.mkdir(exist_ok=(if_exists=='continue'))
+    configs_dir.mkdir(exist_ok=(if_exists == 'continue'))
 
     with open(configs_dir / 'run.yaml', 'w') as f:
         yaml.dump(config, f)

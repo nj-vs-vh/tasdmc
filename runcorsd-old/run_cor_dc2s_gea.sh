@@ -254,6 +254,8 @@ while [ $fail -eq 0 -a $cmdargs_given -eq 1 ]; do
     # RUN CORSIKA and split the output file into parts
     (time ./$corexe <$crdfile 1>$outfile 2>$errfile) 2>>$LOGFILE
     # Stop if CORSIKA has failed in any (known) ways
+
+    # checking corsika exit code
     if [ $? -ne 0 ]; then
         fail=$((fail + 1))
         echo "error(${fail}): CORSIKA EXECUTION FAILED" >>$temp_log
@@ -261,6 +263,8 @@ while [ $fail -eq 0 -a $cmdargs_given -eq 1 ]; do
         rm -rf $prodir_local
         break
     fi
+
+    # counting lines in stderr excluding ones starting with "Note: The following floating-point exceptions are signalling"
     corsika_stat=$(cat $errfile 2>&1 | grep -v 'Note: The following floating-point exceptions are signalling' | wc -l)
     if [ $corsika_stat -gt 0 ]; then
         fail=$((fail + 1))
@@ -269,6 +273,8 @@ while [ $fail -eq 0 -a $cmdargs_given -eq 1 ]; do
         rm -rf $prodir_local
         break
     fi
+
+    # counting lines in corsika long file
     corsika_long_file_length=$(cat $longfile 2>&1 | wc -l)
     if [ $corsika_long_file_length -lt $MIN_CORSIKA_LONG_FILE_LENGTH ]; then
         fail=$((fail + 1))
@@ -276,6 +282,7 @@ while [ $fail -eq 0 -a $cmdargs_given -eq 1 ]; do
         cat $errfile >>$temp_log
         break
     fi
+
     (time ./corsika_split-th $fbase0 $THREADS_PER_NODE) 2>>$LOGFILE
     echo "Finish Run CORSIKA and corsika_split-th" >>$LOGFILE
     SPLIT_FILES=""

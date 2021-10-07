@@ -9,20 +9,21 @@ import click
 
 from typing import Optional
 
-#  To generate CORSIKA showers using B. T. Stokes optimal thinning 
+#  To generate CORSIKA showers using B. T. Stokes optimal thinning
 #  parameters for each energy in 0.1 log10e bin and run number convention
 #  index of the dictionary: energy, log10(E/eV)
 #  For each log10(E/eV) value:
 #   [0]         = last 2 digits (XX) of the corsika DAT????XX.in input file
-#   (run number in CORSIKA card file is a 6 digit number XXXXXX in 
-#   DATXXXXXX.in file name, the last 2 digits in XXXXXX identify the energy 
-#   channel and the first 4 digits are just a sequential number from 0 to 9999 
+#   (run number in CORSIKA card file is a 6 digit number XXXXXX in
+#   DATXXXXXX.in file name, the last 2 digits in XXXXXX identify the energy
+#   channel and the first 4 digits are just a sequential number from 0 to 9999
 #   [1],[2],[3] = three values of the CORSIKA THIN card
 #   [4],[5]     = two values of the CORSIKA THINH card
 #   [6]         = how many particles BTS would normally throw at each energy
 BTS_PAR = {}
 
 
+# fmt: off
 BTS_PAR[15.0] = (70, 1.0E-6, 1.000000e+1, 10.e2,   1.0,  1.0E2, 10000 )
 BTS_PAR[15.1] = (71, 1.0E-6, 1.000000e+1, 10.e2,   1.0,  1.0E2, 10000 )
 BTS_PAR[15.2] = (72, 1.0E-6, 1.000000e+1, 10.e2,   1.0,  1.0E2, 6300  )
@@ -79,6 +80,7 @@ BTS_PAR[20.2] = (22, 1.0E-6, 1.584893e+5, 900.e2,  1.0,  1.0E2, 250   )
 BTS_PAR[20.3] = (23, 1.0E-6, 1.995262e+5, 950.e2,  1.0,  1.0E2, 250   )
 BTS_PAR[20.4] = (24, 1.0E-6, 2.511886e+5, 1000.e2, 1.0,  1.0E2, 250   )
 BTS_PAR[20.5] = (25, 1.0E-6, 3.162278e+5, 1050.e2, 1.0,  1.0E2, 250   )
+# fmt: on
 
 
 LOG10_E_STEP = 0.1
@@ -87,7 +89,7 @@ LOG10_E_MAX_POSSIBLE = max(BTS_PAR.keys()) + LOG10_E_STEP
 
 
 # For QGSJET
-BTS_SAMPLE_CARD_FILE='''
+BTS_SAMPLE_CARD_FILE = '''
 RUNNR 023905
 DIRECT " "
 PRMPAR 14
@@ -127,7 +129,7 @@ ATMOD   17
 '''
 
 # Additional EPOS cards
-EPOS_CARDS='''
+EPOS_CARDS = '''
 EPOS T 0
 EPOSIG T
 EPOPAR input epos/epos.param        !initialization input file for epos
@@ -150,15 +152,12 @@ def get_5_cor_seeds():
 
 
 class CorsikaCard:
-
     def __init__(self):
-        self.buf=BTS_SAMPLE_CARD_FILE.strip()
-        self.epos_cards_added=False
+        self.buf = BTS_SAMPLE_CARD_FILE.strip()
+        self.epos_cards_added = False
 
     def replace_card(self, card_name, card_value, occurrence=1):
-
         class Nth(object):
-
             def __init__(self, n_min, n_max, replacement):
                 if n_max < n_min:
                     n_min, n_max = n_max, n_min
@@ -173,62 +172,62 @@ class CorsikaCard:
                     return self.replacement
                 return matchobj.group(0)
 
-        name=str(card_name)
-        value=str(card_value)
-        crd_original=r'{:s} .+'.format(name)
-        crd_replaced=r'{:s} {:s}'.format(name, value)
+        name = str(card_name)
+        value = str(card_value)
+        crd_original = r'{:s} .+'.format(name)
+        crd_replaced = r'{:s} {:s}'.format(name, value)
         self.buf = re.sub(crd_original, Nth(occurrence, occurrence, crd_replaced), self.buf)
 
-    def set_RUNNR(self,runnr):
-        self.replace_card("RUNNR","{:06d}".format(runnr))
+    def set_RUNNR(self, runnr):
+        self.replace_card("RUNNR", "{:06d}".format(runnr))
 
-    def set_ATMOD(self,atmod):
-        self.replace_card("ATMOD","{:d}".format(atmod))
+    def set_ATMOD(self, atmod):
+        self.replace_card("ATMOD", "{:d}".format(atmod))
 
-    def set_PRMPAR(self,prmpar):
-        self.replace_card("PRMPAR","{:d}".format(prmpar))
+    def set_PRMPAR(self, prmpar):
+        self.replace_card("PRMPAR", "{:d}".format(prmpar))
 
-    def set_fixed_log10en(self,log10en_eV):
-        E_GeV=1e-9*math.pow(10.0,float(log10en_eV))
-        val="{:.6E} {:.6E}".format(E_GeV,E_GeV).replace("+0","+")
+    def set_fixed_log10en(self, log10en_eV):
+        E_GeV = 1e-9 * math.pow(10.0, float(log10en_eV))
+        val = "{:.6E} {:.6E}".format(E_GeV, E_GeV).replace("+0", "+")
         self.replace_card("ERANGE", val)
 
-    def set_fixed_theta(self,theta_deg):
-        self.replace_card("THETAP", "{:.2f} {:.2f}".format(theta_deg,theta_deg))
-    
-    def set_fixed_phi(self,phi_deg):
-        self.replace_card("PHIP", "{:.2f} {:.2f}".format(phi_deg,phi_deg))
+    def set_fixed_theta(self, theta_deg):
+        self.replace_card("THETAP", "{:.2f} {:.2f}".format(theta_deg, theta_deg))
 
-    def set_THIN(self,val1,val2,val3):
-        val="{:.1E} {:.6E} {:.2E}".format(val1,val2,val3)
-        val=val.replace("+0","+")
-        val=val.replace("-0","-")
-        self.replace_card("THIN",val)
-        
-    def set_THINH(self,val1,val2):
-        val="{:.1f} {:.1E}".format(val1,val2)
-        val=val.replace("+0","+")
-        val=val.replace("-0","-")
-        self.replace_card("THINH",val)
-        
-    def set_SEED(self,seed1,seed2,seed3,seed4,seed5):
+    def set_fixed_phi(self, phi_deg):
+        self.replace_card("PHIP", "{:.2f} {:.2f}".format(phi_deg, phi_deg))
+
+    def set_THIN(self, val1, val2, val3):
+        val = "{:.1E} {:.6E} {:.2E}".format(val1, val2, val3)
+        val = val.replace("+0", "+")
+        val = val.replace("-0", "-")
+        self.replace_card("THIN", val)
+
+    def set_THINH(self, val1, val2):
+        val = "{:.1f} {:.1E}".format(val1, val2)
+        val = val.replace("+0", "+")
+        val = val.replace("-0", "-")
+        self.replace_card("THINH", val)
+
+    def set_SEED(self, seed1, seed2, seed3, seed4, seed5):
         self.replace_card("SEED", "{:d} 0 0".format(seed1), occurrence=1)
         self.replace_card("SEED", "{:d} 0 0".format(seed2), occurrence=2)
         self.replace_card("SEED", "{:d} 0 0".format(seed3), occurrence=3)
         self.replace_card("SEED", "{:d} 0 0".format(seed4), occurrence=4)
         self.replace_card("SEED", "{:d} 0 0".format(seed5), occurrence=5)
 
-    def set_USER(self,user):
-        self.replace_card("USER",user)
-        
-    def set_HOST(self,host):
-        self.replace_card("HOST",host)
-        
+    def set_USER(self, user):
+        self.replace_card("USER", user)
+
+    def set_HOST(self, host):
+        self.replace_card("HOST", host)
+
     def add_EPOS_CARDS(self):
         if not self.epos_cards_added:
             self.buf = self.buf + "\n" + EPOS_CARDS.strip()
-            self.epos_cards_added=True
-        
+            self.epos_cards_added = True
+
 
 def generate_corsika_cards(
     primary_particle_id: int,
@@ -244,7 +243,7 @@ def generate_corsika_cards(
     check_if_card_exist: bool = False,
 ):
     card = CorsikaCard()
-    card.set_USER(getpass.getuser());
+    card.set_USER(getpass.getuser())
     card.set_HOST("chpc")
     card.set_PRMPAR(primary_particle_id)
 
@@ -256,10 +255,10 @@ def generate_corsika_cards(
     card.set_fixed_log10en(log10_E_primary_quantized)
 
     # thinning options optimal for the energy
-    par=BTS_PAR[log10_E_primary_quantized]
-    energy_id=int(par[0])
-    card.set_THIN(par[1],par[2],par[3])
-    card.set_THINH(par[4],par[5])
+    par = BTS_PAR[log10_E_primary_quantized]
+    energy_id = int(par[0])
+    card.set_THIN(par[1], par[2], par[3])
+    card.set_THINH(par[4], par[5])
 
     if event_number_override is None:
         # number of events for each energy was heuristically selected by B.T. Stokes and is used here
@@ -274,14 +273,12 @@ def generate_corsika_cards(
             )
     else:
         min_file_index = int(0)
-        max_file_index=int(event_number_override)
+        max_file_index = int(event_number_override)
         if not 0 <= max_file_index <= 9999:
             raise ValueError(f"Overriden event number ({event_number_override}) exceeds 9999")
         if fixed_theta_angle is not None:
             if not (0 <= fixed_theta_angle <= 60.0):
-                raise ValueError(
-                    f"Fixed theta angle = {fixed_theta_angle:.2f}, outside allowed 0 - 60 degrees range"
-                )
+                raise ValueError(f"Fixed theta angle = {fixed_theta_angle:.2f}, outside allowed 0 - 60 degrees range")
             card.set_fixed_theta(fixed_theta_angle)
 
     if is_epos:
@@ -295,8 +292,8 @@ def generate_corsika_cards(
     # trailing slash is included manually for COSIKA to understand
     card.replace_card("DIRECT", str(corsika_output_dir) + '/')
 
-    for file_index in range(min_file_index, max_file_index+1):
-        runnr = file_index*100 + energy_id
+    for file_index in range(min_file_index, max_file_index + 1):
+        runnr = file_index * 100 + energy_id
         card_file = infiles_dir / f"DAT{runnr:06d}.in"
         card.set_RUNNR(runnr)
         card.set_SEED(*get_5_cor_seeds())  # new seeds are generated for each card
@@ -304,7 +301,7 @@ def generate_corsika_cards(
             continue
         else:
             with open(card_file, "w") as f:
-                f.write(card.buf+"\n")
+                f.write(card.buf + "\n")
 
     if verbose:
         click.secho(

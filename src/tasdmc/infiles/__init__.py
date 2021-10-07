@@ -55,7 +55,7 @@ def generate_corsika_input_files(config: Config):
             assert (
                 LOG10_E_MIN_POSSIBLE <= log10E <= LOG10_E_MAX_POSSIBLE,
                 "Primary energy (both min and max) must be in "
-                + f"[10^{LOG10_E_MIN_POSSIBLE:.1f}, 10^{LOG10_E_MAX_POSSIBLE:.1f}] eV"
+                + f"[10^{LOG10_E_MIN_POSSIBLE:.1f}, 10^{LOG10_E_MAX_POSSIBLE:.1f}] eV",
             )
     except (ValueError, AssertionError) as e:
         raise InfilesGenerationError(str(e))
