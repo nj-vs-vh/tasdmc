@@ -29,8 +29,6 @@ def run_simulation(config):
     particle_file_split_to = get_config_key(config, 'dethinning.particle_file_split_to')
 
     corsika_infiles = [f for f in infiles_dir.iterdir()]
-    if verbose:
-        corsika_infiles = tqdm(corsika_infiles)  # TODO: find solution for multiprocessing progress bar
 
     for infile in corsika_infiles:
         # NOTE: multiprocessing parallelism will be done here with ProcessPoolExecutor
@@ -40,6 +38,7 @@ def run_simulation(config):
             try_to_continue=try_to_continue,
             corsika_kwargs=corsika_kwargs,
             particle_file_split_to=particle_file_split_to,
+            verbose=verbose,
         )
 
 
@@ -49,9 +48,14 @@ def run_simulation_on_file(
     try_to_continue: bool,
     corsika_kwargs: Dict,
     particle_file_split_to: int,
+    verbose: bool,
 ):
+    if verbose:
+        click.secho(f"Processing {corsika_input_file.name}...")
+
     cof = CorsikaOutputFiles.from_input_file(corsika_input_file, corsika_output_files_dir)
     if not (try_to_continue and cof.check(raise_error=False)):
+        click.secho('Running CORSIKA', dim=True)
         cof.clear()
         cw.corsika(
             steering_card=cw.read_steering_card(corsika_input_file),
@@ -61,9 +65,14 @@ def run_simulation_on_file(
             **corsika_kwargs,
         )
         cof.check()
+    else:
+        click.secho('CORSIKA output found, skipping', dim=True)
 
     csof = CorsikaSplitOutputFiles.from_corsika_output(cof, n_split=particle_file_split_to)
     if not (try_to_continue and csof.check(raise_error=False)):
+        click.secho(f'Splitting CORSIKA output to {particle_file_split_to} parts', dim=True)
         csof.clear()
         split_thinned_corsika_output(cof.particle, particle_file_split_to)
         csof.check()
+    else:
+        click.secho(f'Splitted CORSIKA output found, skipping', dim=True)
