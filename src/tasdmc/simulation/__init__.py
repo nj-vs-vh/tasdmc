@@ -1,4 +1,4 @@
-"""Running CORSIKA, deweight and GEANT simulations on prepared input files"""
+"""Running CORSIKA, dethinning and GEANT simulations on prepared input files"""
 
 from __future__ import annotations
 import corsika_wrapper as cw
@@ -7,10 +7,11 @@ import click
 from pathlib import Path
 from typing import Dict
 
-from .corsika_output_files import CorsikaOutputFiles
-
 from ..fileio import corsika_input_files_dir, corsika_output_files_dir
 from ..config import get_config_key, get_try_to_continue, get_verbosity
+
+from .corsika_output_files import CorsikaOutputFiles
+from .dethinning import split_thinned_corsika_output
 
 
 def run_simulation(config):
@@ -28,17 +29,29 @@ def run_simulation(config):
         'save_stdout': True,
     }
 
+    particle_file_split_to = get_config_key(config, 'dethinning.particle_file_split_to')
+
     corsika_infiles = [f for f in infiles_dir.iterdir()]
     if verbose:
         corsika_infiles = tqdm(corsika_infiles)  # TODO: find solution for multiprocessing progress bar
 
     for infile in corsika_infiles:
         # NOTE: multiprocessing parallelism will be done here with ProcessPoolExecutor
-        run_simulation_on_file(infile, outfiles_dir, try_to_continue, corsika_kwargs)
+        run_simulation_on_file(
+            corsika_input_file=infile,
+            corsika_output_files_dir=outfiles_dir,
+            try_to_continue=try_to_continue,
+            corsika_kwargs=corsika_kwargs,
+            particle_file_split_to=particle_file_split_to
+        )
 
 
 def run_simulation_on_file(
-    corsika_input_file: Path, corsika_output_files_dir: Path, try_to_continue: bool, corsika_kwargs: Dict
+    corsika_input_file: Path,
+    corsika_output_files_dir: Path,
+    try_to_continue: bool,
+    corsika_kwargs: Dict,
+    particle_file_split_to: int,
 ):
     cof = CorsikaOutputFiles.from_input_file(corsika_input_file, corsika_output_files_dir)
     if try_to_continue and cof.check(raise_error=False):
@@ -52,3 +65,8 @@ def run_simulation_on_file(
             **corsika_kwargs,
         )
         cof.check()
+
+    if try_to_continue and all([f.exists() for f in cof.splitted_particle_files(particle_file_split_to)]):
+        pass
+    else:
+        split_thinned_corsika_output(cof.particle, particle_file_split_to)

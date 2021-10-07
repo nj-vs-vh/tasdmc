@@ -1,4 +1,4 @@
-// Splitting CORSIKA output file to several parts for independent deweighting.
+// Splitting CORSIKA output file to several parts for independent dethinning.
 
 // Originally written by BTS (runcorsd-old/corsika_split-th.c)
 // Adapted as a C-extension of `tasdmc` Python package by Igor Vaiman
@@ -40,7 +40,7 @@ int splitThinnedCorsikaOutput(const char* corsikaOutputFilename, int splitParts)
 		return EXIT_FAILURE;
 	}
 
-	for (i = 0; i < splitParts; i++)  // .p00, .p01, .p02, ... .p99
+	for (i = 0; i < splitParts; i++)  // .p01, .p02, ... .p99
 		sprintf(outputFiles[i], "%s.p%2.2d", corsikaOutputFilename, i + 1);
 
 	while (fread(&blockLen, sizeof(int), 1, fin))

@@ -24,6 +24,9 @@ class CorsikaOutputFiles:
             particle_file.with_suffix('.stderr'),
         )
 
+    def splitted_particle_files(self, n: int):
+        return [self.particle.with_suffix(f'.p{i:02d}') for i in range(n)]
+
     def check(self, raise_error: bool = True) -> bool:
         try:
             if not (
