@@ -16,8 +16,9 @@ tasdmc_ext_module = Extension(
     "tasdmc.tasdmc_ext",
     sources=[str(package_root / 'src/tasdmc_ext.c')],
     library_dirs=[str(tasdmc_lib_dir)],
-    libraries=['corsika_split_th'],
-    extra_compile_args=[f'-I{extensions_source_dir}'],
+    libraries=['corsika_split_th', 'dethinning'],
+    # extra_compile_args=[f'-I{extensions_source_dir}'],
+    include_dirs=[str(extensions_source_dir)],
 )
 
 

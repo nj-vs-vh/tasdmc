@@ -31,23 +31,24 @@ ${BINDIR}/${DETHIN}.o: ${DETHBINDIR}/main.o ${DETHBINDIR}/atmosphere.o ${DETHBIN
 	ld -r -o $@ $^
 
 
-# list of target file stems
+# lists of targets
+
 DIRS = ${BINDIR} ${DETHBINDIR}
 
-SRC = corsika_split_th ${DETHIN}
+STEMS = corsika_split_th ${DETHIN}
 
-LIB_FILES = $(addprefix lib, $(addsuffix .so, ${SRC}))
+LIB_FILES = $(addprefix lib, $(addsuffix .so, ${STEMS}))
 
-LIB_TARGETS = $(addprefix ${BINDIR}/, ${LIB_FILES})
+LIB_PATHS = $(addprefix ${BINDIR}/, ${LIB_FILES})
 
 
 # commands
 
 .PHONY: install clean reinstall
 
-install: ${LIB_TARGETS}
+install: ${LIB_PATHS}
 	mkdir -p ${TASDMC_LIB_DIR} && \
-	cp ${LIB_TARGETS} ${TASDMC_LIB_DIR}
+	cp ${LIB_PATHS} ${TASDMC_LIB_DIR}
 
 clean:
 	rm -rf ${BINDIR} && \

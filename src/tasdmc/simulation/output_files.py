@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import os
 from pathlib import Path
 
-from typing import List
+from typing import Dict, List
 
 
 class BadOutputFilesException(Exception):
@@ -105,6 +105,26 @@ class CorsikaSplitOutputFiles(OutputFiles):
             if not spf.exists():
                 raise BadOutputFilesException(f"Splitted particle file {spf.name} (and maybe others) do not exist")
             _check_particle_file(spf)
+
+
+@dataclass
+class DethinningOutputFiles(OutputFiles):
+    particle_to_dethinned: Dict[Path, Path]
+
+    @property
+    def all_files(self) -> List[Path]:
+        return list(self.particle_to_dethinned.values())
+
+    @classmethod
+    def from_corsika_split_output(cls, csof: CorsikaSplitOutputFiles) -> DethinningOutputFiles:
+        return cls({f: f.with_suffix(f.suffix + '.dethinned') for f in csof.splitted_particle})
+
+    def _check(self):
+        for dethinned_file in self.all_files:
+            if not dethinned_file.exists():
+                raise BadOutputFilesException(
+                    f"Dethinned particle file {dethinned_file.name} (and maybe others) do not exist"
+                )
 
 
 def _check_particle_file(particle_file: Path):

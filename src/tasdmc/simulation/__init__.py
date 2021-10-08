@@ -10,8 +10,8 @@ from typing import Dict
 from ..fileio import corsika_input_files_dir, corsika_output_files_dir
 from ..config import get_config_key, get_try_to_continue, get_verbosity
 
-from .output_files import CorsikaOutputFiles, CorsikaSplitOutputFiles
-from .dethinning import split_thinned_corsika_output
+from .output_files import CorsikaOutputFiles, CorsikaSplitOutputFiles, DethinningOutputFiles
+from .dethinning import run_dethinning, split_thinned_corsika_output
 
 
 def run_simulation(config):
@@ -76,3 +76,14 @@ def run_simulation_on_file(
         csof.check()
     else:
         click.secho(f'Splitted CORSIKA output found, skipping', dim=True)
+
+    # TODO: check file existence on per-file basis, not in bulk!
+    dof = DethinningOutputFiles.from_corsika_split_output(csof)
+    if not (try_to_continue and dof.check(raise_error=False)):
+        click.secho(f'Running dethinning', dim=True)
+        dof.clear()
+        for particle, dethinned in dof.particle_to_dethinned.items():
+            run_dethinning(particle, dethinned)
+        dof.check()
+    else:
+        click.secho(f'Dethinning found, skipping', dim=True)
