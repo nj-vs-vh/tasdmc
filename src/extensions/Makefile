@@ -6,6 +6,9 @@ CFLAGS				= $(OPTIMIZATION_OPTION) -Wall -fPIC
 CPP					= g++
 CPPFLAGS			= $(OPTIMIZATION_OPTION) -Wall -fPIC
 
+SRC_TO_OBJ_RULE = ${CC} -c $< -o $@ ${CFLAGS}
+OBJ_TO_SHARED_LIB_RULE = ${CC} -shared $< -o $@ ${CFLAGS}
+
 envcheck:
 ifndef TASDMC_LIB_DIR
 	$(error TASDMC_LIB_DIR is not defined)
@@ -16,12 +19,24 @@ ${BINDIR}: envcheck
 	mkdir -p ${BINDIR}
 
 
-# list of target file stems w/ lib filenames and targets (with ./bin/target)
+# dethinning (compiled statically from several source files then turned to shared lib)
 
-SRC = corsika_split_th
-SRC += dummy
+DETHBINDIR = ${BINDIR}/dethinning
+${DETHBINDIR}: | ${BINDIR}
+	mkdir -p ${DETHBINDIR}
 
-LIB_FILES = $(addsuffix .so, $(addprefix lib, ${SRC}))
+DETHIN = dethinning
+
+${BINDIR}/${DETHIN}.o: ${DETHBINDIR}/main.o ${DETHBINDIR}/atmosphere.o ${DETHBINDIR}/corsika_weights.o | ${DETHBINDIR}
+	ld -r -o $@ $^
+
+
+# list of target file stems
+DIRS = ${BINDIR} ${DETHBINDIR}
+
+SRC = corsika_split_th ${DETHIN}
+
+LIB_FILES = $(addprefix lib, $(addsuffix .so, ${SRC}))
 
 LIB_TARGETS = $(addprefix ${BINDIR}/, ${LIB_FILES})
 
@@ -43,8 +58,8 @@ reinstall: clean | install
 
 # pattern rules
 
-${BINDIR}/%.o: %.c | ${BINDIR}
-	${CC} -c $< -o $@ ${CFLAGS}
+${BINDIR}/%.o: %.c | ${DIRS}
+	${SRC_TO_OBJ_RULE}
 
 ${BINDIR}/lib%.so: ${BINDIR}/%.o
-	${CC} -shared $< -o $@ ${CFLAGS}
+	${OBJ_TO_SHARED_LIB_RULE}
