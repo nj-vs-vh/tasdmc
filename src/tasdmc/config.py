@@ -1,39 +1,52 @@
-""".yaml config files reading and accessing"""
+"""access to configuration read from .yaml file(s)
+
+this module serves as a global singleton object, e.g.
+
+>>> from tasdmc import config
+>>> config.get_key('your.key.here')
+"""
 
 import yaml
 
 from typing import Dict, Any, Optional
 
 
-Config = Dict  # for type hints
+_config = None
 
 
-def read_config(filename: str) -> Config:
-    with open(filename, 'r') as f:
-        config = yaml.safe_load(f)
-    return config
+class ConfigNotReadError(Exception):
+    pass
 
 
 class ConfigKeyError(Exception):
     pass
 
 
-def get_config_key(config: Config, key: str, key_prefix: Optional[str] = None, default: Optional[Any] = None) -> Any:
-    """Utility function to read (possibly deeply nested) key from config dict and get nice error messages
-    in case something is missing.
+def load(filename: str):
+    global _config
+    with open(filename, 'r') as f:
+        _config = yaml.safe_load(f)
+
+
+def get_key(key: str, key_prefix: Optional[str] = None, default: Optional[Any] = None) -> Any:
+    """Utility function to get (possibly deeply nested) key from configand get nice error messages
+    in case something is wrong.
 
     Args:
-        config (Dict): loaded from yaml with read_config(filename)
         key (str): comma-separated list of keys from top to bottom, e.g. 'infiles.log10E.step'
         key_prefix (str): prefix added to the start of the key, e.g. for 'infiles' prefix any 'smth' key
                           becomes 'infiles.smth'
 
     Raises:
         ConfigKeyError: specified key is missing on some nesting level, error message tells what is wrong
+        ConfigNotReadError: get_key was called before load()
 
     Returns:
         Any: value in the specified key
     """
+    if _config is None:
+        raise ConfigNotReadError(f"Attempt to read config key before it is loaded, run config.load('smth.yaml') first.")
+
     if key_prefix is not None:
         key = key_prefix + '.' + key
     level_keys = key.split('.')
@@ -41,7 +54,7 @@ def get_config_key(config: Config, key: str, key_prefix: Optional[str] = None, d
         raise ConfigKeyError(f'No key specified')
 
     traversed_level_keys = []
-    current_value = config
+    current_value = _config
     for level_key in level_keys:
         current_value = current_value.get(level_key)
         if current_value is None:
@@ -58,9 +71,9 @@ def get_config_key(config: Config, key: str, key_prefix: Optional[str] = None, d
     return current_value
 
 
-def get_verbosity(config: Config) -> int:
-    return get_config_key(config, 'verbosity')
+def try_to_continue() -> bool:
+    return get_key('if_exists') == 'continue'
 
 
-def get_try_to_continue(config: Config) -> bool:
-    return get_config_key(config, 'if_exists') == 'continue'
+def verbosity() -> int:
+    return get_key('verbosity', default=1)

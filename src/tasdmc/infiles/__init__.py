@@ -5,11 +5,9 @@ Based on runcorsd-old/gen_infiles_primary.sh
 
 import click
 
-from tasdmc.config import get_config_key, get_verbosity
-from tasdmc.fileio import corsika_input_files_dir, corsika_output_files_dir
+from tasdmc import config
 
 from .corsika_card import generate_corsika_cards, LOG10_E_STEP, LOG10_E_MIN_POSSIBLE, LOG10_E_MAX_POSSIBLE
-from ..config import Config, get_try_to_continue
 
 
 class InfilesGenerationError(Exception):
@@ -28,8 +26,8 @@ PARTICLE_ID_BY_NAME = {
 }
 
 
-def generate_corsika_input_files(config: Config):
-    verbosity = get_verbosity(config)
+def generate_corsika_input_files():
+    verbosity = config.verbosity()
     verbose = verbosity > 0
 
     if verbose:
@@ -37,7 +35,7 @@ def generate_corsika_input_files(config: Config):
 
     prefix = 'corsika_input_files'
 
-    particle = get_config_key(config, 'particle', prefix)
+    particle = config.get_key('particle', prefix)
     try:
         particle_id = PARTICLE_ID_BY_NAME[particle]
     except KeyError:
@@ -48,8 +46,8 @@ def generate_corsika_input_files(config: Config):
         click.echo(f'Primary particle: {particle} (id {particle_id})')
 
     try:
-        log10E_min = round(float(get_config_key(config, 'log10E_min', prefix)), ndigits=1)
-        log10E_max = round(float(get_config_key(config, 'log10E_max', prefix)), ndigits=1)
+        log10E_min = round(float(config.get_key('log10E_min', prefix)), ndigits=1)
+        log10E_max = round(float(config.get_key('log10E_max', prefix)), ndigits=1)
         assert log10E_max >= log10E_min, "Maximum primary energy cannot be less than minimal"
         for log10E in (log10E_min, log10E_max):
             assert (
@@ -62,12 +60,12 @@ def generate_corsika_input_files(config: Config):
     if verbose:
         click.echo(f'Energy scale (log10(E / eV)): {log10E_min:.1f} ... {log10E_max:.1f}, with step {LOG10_E_STEP:.1f}')
 
-    high_E_model = get_config_key(config, 'corsika.high_E_hadronic_interactions_model')
-    low_E_model = get_config_key(config, 'corsika.low_E_hadronic_interactions_model')
+    high_E_model = config.get_key('corsika.high_E_hadronic_interactions_model')
+    low_E_model = config.get_key('corsika.low_E_hadronic_interactions_model')
     if verbose:
         click.echo(f'Hadronic interactions models: {low_E_model}/{high_E_model}')
 
-    event_number_multiplier = get_config_key(config, 'event_number_multiplier', prefix, default=1.0)
+    event_number_multiplier = config.get_key('event_number_multiplier', prefix, default=1.0)
     try:
         event_number_multiplier = float(event_number_multiplier)
         assert event_number_multiplier > 0
@@ -77,11 +75,6 @@ def generate_corsika_input_files(config: Config):
         )
     if verbose and event_number_multiplier != 1.0:
         click.echo(f"Event numbers are multiplied by {event_number_multiplier:.2f} in each energy bin")
-
-    try_to_continue = get_try_to_continue(config)
-
-    infiles_dir = corsika_input_files_dir(config)
-    outfiles_dir = corsika_output_files_dir(config)
 
     verbose_card_generation = verbosity > 1
     if verbose_card_generation:
@@ -93,9 +86,6 @@ def generate_corsika_input_files(config: Config):
             log10_E_primary=log10E_min + E_bin_i * LOG10_E_STEP,
             is_epos=(high_E_model == 'EPOS'),
             is_urqmd=(low_E_model == 'URQMD'),
-            infiles_dir=infiles_dir,
-            corsika_output_dir=outfiles_dir,
             event_number_multiplier=event_number_multiplier,
             verbose=verbose_card_generation,
-            check_if_card_exist=try_to_continue,
         )

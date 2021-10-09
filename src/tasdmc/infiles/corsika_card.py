@@ -4,10 +4,11 @@ import re
 import math
 import getpass
 import random
-from pathlib import Path
 import click
 
 from typing import Optional
+
+from tasdmc import fileio, config
 
 #  To generate CORSIKA showers using B. T. Stokes optimal thinning
 #  parameters for each energy in 0.1 log10e bin and run number convention
@@ -234,13 +235,10 @@ def generate_corsika_cards(
     log10_E_primary: float,
     is_epos: bool,
     is_urqmd: bool,
-    infiles_dir: Path,
-    corsika_output_dir: Path,
     event_number_multiplier: float = 1.0,
     event_number_override: Optional[int] = None,
     fixed_theta_angle: Optional[float] = None,
     verbose: bool = False,
-    check_if_card_exist: bool = False,
 ):
     card = CorsikaCard()
     card.set_USER(getpass.getuser())
@@ -290,14 +288,14 @@ def generate_corsika_cards(
 
     # directing longtitude and particle files to output directory (stdout and stderr will be there automatically)
     # trailing slash is included manually for COSIKA to understand
-    card.replace_card("DIRECT", str(corsika_output_dir) + '/')
+    card.replace_card("DIRECT", str(fileio.corsika_output_files_dir()) + '/')
 
     for file_index in range(min_file_index, max_file_index + 1):
         runnr = file_index * 100 + energy_id
-        card_file = infiles_dir / f"DAT{runnr:06d}.in"
+        card_file = fileio.corsika_input_files_dir() / f"DAT{runnr:06d}.in"
         card.set_RUNNR(runnr)
         card.set_SEED(*get_5_cor_seeds())  # new seeds are generated for each card
-        if check_if_card_exist and card_file.exists():
+        if config.try_to_continue() and card_file.exists():
             continue
         else:
             with open(card_file, "w") as f:

@@ -5,78 +5,70 @@ import yaml
 import click
 from pathlib import Path
 import shutil
-from functools import wraps
+from functools import lru_cache
 
-from .config import Config, get_config_key
+from tasdmc import config
 
 
 RUNS_DIR = Path(os.environ.get("TASDMC_RUNS_DIR")) or Path(os.getcwd()) / 'runs'
 RUNS_DIR.mkdir(exist_ok=True)
 
 
-def run_dir(config: Config) -> Path:
-    run_dir_name: str = get_config_key(config, 'name')
+def run_dir() -> Path:
+    run_dir_name: str = config.get_key('name')
     return RUNS_DIR / run_dir_name
 
 
-def run_configs_dir(config: Config) -> Path:
-    return run_dir(config) / 'configs'
+internal_dir_getters = []
 
 
-def corsika_input_files_dir(config: Config) -> Path:
-    return run_dir(config) / 'corsika_input'
+def internal(fn):
+    """Decorator to register internal dir so that it will be created when preparing run dir"""
+    internal_dir_getters.append(fn)
+    return lru_cache(maxsize=1)(fn)
 
 
-def corsika_output_files_dir(config: Config) -> Path:
-    return run_dir(config) / 'corsika_output'
+@internal
+def configs_dir() -> Path:
+    return run_dir() / 'configs'
 
 
-def prepare_run_dir(config: Config):
-    verbose = get_config_key(config, 'verbosity') > 0
-    if_exists = get_config_key(config, 'if_exists', default='error')
+@internal
+def corsika_input_files_dir() -> Path:
+    return run_dir() / 'corsika_input'
+
+
+@internal
+def corsika_output_files_dir() -> Path:
+    return run_dir() / 'corsika_output'
+
+
+def prepare_run_dir():
+    rd = run_dir()
+    if_exists = config.get_key('if_exists', default='error')
     if if_exists == 'continue':
-        if run_dir(config).exists():
+        if rd.exists():
             click.secho(f"Run directory already exists, trying to continue operation", fg='red', bold=True)
-    elif if_exists == 'append_index':
-        run_dir_idx = None
-        run_dir_name_plain = run_dir(config).name
-        while True:
-            rd = run_dir(config)
-            try:
-                rd.mkdir()
-                if run_dir_idx is not None and verbose:
-                    click.secho(
-                        f"Run name '{run_dir_name_plain}' taken, updated to '{rd.name}'",
-                        fg='red',
-                        bold=True,
-                    )
-                break
-            except FileExistsError:
-                run_dir_idx = run_dir_idx + 1 if run_dir_idx is not None else 1
-                config['name'] = run_dir_name_plain + '-' + str(run_dir_idx)
+        else:
+            rd.mkdir()
     elif if_exists == 'overwrite':
-        rd = run_dir(config)
         try:
             shutil.rmtree(rd)
         except FileNotFoundError:
             click.secho(f"Run directory existed and was overwritten", fg='red', bold=True)
         rd.mkdir()
     elif if_exists == 'error':
-        rd = run_dir(config)
         try:
             rd.mkdir()
         except FileExistsError:
             raise ValueError(f"Run directory '{rd.name}' already exists, pick another run name")
     else:
         raise ValueError(
-            "if_exists config key must be 'continue', 'overwrite', 'append_index', or 'error', "
-            + f"but {if_exists} was specified"
+            f"if_exists config key must be 'continue', 'overwrite', or 'error', but {if_exists} was specified"
         )
 
-    for internal_dir in (run_configs_dir, corsika_input_files_dir, corsika_output_files_dir):
-        internal_dir(config).mkdir(exist_ok=(if_exists == 'continue'))
+    for idir_getter in internal_dir_getters:
+        idir_getter().mkdir(exist_ok=config.try_to_continue())
 
-    configs_dir = run_configs_dir(config)
-
-    with open(configs_dir / 'run.yaml', 'w') as f:
+    with open(configs_dir() / 'run.yaml', 'w') as f:
         yaml.dump(config, f)
