@@ -1,4 +1,4 @@
-"""File input-output for all the routines in the package"""
+"""File input-output for all routines in the package"""
 
 import os
 import yaml

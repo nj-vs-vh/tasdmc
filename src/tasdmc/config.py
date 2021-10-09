@@ -1,14 +1,13 @@
-"""access to configuration read from .yaml file(s)
+"""Access to configuration read from .yaml file(s)
 
-this module serves as a global singleton object, e.g.
-
+This module serves as a global singleton object:
 >>> from tasdmc import config
 >>> config.get_key('your.key.here')
 """
 
 import yaml
 
-from typing import Dict, Any, Optional
+from typing import Any, Optional
 
 
 _config = None
@@ -18,7 +17,11 @@ class ConfigNotReadError(Exception):
     pass
 
 
-class ConfigKeyError(Exception):
+class ConfigKeyError(KeyError):
+    pass
+
+
+class BadConfigValue(ValueError):
     pass
 
 

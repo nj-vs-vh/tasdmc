@@ -9,7 +9,7 @@ corsika:
   low_E_hadronic_interactions_model: GHEISHA  # FLUKA | URQMD | GHEISHA
   high_E_hadronic_interactions_model: QGSJETII  # QGSJETII | EPOS
 
-corsika_input_files:
+input_files:
   particle: proton
   log10E_min: 16.5
   log10E_max: 16.5

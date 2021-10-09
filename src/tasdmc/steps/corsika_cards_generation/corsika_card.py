@@ -10,6 +10,17 @@ from typing import Optional
 
 from tasdmc import fileio, config
 
+PARTICLE_ID_BY_NAME = {
+    'proton': 14,
+    'H': 14,
+    'helium': 402,
+    'He': 402,
+    'nitrogen': 1407,
+    'N': 1407,
+    'iron': 5626,
+    'Fe': 5626,
+}
+
 #  To generate CORSIKA showers using B. T. Stokes optimal thinning
 #  parameters for each energy in 0.1 log10e bin and run number convention
 #  index of the dictionary: energy, log10(E/eV)
@@ -146,12 +157,6 @@ EPOPAR fname copy  none                !dummy output file for epos
 '''
 
 
-# CORSIKA version 73695 allows random integer seeds in 1,900000000 range
-# inclusively.  Getting an ntuple of 5 random seeds.
-def get_5_cor_seeds():
-    return tuple([random.randint(1, 900000000) for _ in range(5)])
-
-
 class CorsikaCard:
     def __init__(self):
         self.buf = BTS_SAMPLE_CARD_FILE.strip()
@@ -218,6 +223,10 @@ class CorsikaCard:
         self.replace_card("SEED", "{:d} 0 0".format(seed4), occurrence=4)
         self.replace_card("SEED", "{:d} 0 0".format(seed5), occurrence=5)
 
+    def set_random_seeds(self):
+        # CORSIKA v73695 allows random integer seeds in [1, 900000000] interval
+        self.set_SEED(*[random.randint(1, 900000000) for _ in range(5)])
+
     def set_USER(self, user):
         self.replace_card("USER", user)
 
@@ -228,83 +237,3 @@ class CorsikaCard:
         if not self.epos_cards_added:
             self.buf = self.buf + "\n" + EPOS_CARDS.strip()
             self.epos_cards_added = True
-
-
-def generate_corsika_cards(
-    primary_particle_id: int,
-    log10_E_primary: float,
-    is_epos: bool,
-    is_urqmd: bool,
-    event_number_multiplier: float = 1.0,
-    event_number_override: Optional[int] = None,
-    fixed_theta_angle: Optional[float] = None,
-    verbose: bool = False,
-):
-    card = CorsikaCard()
-    card.set_USER(getpass.getuser())
-    card.set_HOST("chpc")
-    card.set_PRMPAR(primary_particle_id)
-
-    log10_E_options = list(BTS_PAR.keys())
-    _log10_E_residuals = [abs(log10_E_option - log10_E_primary) for log10_E_option in log10_E_options]
-    closest_option_idx = _log10_E_residuals.index(min(_log10_E_residuals))
-
-    log10_E_primary_quantized = log10_E_options[closest_option_idx]
-    card.set_fixed_log10en(log10_E_primary_quantized)
-
-    # thinning options optimal for the energy
-    par = BTS_PAR[log10_E_primary_quantized]
-    energy_id = int(par[0])
-    card.set_THIN(par[1], par[2], par[3])
-    card.set_THINH(par[4], par[5])
-
-    if event_number_override is None:
-        # number of events for each energy was heuristically selected by B.T. Stokes and is used here
-        min_file_index = int(0)
-        max_file_index = int(par[6] * event_number_multiplier) - 1
-        # NOTE: this limitation is eliminated in the latest corsika
-        # NRREXT option may be used, files are then named DATnnnnnnnnn istead of DATnnnnnn
-        if not 0 <= max_file_index <= 9999:
-            raise ValueError(
-                f"Event number multiplier {event_number_multiplier} results in file index exceeding "
-                + f"9999, select smaller value (event number without multiplication = {par[6]})."
-            )
-    else:
-        min_file_index = int(0)
-        max_file_index = int(event_number_override)
-        if not 0 <= max_file_index <= 9999:
-            raise ValueError(f"Overriden event number ({event_number_override}) exceeds 9999")
-        if fixed_theta_angle is not None:
-            if not (0 <= fixed_theta_angle <= 60.0):
-                raise ValueError(f"Fixed theta angle = {fixed_theta_angle:.2f}, outside allowed 0 - 60 degrees range")
-            card.set_fixed_theta(fixed_theta_angle)
-
-    if is_epos:
-        card.add_EPOS_CARDS()
-
-    # if low-energy hadronic interaction model is URQMD, E cut must be higher (0.05 GeV -> 0.3 GeV)
-    if is_urqmd:
-        card.replace_card("ECUTS", "0.3  0.05  0.00025  0.00025")
-
-    # directing longtitude and particle files to output directory (stdout and stderr will be there automatically)
-    # trailing slash is included manually for COSIKA to understand
-    card.replace_card("DIRECT", str(fileio.corsika_output_files_dir()) + '/')
-
-    for file_index in range(min_file_index, max_file_index + 1):
-        runnr = file_index * 100 + energy_id
-        card_file = fileio.corsika_input_files_dir() / f"DAT{runnr:06d}.in"
-        card.set_RUNNR(runnr)
-        card.set_SEED(*get_5_cor_seeds())  # new seeds are generated for each card
-        if config.try_to_continue() and card_file.exists():
-            continue
-        else:
-            with open(card_file, "w") as f:
-                f.write(card.buf + "\n")
-
-    if verbose:
-        click.secho(
-            f"PRIMARY {primary_particle_id:d} ENERGY {log10_E_primary_quantized:.1f} "
-            + f"({energy_id:02d}){' EPOS' if is_epos else ''}: "
-            + f"{max_file_index-min_file_index+1:d} card files",
-            dim=True,
-        )
