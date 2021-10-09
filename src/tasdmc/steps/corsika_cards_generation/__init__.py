@@ -29,7 +29,7 @@ class NoFiles(Files):
 
 
 @dataclass
-class CorsikaCards(Files):
+class CorsikaCardFiles(Files):
     files: List[Path]
 
     @property
@@ -40,7 +40,7 @@ class CorsikaCards(Files):
 @dataclass
 class CorsikaCardsGeneration(FileInFileOutStep):
     input_: NoFiles
-    output: CorsikaCards
+    output: CorsikaCardFiles
 
     @classmethod
     def create_and_run(cls) -> CorsikaCardsGeneration:
@@ -50,12 +50,12 @@ class CorsikaCardsGeneration(FileInFileOutStep):
         Because of that, instead of instantiate-then-run, use a single class method
         >>> CorsikaInputFilesGeneration.create_and_run()
         """
-        instance = cls(NoFiles(), CorsikaCards([]))
+        instance = cls(NoFiles(), CorsikaCardFiles([]))
         instance.run()  # here corsika input files are added to output.all list
         return instance
 
     def run(self):
-        progress.title("Generating CORSIKA input files")
+        progress.info("Generating CORSIKA input files")
 
         particle, particle_id = _particle_id_from_config()
         progress.info(f'Primary particle: {particle} (id {particle_id})')

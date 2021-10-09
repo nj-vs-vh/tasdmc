@@ -70,5 +70,4 @@ def prepare_run_dir():
     for idir_getter in internal_dir_getters:
         idir_getter().mkdir(exist_ok=config.try_to_continue())
 
-    with open(configs_dir() / 'run.yaml', 'w') as f:
-        yaml.dump(config, f)
+    config.dump(configs_dir() / 'run.yaml')

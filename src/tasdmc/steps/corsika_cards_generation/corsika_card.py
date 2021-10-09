@@ -2,13 +2,8 @@
 
 import re
 import math
-import getpass
 import random
-import click
 
-from typing import Optional
-
-from tasdmc import fileio, config
 
 PARTICLE_ID_BY_NAME = {
     'proton': 14,

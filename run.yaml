@@ -6,6 +6,7 @@ verbosity: 2
 
 corsika:
   path: /home/njvh/Documents/Science/tools/corsika-77402/run/corsika77402Linux_QGSII_gheisha_thin
+  default_executable_name: True  # affects only config validation, set to False when using non-default executable name
   low_E_hadronic_interactions_model: GHEISHA  # FLUKA | URQMD | GHEISHA
   high_E_hadronic_interactions_model: QGSJETII  # QGSJETII | EPOS
 

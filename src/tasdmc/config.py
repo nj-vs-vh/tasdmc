@@ -6,6 +6,7 @@ This module serves as a global singleton object:
 """
 
 import yaml
+from pathlib import Path
 
 from typing import Any, Optional
 
@@ -29,6 +30,11 @@ def load(filename: str):
     global _config
     with open(filename, 'r') as f:
         _config = yaml.safe_load(f)
+
+
+def dump(filename: Path):
+    with open(filename, 'w') as f:
+        yaml.dump(_config, f)
 
 
 def get_key(key: str, key_prefix: Optional[str] = None, default: Optional[Any] = None) -> Any:
