@@ -10,10 +10,10 @@ from .exceptions import FilesCheckFailed
 
 class Files(ABC):
     """Abstract class for storing info on any set of files serving as inputs/outputs of tasdmc steps.
-    
+
     Subclassed by each step to incapsulate specific behavior and checks.
     """
-    
+
     @property
     @abstractmethod
     def all(self) -> List[Path]:
@@ -34,7 +34,7 @@ class Files(ABC):
 
     def _check_contents(self):
         """Method to check file(s) content, may be overriden by subclasses.
-        
+
         Must raise FilesCheckFailes on errors.
         """
         pass
@@ -51,6 +51,7 @@ class Files(ABC):
 @dataclass
 class FileInFileOutStep(ABC):
     """Abstract class representing a single file-in-file-out operation in tasdmc pipeline"""
+
     input_: Files
     output: Files
 
@@ -73,7 +74,7 @@ class FileInFileOutStep(ABC):
 
     def _run(self):
         """Internal method with 'bare' logic for funning the step, without input/output file checks.
-        
+
         Should be overriden by subclasses
         """
         pass

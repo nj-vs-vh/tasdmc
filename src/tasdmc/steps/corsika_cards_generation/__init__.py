@@ -46,7 +46,7 @@ class CorsikaCardsGeneration(FileInFileOutStep):
     def create_and_run(cls) -> CorsikaCardsGeneration:
         """For CORSIKA cards generation a set of output files cannot be easily determined in advance.
         Instead, it is done in runtime based on optimal number of cards per energy bin.
-        
+
         Because of that, instead of instantiate-then-run, use a single class method
         >>> CorsikaInputFilesGeneration.create_and_run()
         """
@@ -118,15 +118,19 @@ class CorsikaCardsGeneration(FileInFileOutStep):
                 else:
                     with open(card_file, "w") as f:
                         f.write(card.buf + "\n")
-            
-            skipped_str = '' if skipped_cards_count == 0 else (
-                ' (already found in the run dir)'
-                if skipped_cards_count == cards_count
-                else f' ({skipped_cards_count}/{cards_count} already found in the run dir)'
+
+            skipped_msg = (
+                ''
+                if skipped_cards_count == 0
+                else (
+                    ' (already found in the run dir)'
+                    if skipped_cards_count == cards_count
+                    else f' ({skipped_cards_count}/{cards_count} of cards already found in the run dir)'
+                )
             )
             progress.debug(
                 f"PRIMARY {particle_id:d} ENERGY {log10E:.1f} ({energy_id:02d}): "
-                + f"{cards_count:d} cards{skipped_str}",
+                + f"{cards_count:d} cards{skipped_msg}",
             )
 
     @classmethod

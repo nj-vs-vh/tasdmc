@@ -5,6 +5,7 @@ from pathlib import Path
 
 # TODO: add exception handling and output file checks
 
+
 def split_thinned_corsika_output(particle_file: Path, n_parts_split: int):
     tasdmc_ext.split_thinned_corsika_output(str(particle_file), n_parts_split)
 
