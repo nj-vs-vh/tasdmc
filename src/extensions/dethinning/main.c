@@ -192,9 +192,9 @@ int dethinning(
 				fwrite(buf2, sizeof(float), NWORD2, fout);
 				if (verbose)
 				{
-					fprintf(stderr, "Primary Event Direction: %g\t%g\t%g\n",
+					fprintf(stdout, "Primary Event Direction: %g\t%g\t%g\n",
 							R0[0], R0[1], R0[2]);
-					fprintf(stderr, "Origin: %g\t%g\t%g\t%g\n",
+					fprintf(stdout, "Origin: %g\t%g\t%g\t%g\n",
 							origin[0], origin[1], origin[2], -toffset);
 				}
 				sblockcount++;
@@ -309,8 +309,8 @@ int dethinning(
 				fclose(fout);
 				if (verbose)
 				{
-					fprintf(stderr, "read %d blocks\n", nBlock);
-					fprintf(stderr, "RUNH: %d, EVTH: %d, PARTSUB: %d, LONG: %d, EVTE: %d, RUNE: %d\n",
+					fprintf(stdout, "read %d blocks\n", nBlock);
+					fprintf(stdout, "RUNH: %d, EVTH: %d, PARTSUB: %d, LONG: %d, EVTE: %d, RUNE: %d\n",
 							nRUNH, nEVTH, nPARTSUB, nLONG, nEVTE, nRUNE);
 				}
 				return EXIT_SUCCESS;
