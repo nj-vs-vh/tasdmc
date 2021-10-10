@@ -5,7 +5,7 @@ import corsika_wrapper as cw
 
 from typing import List
 
-from tasdmc import fileio, config, progress
+from tasdmc import fileio, config
 from .base import Files, FileInFileOutStep
 from .corsika_cards_generation import CorsikaCardsGenerationStep
 from .exceptions import FilesCheckFailed
@@ -84,7 +84,6 @@ class CorsikaStep(FileInFileOutStep):
 
     def _run(self):
         input_file = self.input_.infile
-        progress.info(f"Running CORSIKA on {input_file.name}")
         cw.corsika(
             steering_card=cw.read_steering_card(input_file),
             # DATnnnnn.stdout and DATnnnnnn.stderr are created automatically by wrapper
