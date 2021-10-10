@@ -38,12 +38,12 @@ class CorsikaCardFiles(Files):
 
 
 @dataclass
-class CorsikaCardsGeneration(FileInFileOutStep):
+class CorsikaCardsGenerationStep(FileInFileOutStep):
     input_: NoFiles
     output: CorsikaCardFiles
 
     @classmethod
-    def create_and_run(cls) -> CorsikaCardsGeneration:
+    def create_and_run(cls) -> CorsikaCardsGenerationStep:
         """For CORSIKA cards generation a set of output files cannot be easily determined in advance.
         Instead, it is done in runtime based on optimal number of cards per energy bin.
 

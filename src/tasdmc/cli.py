@@ -2,7 +2,7 @@
 
 import click
 from tasdmc import config, fileio
-from tasdmc.steps import CorsikaCardsGeneration, CorsikaSimulation
+from tasdmc.steps import CorsikaCardsGenerationStep, CorsikaStep
 
 
 @click.group()
@@ -15,9 +15,9 @@ def cli():
 def run(run_config_filename):
     config.load(run_config_filename)
     fileio.prepare_run_dir()
-    for Step in (CorsikaCardsGeneration, CorsikaSimulation):
+    for Step in (CorsikaCardsGenerationStep, CorsikaStep):
         Step.validate_config()
 
-    ccg = CorsikaCardsGeneration.create_and_run()
-    for cs in CorsikaSimulation.from_corsika_cards_generation(ccg):
-        cs.run()
+    cards_generation_step = CorsikaCardsGenerationStep.create_and_run()
+    for corsika_step in CorsikaStep.from_corsika_cards_generation(cards_generation_step):
+        corsika_step.run()

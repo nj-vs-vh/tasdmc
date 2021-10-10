@@ -1,8 +1,8 @@
-from .corsika_cards_generation import CorsikaCardsGeneration
-from .corsika import CorsikaSimulation
+from .corsika_cards_generation import CorsikaCardsGenerationStep
+from .corsika import CorsikaStep
 
 
 __all__ = [
-    'CorsikaCardsGeneration',
-    'CorsikaSimulation',
+    'CorsikaCardsGenerationStep',
+    'CorsikaStep',
 ]

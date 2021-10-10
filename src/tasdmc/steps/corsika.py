@@ -7,7 +7,7 @@ from typing import List
 
 from tasdmc import fileio, config, progress
 from .base import Files, FileInFileOutStep
-from .corsika_cards_generation import CorsikaCardsGeneration
+from .corsika_cards_generation import CorsikaCardsGenerationStep
 from .exceptions import FilesCheckFailed
 from .utils import check_particle_file_contents
 
@@ -66,12 +66,12 @@ class CorsikaOutputFiles(Files):
         check_particle_file_contents(self.particle)
 
 
-class CorsikaSimulation(FileInFileOutStep):
+class CorsikaStep(FileInFileOutStep):
     input_: CorsikaCardFile
     output: CorsikaOutputFiles
 
     @classmethod
-    def from_corsika_cards_generation(cls, corsika_cards_generation: CorsikaCardsGeneration) -> List[CorsikaSimulation]:
+    def from_corsika_cards_generation(cls, corsika_cards_generation: CorsikaCardsGenerationStep) -> List[CorsikaStep]:
         input_files = corsika_cards_generation.output.files
         return [
             cls(input_=CorsikaCardFile(input_file), output=CorsikaOutputFiles.from_card_path(input_file))
