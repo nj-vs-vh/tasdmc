@@ -18,11 +18,10 @@
 
 // geantfname: name of the geant DST file that stores the energy loss histograms
 // 0 - success, -1 - problems
-int load_elosses (char *geantfname);
+int load_elosses(const char *geantfname);
 
 // free the memory if the program needs to proceed further w/o using the geant sampler
 void unload_elosses();
-
 
 // corid:       corsika ID for the particle
 // ke:          particle kinetic energy, in MeV
@@ -30,8 +29,7 @@ void unload_elosses();
 // eLossLower,
 // eLossUpper:  energy losses in MeV
 // 0 - success, -1 - problems
-int get_elosses (int corid, double ke, double sectheta,
-     double *eLossUpper, double *eLossLower);
-
+int get_elosses(int corid, double ke, double sectheta,
+                double *eLossUpper, double *eLossLower);
 
 #endif /* ELOSS_SDGEANT_H_ */

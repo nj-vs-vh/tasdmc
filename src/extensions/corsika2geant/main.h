@@ -9,12 +9,3 @@
 #endif
 
 int corsika2geant(const char *inputFile, const char *geantFile, const char *outputFile);
-
-// THESE WILL LIVE IN THEIR OWN HEADERS
-
-// double corsika_times_th(char *filename);
-// double corsika_vem_th(char *filename, int tcount);
-// double corsika_vem(char *filename, char *tmpfile, int tcount);
-// double corsika_vem_init(char *filename, char *tmpfile, int tcount);
-// void fill_time();
-// void fill_vem();

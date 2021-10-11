@@ -1,3 +1,6 @@
+#ifndef CONSTANTS_H_
+#define CONSTANTS_H_
+
 // physical constants
 
 #define DISTMAX 8400 /* Meters / 10.0 */
@@ -24,3 +27,7 @@ static const float pmass[26] = {0., 0., 0.511e-3, .511e-3, 0., 105.7e-3, 105.7e-
 #define NWORD NPART *NSENTENCE
 #define NSUBBLOCK 21
 #define PARTSIZE 7
+
+#define EXIT_FAILURE_DOUBLE -1.0 // replacement for EXIT_FAILURE for double-returning func
+
+#endif
