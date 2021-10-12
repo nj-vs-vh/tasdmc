@@ -47,7 +47,9 @@ C2G_OBJS = $(addsuffix .o, $(addprefix ${C2GBINDIR}/, main corsika_times corsika
 ${BINDIR}/${C2G}.o: ${C2G_OBJS} | ${C2GBINDIR}
 	ld -r -o $@ $^
 
-SRC_TO_OBJ_WITH_DEFINED_NT_RECIPE = ${SRC_TO_OBJ_RECIPE} -DNT=$$(( 16 * ${TASDMC_MEMORY_PER_PROCESS_GB} ))
+# calculating 16 * (memory in Gb) with bc & deleting everything after decimal point from output
+NT_VALUE := $(shell echo "16 * ${TASDMC_MEMORY_PER_PROCESS_GB}" | bc | cut -d '.' -f 1)
+SRC_TO_OBJ_WITH_DEFINED_NT_RECIPE = ${SRC_TO_OBJ_RECIPE} -DNT=${NT_VALUE}
 
 ${C2GBINDIR}/%.o: ${C2G}/%.c
 	${SRC_TO_OBJ_WITH_DEFINED_NT_RECIPE}

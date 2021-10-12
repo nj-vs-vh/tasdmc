@@ -5,6 +5,7 @@
 
 #include "corsika_split_th.h"
 #include "./dethinning/main.h"
+#include "./corsika2geant/main.h"
 
 static PyObject *
 split_thinned_corsika_output(PyObject *self, PyObject *args)
@@ -49,9 +50,32 @@ run_dethinning(PyObject *self, PyObject *args)
 }
 
 
+static PyObject *
+run_c2g(PyObject *self, PyObject *args)
+{
+    const char *particle_filelist;
+    const char *geant_filename;
+	const char *output_filename;
+
+    if (!PyArg_ParseTuple(args, "sss", &particle_filelist, &geant_filename, &output_filename))
+        return NULL;
+
+    int exit_code = corsika2geant(particle_filelist, geant_filename, output_filename);
+
+    if (exit_code == EXIT_SUCCESS)
+        Py_RETURN_NONE;
+    else
+    {
+        PyErr_SetString(PyExc_Exception, "corsika2geant failed, see stderr");
+        return NULL;
+    }
+}
+
+
 static PyMethodDef methods[] = {
     {"split_thinned_corsika_output", (PyCFunction)split_thinned_corsika_output, METH_VARARGS, "split CORSIKA output for dethinning"},
     {"run_dethinning", (PyCFunction)run_dethinning, METH_VARARGS, "run dethinning C routine on particle file"},
+    {"run_corsika2geant", (PyCFunction)run_c2g, METH_VARARGS, "run corsika2geant C routine on a list of particle files"},
     {NULL, NULL, 0, NULL} /* Sentinel */
 };
 

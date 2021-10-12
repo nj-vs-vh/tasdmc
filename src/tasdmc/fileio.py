@@ -1,7 +1,6 @@
 """File input-output for all routines in the package"""
 
 import os
-import yaml
 import click
 from pathlib import Path
 import shutil
@@ -10,7 +9,10 @@ from functools import lru_cache
 from tasdmc import config
 
 
-RUNS_DIR = Path(os.environ.get("TASDMC_RUNS_DIR")) or Path(os.getcwd()) / 'runs'
+runs_dir_path = os.environ.get("TASDMC_RUNS_DIR")
+if runs_dir_path is None:
+    raise EnvironmentError("TASDMC_RUNS_DIR environment variable must be set")
+RUNS_DIR = Path(runs_dir_path)
 RUNS_DIR.mkdir(exist_ok=True)
 
 

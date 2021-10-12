@@ -5,21 +5,38 @@ from distutils.command.clean import clean
 import subprocess
 import os
 from pathlib import Path
+import gdown
+import hashlib
 
+
+for required_env_var in ('TASDMC_LIB_DIR', 'DST2K_DIR', 'TASDMC_MEMORY_PER_PROCESS_GB', 'TASDMC_SDGEANT_DST'):
+    if required_env_var not in os.environ:
+        raise EnvironmentError(f"{required_env_var} environment variable is not set")
 
 package_root = Path(__file__).parent.resolve()
-extensions_source_dir = package_root / 'src/extensions'
 tasdmc_lib_dir = os.environ.get('TASDMC_LIB_DIR')
-if tasdmc_lib_dir is None:
-    raise EnvironmentError("TASDMC_LIB_DIR envirnoment variable must be set before installing the package!")
+extensions_source_dir = package_root / 'src/extensions'
 tasdmc_ext_module = Extension(
     "tasdmc.tasdmc_ext",
     sources=[str(package_root / 'src/tasdmc_ext.c')],
     library_dirs=[str(tasdmc_lib_dir)],
     libraries=['corsika_split_th', 'dethinning'],
-    # extra_compile_args=[f'-I{extensions_source_dir}'],
     include_dirs=[str(extensions_source_dir)],
 )
+
+sdgeant_path = Path(os.environ.get('TASDMC_SDGEANT_DST'))
+if not sdgeant_path.exists():
+    sdgeant_path.parent.mkdir(parents=True, exist_ok=True)
+    gdown.download(
+        url='https://docs.google.com/uc?export=download&id=1ZTSrrAg2T8bvIDhPuh2ruVShmubwvTWG',
+        output=str(sdgeant_path),
+    )
+
+md5 = hashlib.new('md5')
+with open(sdgeant_path, 'rb') as f:
+    md5.update(f.read())
+if md5.hexdigest() != '0cebc42f86e227e2fb2397dd46d7d981':
+    raise OSError(f"{sdgeant_path} has incorrect MD5 hash. Try downloading sdgeant.dst file from Google Drive.")
 
 
 class InstallWithExternalLibs(install):
