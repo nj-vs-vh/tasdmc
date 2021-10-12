@@ -7,11 +7,22 @@ This module serves as a global singleton object:
 
 import yaml
 from pathlib import Path
+import os
 
 from typing import Any, Optional
 
 
 _config = None
+
+
+class Global:
+    """Namespace class to hold global/pre-installation configuration options"""
+
+    lib_dir = Path(os.environ['TASDMC_LIB_DIR'])
+    runs_dir = Path(os.environ['TASDMC_RUNS_DIR'])
+    dst2k_dir = Path(os.environ['DST2K_DIR'])
+    memory_per_process_Gb = float(os.environ['TASDMC_MEMORY_PER_PROCESS_GB'])
+    sdgeant_dst = Path(os.environ['TASDMC_SDGEANT_DST'])
 
 
 class ConfigNotReadError(Exception):

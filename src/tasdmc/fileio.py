@@ -9,16 +9,12 @@ from functools import lru_cache
 from tasdmc import config
 
 
-runs_dir_path = os.environ.get("TASDMC_RUNS_DIR")
-if runs_dir_path is None:
-    raise EnvironmentError("TASDMC_RUNS_DIR environment variable must be set")
-RUNS_DIR = Path(runs_dir_path)
-RUNS_DIR.mkdir(exist_ok=True)
+config.Global.runs_dir.mkdir(exist_ok=True, parents=True)
 
 
 def run_dir() -> Path:
     run_dir_name: str = config.get_key('name')
-    return RUNS_DIR / run_dir_name
+    return config.Global.runs_dir / run_dir_name
 
 
 internal_dir_getters = []
