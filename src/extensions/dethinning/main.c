@@ -20,6 +20,14 @@
 #include "./globals.h"
 #include "./corsika_weights.h"
 
+// in-memory buffering can help speed up dethinning by first accumulating data in RAM
+// and only then writing it to file with an expensive syscall
+// set INMENORY_BUFFER_SIZE to some reasonably large constant
+// TODO: determine INMENORY_BUFFER_SIZE from TASDMC_MEMORY_PER_PROCESS_GB dynamically
+#define INMEMORY_BUFFERING  // uncomment to turn buffering on
+#define INPUTBUFFER_SIZE 1024 * 128 // bytes
+#define OUTPUTBUFFER_SIZE 1024 * 512 // bytes
+
 int dethinning(
 	const char *particleFilename,
 	const char *longtitudeFilename,
@@ -40,6 +48,11 @@ int dethinning(
 	float otmp[3], height_long = 1.e12, npart[9], x0, secnew, enew;
 	off_t RB = sizeof(float);
 
+	#ifdef INMEMORY_BUFFERING
+	char outputBuffer[OUTPUTBUFFER_SIZE];
+	char inputBuffer[INPUTBUFFER_SIZE];
+	#endif
+
 	//Open input file
 	if ((fin = fopen(particleFilename, "rb")) == NULL)
 	{
@@ -47,6 +60,9 @@ int dethinning(
 			fprintf(stderr, "Cannot open %s file \n", particleFilename);
 		return EXIT_FAILURE;
 	}
+	#ifdef INMEMORY_BUFFERING
+	setvbuf(fin, inputBuffer, _IOFBF, INPUTBUFFER_SIZE);
+	#endif
 
 	//Open longitudinal development file (optional)
 	if ((flong = fopen(longtitudeFilename, "r")) == NULL)
@@ -104,6 +120,11 @@ int dethinning(
 			fprintf(stderr, "Cannot open %s file \n", outputFilename);
 		return EXIT_FAILURE;
 	}
+
+	#ifdef INMEMORY_BUFFERING
+	setvbuf(fout, outputBuffer, _IOFBF, OUTPUTBUFFER_SIZE);
+	#endif
+
 	fwrite(&blockLen2, sizeof(int), 1, fout);
 
 	//Read/write CORSIKA input and dethinned output
@@ -144,14 +165,14 @@ int dethinning(
 				fread(buf, sizeof(float), NWORD, fin);
 				for (m = 0; m < NWORD2; m++)
 					buf2[m] = buf[m];
-				coszenith = cosf(buf[10]);  // TODO: pass this as a param where it is needed
+				coszenith = cosf(buf[10]); // TODO: pass this as a param where it is needed
 
 				//Calculate event trajectory
 
 				R0[0] = buf[7] / buf[3];
 				R0[1] = buf[8] / buf[3];
 				R0[2] = -buf[9] / buf[3];
-				Z0 = buf[47];  // TODO: pass this as a param where it is needed
+				Z0 = buf[47]; // TODO: pass this as a param where it is needed
 
 				enlog = log10f(buf[3]) - 10.;
 
@@ -182,8 +203,8 @@ int dethinning(
 					otmp[1] = -buf[8] / buf[9] * (height_long - Z0);
 					otmp[2] = height_long;
 					toffset = hypotf(
-						(otmp[2] - origin[2]), hypotf((otmp[1] - origin[1]), (otmp[0] - origin[0]))
-					) / CSPEED;
+								  (otmp[2] - origin[2]), hypotf((otmp[1] - origin[1]), (otmp[0] - origin[0]))) /
+							  CSPEED;
 					origin[0] = otmp[0];
 					origin[1] = otmp[1];
 					origin[2] = otmp[2];
