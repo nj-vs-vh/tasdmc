@@ -27,13 +27,12 @@ split_thinned_corsika_output(PyObject *self, PyObject *args)
     }
 }
 
-
 static PyObject *
 run_dethinning(PyObject *self, PyObject *args)
 {
     const char *particle_filename;
     const char *longtitude_filename;
-	const char *output_filename;
+    const char *output_filename;
 
     if (!PyArg_ParseTuple(args, "sss", &particle_filename, &longtitude_filename, &output_filename))
         return NULL;
@@ -49,13 +48,12 @@ run_dethinning(PyObject *self, PyObject *args)
     }
 }
 
-
 static PyObject *
 run_c2g(PyObject *self, PyObject *args)
 {
     const char *particle_filelist;
     const char *geant_filename;
-	const char *output_filename;
+    const char *output_filename;
 
     if (!PyArg_ParseTuple(args, "sss", &particle_filelist, &geant_filename, &output_filename))
         return NULL;
@@ -70,7 +68,6 @@ run_c2g(PyObject *self, PyObject *args)
         return NULL;
     }
 }
-
 
 static PyMethodDef methods[] = {
     {"split_thinned_corsika_output", (PyCFunction)split_thinned_corsika_output, METH_VARARGS, "split CORSIKA output for dethinning"},

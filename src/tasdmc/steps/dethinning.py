@@ -10,7 +10,7 @@ from tasdmc import tasdmc_ext
 from .base import Files, FileInFileOutStep
 from .particle_file_splitting import SplitParticleFiles, ParticleFileSplittingStep
 from .exceptions import FilesCheckFailed
-from .utils import check_particle_file_contents
+from .utils import check_particle_file_contents, check_file_is_empty
 
 
 @dataclass
@@ -50,8 +50,7 @@ class DethinningOutputFiles(Files):
         )
 
     def _check_contents(self):
-        if self.stderr.stat().st_size > 0:
-            raise FilesCheckFailed(f"{self.stderr.name} file contains errors")
+        check_file_is_empty(self.stderr)
         with open(self.stdout, 'r') as f:
             for line in f:
                 line = line.strip()

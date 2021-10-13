@@ -9,7 +9,7 @@ CPP	                = g++
 CPPFLAGS            = $(OPTIMIZATION_OPTION) -Wall -fPIC
 
 SRC_TO_OBJ_RECIPE = ${CC} -c $< -o $@ ${CFLAGS}
-OBJ_TO_SHARED_LIB_RECIPE = ${CC} -shared $< -o $@ ${CFLAGS}
+OBJ_TO_SHARED_LIB_RECIPE = ${CC} -shared $^ -o $@ ${CFLAGS}
 MKDIR_RECIPE = mkdir -p $@
 
 envcheck:
@@ -44,18 +44,16 @@ ${C2GBINDIR}: | ${BINDIR}
 
 C2G_OBJS = $(addsuffix .o, $(addprefix ${C2GBINDIR}/, main corsika_times corsika_vem_init corsika_vem eloss_sdgeant))
 
-${BINDIR}/${C2G}.o: ${C2G_OBJS} | ${C2GBINDIR}
-	ld -r -o $@ $^
-
 # calculating 16 * (memory in Gb) with bc & deleting everything after decimal point from output
 NT_VALUE := $(shell echo "16 * ${TASDMC_MEMORY_PER_PROCESS_GB}" | bc | cut -d '.' -f 1)
-SRC_TO_OBJ_WITH_DEFINED_NT_RECIPE = ${SRC_TO_OBJ_RECIPE} -DNT=${NT_VALUE}
+WITH_DEFINED_NT = -DNT=${NT_VALUE}
+WITH_LINK_TO_DST2K = -I${DST2K_DIR}/inc -L$(DST2K_DIR)/lib -L/usr/lib/x86_64-linux-gnu -ldst2k -lm  -lc -lz -lbz2
 
 ${C2GBINDIR}/%.o: ${C2G}/%.c
-	${SRC_TO_OBJ_WITH_DEFINED_NT_RECIPE}
+	${SRC_TO_OBJ_RECIPE} ${WITH_DEFINED_NT} ${WITH_LINK_TO_DST2K}
 
-${C2GBINDIR}/eloss_sdgeant.o: ${C2G}/eloss_sdgeant.c  # this little guy requires linking with dst2k library
-	${SRC_TO_OBJ_WITH_DEFINED_NT_RECIPE} -I${DST2K_DIR}/inc -L$(DST2K_DIR)/lib -ldst2k
+${BINDIR}/lib${C2G}.so: ${C2G_OBJS} | ${C2GBINDIR}
+	${OBJ_TO_SHARED_LIB_RECIPE} ${WITH_LINK_TO_DST2K}
 
 
 # lists of targets

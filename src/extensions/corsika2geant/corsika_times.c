@@ -34,7 +34,7 @@ double corsika_times(const char *particleFilesList)
             time1[i][j] = 1.e9;
         }
     }
-    fprintf(stderr, "Opening %s filelist\n", particleFilesList);
+    fprintf(stdout, "Opening %s filelist\n", particleFilesList);
     if ((flist = fopen(particleFilesList, "r")) == NULL)
     {
         fprintf(stderr, "Cannot open %s file: %s\n", particleFilesList, strerror(errno));
@@ -50,7 +50,7 @@ double corsika_times(const char *particleFilesList)
             fprintf(stderr, "Cannot open %s file \n", particleFilename);
             return EXIT_FAILURE_DOUBLE;
         }
-        fprintf(stderr, "Opening %s file\n", particleFilename);
+        fprintf(stdout, "Opening %s file\n", particleFilename);
         while (fread(&blockLen, sizeof(int), 1, f))
         {
             nBlock++;

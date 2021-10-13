@@ -9,7 +9,7 @@ from tasdmc import fileio, config
 from .base import Files, FileInFileOutStep
 from .corsika_cards_generation import CorsikaCardsGenerationStep
 from .exceptions import FilesCheckFailed
-from .utils import check_particle_file_contents
+from .utils import check_particle_file_contents, check_file_is_empty
 
 
 @dataclass
@@ -43,13 +43,9 @@ class CorsikaOutputFiles(Files):
         )
 
     def check_contents(self):
-        with open(self.stderr, 'r') as stderrfile:
-            ignored_errmsg = 'Note: The following floating-point exceptions are signalling'
-            error_messages = [line for line in stderrfile if not line.startswith(ignored_errmsg)]
-            if len(error_messages) > 0:
-                raise FilesCheckFailed(
-                    f"{self.stderr.name} contains errors:\n" + '\n'.join([f'\t{line}' for line in error_messages])
-                )
+        check_file_is_empty(
+            self.stderr, ignore_strings=['Note: The following floating-point exceptions are signalling']
+        )
         MIN_CORSIKA_LONG_FILE_LINE_COUNT = 1500
         with open(self.longtitude, 'r') as longfile:
             line_count = len([line for line in longfile])

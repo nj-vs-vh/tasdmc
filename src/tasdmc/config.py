@@ -9,7 +9,7 @@ import yaml
 from pathlib import Path
 import os
 
-from typing import Any, Optional
+from typing import Any, Optional, List, Type
 
 
 _config = None
@@ -46,6 +46,13 @@ def load(filename: str):
 def dump(filename: Path):
     with open(filename, 'w') as f:
         yaml.dump(_config, f)
+
+
+def validate(steps: Optional[List[Type['FileInFileOutStep']]] = None):  # type: ignore
+    if steps is None:
+        from tasdmc.steps import all_steps as steps
+    for Step in steps:
+        Step.validate_config()
 
 
 def get_key(key: str, key_prefix: Optional[str] = None, default: Optional[Any] = None) -> Any:

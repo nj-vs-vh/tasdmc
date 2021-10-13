@@ -10,13 +10,10 @@
 #include <libgen.h>
 #include <errno.h>
 
-// #include "corsika2geant.h"
-// #include "eloss_sdgeant.h"
 #include "./globals.h"
 #include "./corsika_times.h"
 #include "./corsika_vem_init.h"
 #include "./corsika_vem.h"
-
 #include "./eloss_sdgeant.h"
 
 int corsika2geant(const char *dethinnedParticleFilesList, const char *geantFile, const char *outputFile)
@@ -64,7 +61,7 @@ int corsika2geant(const char *dethinnedParticleFilesList, const char *geantFile,
     fwrite(eventbuf, sizeof(float), NWORD, fout);
     printf("%g:%g\t %g Percent\n", count2, count, count2 / count * 100.);
     fflush(stdout);
-    sprintf(tmpFile[1], "tmp%3.3d", 1);
+    sprintf(tmpFile[1], "%s.tmp%3.3d", outputFile, 1);
     count2 += corsika_vem_init(dethinnedParticleFilesList, tmpFile[1], tcount);
     if (count2 == EXIT_FAILURE_DOUBLE)
     {
@@ -105,7 +102,7 @@ int corsika2geant(const char *dethinnedParticleFilesList, const char *geantFile,
     tcount++;
     for (j = 1; j < (int)ceilf((float)TMAX / (float)NT); j++)
     {
-        sprintf(tmpFile[j + 1], "tmp%3.3d", j + 1);
+        sprintf(tmpFile[j + 1], "%s.tmp%3.3d", outputFile, j + 1);
         count2 += corsika_vem(tmpFile[j], tmpFile[j + 1], tcount);
         if (count2 == EXIT_FAILURE_DOUBLE)
         {

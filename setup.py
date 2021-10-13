@@ -14,13 +14,12 @@ for required_env_var in ('TASDMC_LIB_DIR', 'DST2K_DIR', 'TASDMC_MEMORY_PER_PROCE
         raise EnvironmentError(f"{required_env_var} environment variable is not set")
 
 package_root = Path(__file__).parent.resolve()
-tasdmc_lib_dir = os.environ.get('TASDMC_LIB_DIR')
 extensions_source_dir = package_root / 'src/extensions'
 tasdmc_ext_module = Extension(
     "tasdmc.tasdmc_ext",
     sources=[str(package_root / 'src/tasdmc_ext.c')],
-    library_dirs=[str(tasdmc_lib_dir)],
-    libraries=['corsika_split_th', 'dethinning'],
+    library_dirs=[os.environ.get('TASDMC_LIB_DIR'), os.environ.get('DST2K_DIR') + '/lib'],
+    libraries=['corsika_split_th', 'dethinning', 'corsika2geant'],
     include_dirs=[str(extensions_source_dir)],
 )
 
@@ -41,7 +40,9 @@ if md5.hexdigest() != '0cebc42f86e227e2fb2397dd46d7d981':
 
 class InstallWithExternalLibs(install):
     def run(self):
-        subprocess.run(f"cd {extensions_source_dir} && make install", shell=True)
+        proc = subprocess.run(f"cd {extensions_source_dir} && make install", shell=True)
+        if proc.returncode != 0:
+            exit(0)
         install.run(self)
 
 

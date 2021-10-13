@@ -46,6 +46,11 @@ def dethinning_output_files_dir() -> Path:
     return run_dir() / 'corsika_output_dethinned'
 
 
+@internal
+def c2g_output_files_dir() -> Path:
+    return run_dir() / 'corsika2geant_output'
+
+
 def prepare_run_dir():
     rd = run_dir()
     if_exists = config.get_key('if_exists', default='error')
