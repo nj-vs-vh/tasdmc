@@ -10,11 +10,19 @@
 #include <libgen.h>
 #include <errno.h>
 
-#include "./globals.h"
 #include "./corsika_times.h"
 #include "./corsika_vem_init.h"
 #include "./corsika_vem.h"
 #include "./eloss_sdgeant.h"
+
+#include "./globals.h"
+// defining global variables
+float eventbuf[NWORD];
+float origin[3], zenith;
+float time1[NX][NY], tmin, filldist, emin;
+int dm, dn;
+unsigned short vemcount[NX][NY][NT][2];
+unsigned short pz[NX][NY][NT];
 
 int corsika2geant(const char *dethinnedParticleFilesList, const char *geantFile, const char *outputFile)
 {

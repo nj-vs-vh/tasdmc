@@ -17,7 +17,6 @@
 
 #include "./constants.h"
 #include "./atmosphere.h"
-#include "./globals.h"
 #include "./corsika_weights.h"
 
 // in-memory buffering can help speed up dethinning by first accumulating data in RAM
@@ -27,6 +26,12 @@
 #define INMEMORY_BUFFERING  // uncomment to turn buffering on
 #define INPUTBUFFER_SIZE 1024 * 128 // bytes
 #define OUTPUTBUFFER_SIZE 1024 * 512 // bytes
+
+#include "./globals.h"
+// defining global variables
+float coszenith;
+float origin[3], normorig[3];
+float Z0;
 
 int dethinning(
 	const char *particleFilename,

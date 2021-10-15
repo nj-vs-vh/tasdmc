@@ -58,7 +58,7 @@ class C2GutputFiles(Files):
     def from_c2g_input_files(cls, c2g_input: C2GInputFiles) -> C2GutputFiles:
         outdir = fileio.c2g_output_files_dir()
         return cls(
-            tile=outdir / (c2g_input.corsika_event_name + '.tile'),
+            tile=outdir / (c2g_input.corsika_event_name + '_gea.dat'),
             stdout=outdir / (c2g_input.corsika_event_name + '.c2g.stdout'),
             stderr=outdir / (c2g_input.corsika_event_name + '.c2g.stderr'),
         )
