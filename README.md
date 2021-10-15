@@ -25,8 +25,8 @@ pip install -r requirements.txt
 
 ### Prerequisites and external resources
 
-1. CORSIKA: must be compiled as usual with `coconut`. Recommended build options: high energy handronic interaction model - QGSJETII-04; low energy - FLUKA; horizontal flat detector array geometry; THINning version (option 2a in v77402); compile and remove temporary files. No automatic building is provided for now, so please keep your builds and `.yaml` config files (see later) in sync manually.
-2. [sdanalysis](https://github.com/nj-vs-vh/ta-sdanalysis): must be built following README instructions
+1. `CORSIKA`: must be compiled as usual with `coconut`. Recommended build options: high energy handronic interaction model - QGSJETII-04; low energy - FLUKA; horizontal flat detector array geometry; THINning version (option 2a in v77402); compile and remove temporary files. No automatic building is provided for now, so please keep your builds and `.yaml` config files (see later) in sync manually.
+2. [`sdanalysis`](https://github.com/nj-vs-vh/ta-sdanalysis): must be built following README instructions
 3. `sdgeant.dst` data file containing pre-computed energy losses inside TA surface detector. It is used as a lookup table for detector response calculation to avoid running expensive Geant4 simulations for each MC run. If it's not present on your system, it can be automatically downloaded at installation, see later.
 
 
