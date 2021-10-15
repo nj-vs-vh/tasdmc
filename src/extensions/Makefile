@@ -30,8 +30,13 @@ DETHBINDIR = ${BINDIR}/${DETHIN}
 ${DETHBINDIR}: | ${BINDIR}
 	${MKDIR_RECIPE}
 
-${BINDIR}/${DETHIN}.o: ${DETHBINDIR}/main.o ${DETHBINDIR}/atmosphere.o ${DETHBINDIR}/corsika_weights.o | ${DETHBINDIR}
-	ld -r -o $@ $^
+# ${BINDIR}/${DETHIN}.o: ${DETHBINDIR}/main.o ${DETHBINDIR}/atmosphere.o ${DETHBINDIR}/corsika_weights.o | ${DETHBINDIR}
+# 	ld -r -o $@ $^
+
+DETHIN_OBJS = $(addsuffix .o, $(addprefix ${DETHBINDIR}/, main corsika_weights atmosphere))
+
+${BINDIR}/lib${DETHIN}.so: ${DETHIN_OBJS} | ${DETHBINDIR}
+	${OBJ_TO_SHARED_LIB_RECIPE}
 
 
 # corsika2geant should be linked with dst2k-ta/include code
