@@ -13,3 +13,6 @@ data/
 
 # default dir for runs data
 runs/
+
+run.yaml
+tasdmc_env.sh
