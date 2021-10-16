@@ -42,7 +42,7 @@ class CorsikaOutputFiles(Files):
             particle_file_path.with_suffix('.stderr'),
         )
 
-    def check_contents(self):
+    def _check_contents(self):
         check_file_is_empty(
             self.stderr, ignore_strings=['Note: The following floating-point exceptions are signalling']
         )
