@@ -16,3 +16,4 @@ runs/
 
 run.yaml
 tasdmc_env.sh
+*.log
