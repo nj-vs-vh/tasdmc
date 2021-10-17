@@ -6,24 +6,24 @@ A system for process/node-distributed progress monitoring will be implemented in
 """
 
 import click
+from datetime import datetime
 
 from tasdmc import config
 
 
-def title(message: str):
-    if config.verbosity() > 0:
-        click.secho('\n' + message + '\n', bold=True)
+def _secho(msg: str, min_verbosity: int, **secho_kwargs):
+    if config.verbosity() >= min_verbosity:
+        msg = datetime.now().strftime(r"[%d/%m/%y %H:%M:%S]") + ' ' + msg
+        click.secho(msg, **secho_kwargs)
 
 
 def info(message: str):
-    if config.verbosity() > 0:
-        click.secho(message)
+    _secho(message, min_verbosity=1)
 
 
 def debug(message: str):
-    if config.verbosity() > 1:
-        click.secho(message, dim=True)
+    _secho(message, min_verbosity=2, dim=True)
 
 
 def warning(message: str):
-    click.secho(message, bold=True, fg='red')
+    _secho(message, min_verbosity=0, bold=True, fg='red')
