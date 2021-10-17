@@ -15,6 +15,10 @@ from .utils import check_particle_file_contents
 class SplitParticleFiles(Files):
     files: List[Path]
 
+    @property
+    def must_exist(self) -> List[Path]:
+        return self.files
+
     @classmethod
     def from_corsika_output_files(cls, cof: CorsikaOutputFiles) -> SplitParticleFiles:
         n_split = _n_split_from_config()
@@ -22,9 +26,6 @@ class SplitParticleFiles(Files):
             [cof.particle.with_suffix(f'.p{i+1:02d}') for i in range(n_split)]
         )
 
-    @property
-    def all(self) -> List[Path]:
-        return self.files
 
     def _check_contents(self):
         for f in self.files:

@@ -33,7 +33,7 @@ class CorsikaCardFiles(Files):
     files: List[Path]
 
     @property
-    def all(self):
+    def must_exist(self):
         return self.files
 
 
@@ -47,16 +47,18 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
         """For CORSIKA cards generation a set of output files cannot be easily determined in advance.
         Instead, it is done in runtime based on optimal number of cards per energy bin.
 
-        Because of that, instead of instantiate-then-run, use a single class method
+        Because of that, instead of instantiate-then-run, use this class method
         >>> CorsikaInputFilesGeneration.create_and_run()
         """
         instance = cls(NoFiles(), CorsikaCardFiles([]))
-        instance.run()  # here corsika input files are added to output.all list
+        instance.run(force=True)  # here corsika input files are added to output.all list
         return instance
 
-    def run(self):
-        progress.info("Generating CORSIKA input files")
+    @property
+    def description(self) -> str:
+        return "CORSIKA cards generation"
 
+    def _run(self):
         particle, particle_id = _particle_id_from_config()
         progress.info(f'Primary particle: {particle} (id {particle_id})')
 

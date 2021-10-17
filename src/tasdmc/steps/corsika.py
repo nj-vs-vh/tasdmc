@@ -7,19 +7,22 @@ from typing import List
 
 from tasdmc import fileio, config
 from .base import Files, FileInFileOutStep
-from .corsika_cards_generation import CorsikaCardsGenerationStep
+from .corsika_cards_generation import CorsikaCardsGenerationStep, CorsikaCardFiles
 from .exceptions import FilesCheckFailed
 from .utils import check_particle_file_contents, check_file_is_empty
 
 
 @dataclass
 class CorsikaCardFile(Files):
-    infile: Path
+    card: Path
 
     @property
-    def all(self) -> List[Path]:
-        return [self.infile]
+    def must_exist(self) -> List[Path]:
+        return [self.card]
 
+    @classmethod
+    def from_corsika_card_files(cls, corsika_card_files: CorsikaCardFiles) -> List[CorsikaCardFile]:
+        return [cls(card) for card in corsika_card_files.files]
 
 @dataclass
 class CorsikaOutputFiles(Files):
@@ -29,18 +32,22 @@ class CorsikaOutputFiles(Files):
     stderr: Path
 
     @property
-    def all(self) -> List[Path]:
+    def must_exist(self) -> List[Path]:
         return [self.particle, self.longtitude, self.stderr, self.stdout]
 
+    def prepare_for_step_run(self):
+        for f in self.must_exist:  # corsika_wrapper do not overwrite files, so delete them manually
+            f.unlink(missing_ok=True)
+
     @classmethod
-    def from_card_path(cls, card_path: Path) -> CorsikaOutputFiles:
-        particle_file_path = fileio.corsika_output_files_dir() / card_path.stem
+    def from_corsika_card_file(cls, corsika_card_file: CorsikaCardFile) -> CorsikaOutputFiles:
+        particle_file_path = fileio.corsika_output_files_dir() / corsika_card_file.card.stem
         return cls(
-            particle_file_path,
-            particle_file_path.with_suffix('.long'),
-            particle_file_path.with_suffix('.stdout'),
-            particle_file_path.with_suffix('.stderr'),
-        )
+                particle_file_path,
+                particle_file_path.with_suffix('.long'),
+                particle_file_path.with_suffix('.stdout'),
+                particle_file_path.with_suffix('.stderr')
+            )
 
     def _check_contents(self):
         check_file_is_empty(
@@ -68,18 +75,15 @@ class CorsikaStep(FileInFileOutStep):
 
     @classmethod
     def from_corsika_cards_generation(cls, corsika_cards_generation: CorsikaCardsGenerationStep) -> List[CorsikaStep]:
-        input_files = corsika_cards_generation.output.files
-        return [
-            cls(input_=CorsikaCardFile(input_file), output=CorsikaOutputFiles.from_card_path(input_file))
-            for input_file in input_files
-        ]
+        inputs = CorsikaCardFile.from_corsika_card_files(corsika_cards_generation.output)
+        return [cls(input_, CorsikaOutputFiles.from_corsika_card_file(input_)) for input_ in inputs]
 
     @property
     def description(self) -> str:
-        return f"CORSIKA simulation on {self.input_.infile.name}"
+        return f"CORSIKA simulation on {self.input_.card.name}"
 
     def _run(self):
-        input_file = self.input_.infile
+        input_file = self.input_.card
         cw.corsika(
             steering_card=cw.read_steering_card(input_file),
             # DATnnnnn.stdout and DATnnnnnn.stderr are created automatically by wrapper

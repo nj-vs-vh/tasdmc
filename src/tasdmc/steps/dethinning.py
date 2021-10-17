@@ -18,7 +18,7 @@ class ParticleFile(Files):
     particle: Path
 
     @property
-    def all(self) -> List[Path]:
+    def must_exist(self) -> List[Path]:
         return [self.particle]
 
     @classmethod
@@ -36,8 +36,12 @@ class DethinningOutputFiles(Files):
     stderr: Path
 
     @property
-    def all(self) -> List[Path]:
+    def must_exist(self) -> List[Path]:
         return [self.dethinned_particle, self.stderr, self.stdout]
+
+    @property
+    def not_retained(self) -> List[Path]:
+        return [self.dethinned_particle]
 
     @classmethod
     def from_particle_file(cls, pf: ParticleFile) -> DethinningOutputFiles:

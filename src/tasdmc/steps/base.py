@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from typing import List, Optional
+from typing import List
 
 from tasdmc import config, progress
 from .exceptions import FilesCheckFailed
@@ -15,37 +15,74 @@ class Files(ABC):
     """
 
     @property
-    @abstractmethod
-    def all(self) -> List[Path]:
-        """List of all file Paths"""
+    def must_exist(self) -> List[Path]:
+        """List of file Paths that must exist for Files to be valid step output. Used in the default check method."""
+        return []
+
+    @property
+    def not_retained(self) -> List[Path]:
+        """List of file Paths that can be removed after they have been used in pipeline. This should include
+        temporary or very large files, unnecessary for the end result.
+        """
+        return []
+
+    def prepare_for_step_run(self):
+        """Ensure that Files are ready to be created from scratch in a step.run(). For example, delete existing
+        files if they can't be automatically overwritten during step run.
+        
+        May be overriden by subclasses.
+        """
         pass
 
-    def clear(self):
-        """Simply deletes all files. May be overriden by subclasses to contain additional logic."""
-        for f in self.all:
-            f.unlink(missing_ok=True)
-
-    def check(self):
-        """Check files, raise FilesCheckFailes exception if there's a problem"""
-        for f in self.all:
+    def assert_files_are_ready(self):
+        """Check Files if they are ready and raise FilesCheckFailes exception if there's a problem.
+        
+        Should not be overriden, but modified indirectly by overriding must_exist property and _check_contents method.
+        """
+        for f in self.must_exist:
             if not f.exists():
                 raise FilesCheckFailed(f"{f} (and maybe others) do not exist")
         self._check_contents()
 
-    def _check_contents(self):
-        """Method to check file(s) content, may be overriden by subclasses.
+    def delete_not_retained_files(self):
+        """Delete files that are not retained after pipeline end and create .deleted files in their place"""
+        for f in self.not_retained:
+            try:
+                f.unlink()
+                with open(str(f) + '.deleted', 'w') as del_f:
+                    del_f.write(
+                        f'THIS FILE INDICATES THAT THE FILE\n\n{f}\n\n'
+                        + 'WAS PRODUCED AND THEN DELETED AFTER BEING USED IN A PIPELINE\n'
+                    )
+            except FileNotFoundError:
+                pass
 
-        Must raise FilesCheckFailes on errors.
-        """
+
+    def _check_contents(self):
+        """Check Files' content, should be overriden by subclasses. Must raise FilesCheckFailed on errors."""
         pass
 
-    def check_passed(self) -> bool:
-        """Like check, but return bool value of whether check was passed."""
-        try:
-            self.check()
-            return True
-        except FilesCheckFailed:
-            return False
+    def files_were_produced(self) -> bool:
+        """Returns bool value indicating if Files' were already produced. This is not the same as check_if_ready
+        as it also checks for files that may have been deleted because they are not retained.
+        """
+        try_checking_contents = True
+        for f in self.must_exist:
+            if not f.exists():
+                if f in self.not_retained:  # maybe it was deleted? check if .deleted file exists
+                    try_checking_contents = False  # but there's no point in checking contents anymore
+                    if not Path(str(f) + '.deleted').exists():
+                        return False
+                else:
+                    return False
+
+        if try_checking_contents:
+            try:
+                self._check_contents()
+            except FilesCheckFailed:            
+                return False
+        
+        return True
 
 
 @dataclass
@@ -55,27 +92,32 @@ class FileInFileOutStep(ABC):
     input_: Files
     output: Files
 
-    def run(self):
-        """Main method for running the step."""
-        if config.try_to_continue() and self.output.check_passed():
-            if self.description is not None:
-                progress.info(f"Skipping, output files found: {self.description}")
+    def run(self, force: bool = False):
+        """Main method for running the step.
+
+        Args:
+            force (bool, optional): Skip output check and run case anyway. Defaults to False.
+        """
+        if not force and config.try_to_continue() and self.output.files_were_produced():
+            progress.info(f"Skipping, output files found: {self.description}")
         else:
-            self.output.clear()
-            if self.description is not None:
-                progress.info(f"Running: {self.description}")
+            self.input_.assert_files_are_ready()
+            self.output.prepare_for_step_run()
+            progress.info(f"Running: {self.description}")
             self._run()
-            self.output.check()
+            self.output.assert_files_are_ready()
 
     @property
-    def description(self) -> Optional[str]:
-        """Optional step description srting, used for progress monitoring"""
-        return None
+    @abstractmethod
+    def description(self) -> str:
+        """Step description srting, used for progress monitoring"""
+        pass
 
     def _run(self):
-        """Internal method with 'bare' logic for funning the step, without input/output file checks.
+        """Internal method with 'bare' logic for funning the step, without input/output file checks,
+        parallelization etc.
 
-        Should be overriden by subclasses
+        Should be overriden by subclasses.
         """
         pass
 

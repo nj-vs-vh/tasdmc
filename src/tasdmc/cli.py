@@ -20,10 +20,10 @@ def run(run_config_filename):
     fileio.prepare_run_dir()
 
     cards_generation = CorsikaCardsGenerationStep.create_and_run()
-    for corsika in CorsikaStep.from_corsika_cards_generation(cards_generation):
-        corsika.run()
+    for corsika_step in CorsikaStep.from_corsika_cards_generation(cards_generation):
+        corsika_step.run()
 
-        particle_file_splitting = ParticleFileSplittingStep.from_corsika_step(corsika)
+        particle_file_splitting = ParticleFileSplittingStep.from_corsika_step(corsika_step)
         particle_file_splitting.run()
 
         dethinning_steps = DethinningStep.from_particle_file_splitting_step(particle_file_splitting)
@@ -32,3 +32,6 @@ def run(run_config_filename):
 
         corsika2geant = Corsika2GeantStep.from_dethinning_steps(dethinning_steps)
         corsika2geant.run()
+
+        for dethinning_step in dethinning_steps:
+            dethinning_step.output.delete_not_retained_files()
