@@ -24,8 +24,23 @@ int dm, dn;
 unsigned short vemcount[NX][NY][NT][2];
 unsigned short pz[NX][NY][NT];
 
-int corsika2geant(const char *dethinnedParticleFilesList, const char *geantFile, const char *outputFile)
+int main(int argc, char *argv[])
 {
+    // command line arguments parsing
+	if (argc != 4)
+	{
+		fprintf(
+			stderr,
+			"corsika2geant accepts exactly 3 command-line arguments:\n"
+			"\tlist of CORSIKA particle file paths to process\n"
+			"\tsdgeant.dst file path\n"
+			"\toutput file path\n");
+		exit(EXIT_FAILURE);
+	}
+	const char *particleFilesListingFile = argv[1];
+	const char *geantFile = argv[2];
+	const char *outputFile = argv[3];
+
     FILE *fout;
 
     char tmpFile[1000][256];
@@ -51,18 +66,18 @@ int corsika2geant(const char *dethinnedParticleFilesList, const char *geantFile,
 
     printf("Energy threshold: %f keV\n", emin);
     fflush(stdout);
-    strcpy(tmpFile[0], dethinnedParticleFilesList);
+    strcpy(tmpFile[0], particleFilesListingFile);
 
     if (load_elosses(geantFile) == -1)
     {
         fprintf(stderr, "Cannot open %s file\n", geantFile);
-        return EXIT_FAILURE;
+        exit(EXIT_FAILURE);
     }
-    count = corsika_times(dethinnedParticleFilesList);
+    count = corsika_times(particleFilesListingFile);
     if (count == EXIT_FAILURE_DOUBLE)
     {
-        fprintf(stderr, "corsika_times(%s) function failed", dethinnedParticleFilesList);
-        return EXIT_FAILURE;
+        fprintf(stderr, "corsika_times(%s) function failed", particleFilesListingFile);
+        exit(EXIT_FAILURE);
     }
 
     fout = fopen(outputFile, "w");
@@ -70,11 +85,11 @@ int corsika2geant(const char *dethinnedParticleFilesList, const char *geantFile,
     printf("%g:%g\t %g Percent\n", count2, count, count2 / count * 100.);
     fflush(stdout);
     sprintf(tmpFile[1], "%s.tmp%3.3d", outputFile, 1);
-    count2 += corsika_vem_init(dethinnedParticleFilesList, tmpFile[1], tcount);
+    count2 += corsika_vem_init(particleFilesListingFile, tmpFile[1], tcount);
     if (count2 == EXIT_FAILURE_DOUBLE)
     {
-        fprintf(stderr, "corsika_vem_init(%s, %s, %d) function failed", dethinnedParticleFilesList, tmpFile[1], tcount);
-        return EXIT_FAILURE;
+        fprintf(stderr, "corsika_vem_init(%s, %s, %d) function failed", particleFilesListingFile, tmpFile[1], tcount);
+        exit(EXIT_FAILURE);
     }
 
     printf("%g:%g\t %g Percent\n", count2, count, count2 / count * 100.);
@@ -115,7 +130,7 @@ int corsika2geant(const char *dethinnedParticleFilesList, const char *geantFile,
         if (count2 == EXIT_FAILURE_DOUBLE)
         {
             fprintf(stderr, "corsika_vem(%s, %s, %d) function failed", tmpFile[j], tmpFile[j + 1], tcount);
-            return EXIT_FAILURE;
+            exit(EXIT_FAILURE);
         }
 
         printf("%g:%g\t %g Percent\n", count2, count, count2 / count * 100.);
@@ -152,5 +167,5 @@ int corsika2geant(const char *dethinnedParticleFilesList, const char *geantFile,
         tcount++;
     }
     fclose(fout);
-    return EXIT_SUCCESS;
+    exit(EXIT_SUCCESS);
 }

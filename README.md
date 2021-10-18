@@ -34,16 +34,11 @@ pip install -r requirements.txt
 
 Global configuration is done via environment variables. As usual, their `export`'s may be placed in `.bashrc` or any other activation script.
 
-* `TASDMC_LIB_DIR` controls where C extension libraries will be placed.
+* `TASDMC_BIN_DIR` controls where C routines will be placed.
 * `TASDMC_RUNS_DIR` controls where all the run directories will be created. Note that run directories usually require significant disk space.
-* `DST2K_DIR` points to the `sdanalysis/dst2k-ta` library directory
+* `SDANALYSIS_DIR` points to the `sdanalysis` directory (see prerequisites).
 * `TASDMC_MEMORY_PER_PROCESS_GB` specifies memory available per process in Gb. This affects compilation of some C routines (namely, `corsika2geant`) changing allocated array sizes. The choice depends on the system resources, for example on 64 core, 128 Gb RAM machine we would run 64 processes and to utilize all memory we would set this variable to 2.
-* `TASDMC_SDGEANT_DST` points to `sdgeant.dst` file. If the file doesn't exist, it is downloaded from [Google Drive](https://drive.google.com/file/d/1ZTSrrAg2T8bvIDhPuh2ruVShmubwvTWG/view?usp=sharing) at installation and placed there.
-
-Note that `LD_LIBRARY_PATH` should be updated to include `TASDMC_LIB_DIR` and `DST2K_DIR` paths:
-```bash
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TASDMC_LIB_DIR:$DST2K_DIR
-```
+* `TASDMC_DATA_DIR` points to directory with all data files required for simulation. These include: `sdgeant.dst`, (TBD). If files are missing, they will be downloaded at installation and placed there.
 
 An example of all these variables combined in a single script can be found in [`tasdmc_env.sh`](config_examples/tasdmc_env.sh).
 

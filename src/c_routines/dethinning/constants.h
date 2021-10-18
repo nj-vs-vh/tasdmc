@@ -1,3 +1,5 @@
+#ifndef CONSTANTS_H_
+#define CONSTANTS_H_
 
 // physical constants and params
 #define CSPEED 29.97925
@@ -32,3 +34,5 @@ static const float pmass[26] = {0., 0., 0.511e-3, .511e-3, 0., 105.7e-3, 105.7e-
 								140.e-3, 140.e-3, 498.e-3, 494.e-3, 494.e-3, 940.e-3, 938.e-3,
 								938.e-3, 498.e-3, 549.e-3, 1116.e-3, 1189.e-3, 1193.e-3,
 								1197.e-3, 1315.e-3, 1321.e-3, 1672e-3, 940.e-3};
+
+#endif

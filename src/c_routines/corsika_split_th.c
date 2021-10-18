@@ -19,10 +19,26 @@
 
 #define MAX_SPLIT_PARTS 100
 
-int splitThinnedCorsikaOutput(const char* corsikaOutputFilename, int splitParts)
+int main(int argc, char *argv[])
 {
-	if (splitParts > MAX_SPLIT_PARTS) {
-		return EXIT_FAILURE;
+	if (argc != 3)
+	{
+		fprintf(
+			stderr,
+			"corsika_split_th accepts exactly 2 command-line arguments:\n"
+			"\tCORSIKA particle (DATnnnnnn) file path\n\tnumber of parts to split to\n");
+		exit(EXIT_FAILURE);
+	}
+	const char* corsikaOutputFilename = argv[1];
+	int splitPartsN = atoi(argv[2]);
+	if (splitPartsN == 0) {
+		fprintf(stderr, "Cannot parse splitPartsN parameter from argument \"%s\"\n", argv[2]);
+		exit(EXIT_FAILURE);
+	}
+
+	if (splitPartsN > MAX_SPLIT_PARTS)
+	{
+		exit(EXIT_FAILURE);
 	}
 
 	FILE *fin, *fout;
@@ -37,10 +53,10 @@ int splitThinnedCorsikaOutput(const char* corsikaOutputFilename, int splitParts)
 	if ((fin = fopen(corsikaOutputFilename, "rb")) == NULL)
 	{
 		fprintf(stderr, "Cannot open %s file \n", corsikaOutputFilename);
-		return EXIT_FAILURE;
+		exit(EXIT_FAILURE);
 	}
 
-	for (i = 0; i < splitParts; i++)  // .p01, .p02, ... .p99
+	for (i = 0; i < splitPartsN; i++) // .p01, .p02, ... .p99
 		sprintf(outputFiles[i], "%s.p%2.2d", corsikaOutputFilename, i + 1);
 
 	while (fread(&blockLen, sizeof(int), 1, fin))
@@ -89,13 +105,13 @@ int splitThinnedCorsikaOutput(const char* corsikaOutputFilename, int splitParts)
 	if ((fin = fopen(corsikaOutputFilename, "rb")) == NULL)
 	{
 		fprintf(stderr, "Cannot open %s file \n", corsikaOutputFilename);
-		return EXIT_FAILURE;
+		exit(EXIT_FAILURE);
 	}
 	filenum = 0;
 	if ((fout = fopen(outputFiles[filenum], "wb")) == NULL)
 	{
 		fprintf(stderr, "Cannot open %s file \n", outputFiles[filenum]);
-		return EXIT_FAILURE;
+		exit(EXIT_FAILURE);
 	}
 	fwrite(&blockLen, sizeof(int), 1, fout);
 	fwrite(runhbuf, sizeof(float), NWORD, fout);
@@ -132,7 +148,7 @@ int splitThinnedCorsikaOutput(const char* corsikaOutputFilename, int splitParts)
 					fwrite(&blockLen, sizeof(int), 1, fout);
 					fwrite(&blockLen, sizeof(int), 1, fout);
 				}
-				if (((nPART2 - 1) * splitParts) / nPART > filenum)
+				if (((nPART2 - 1) * splitPartsN) / nPART > filenum)
 				{
 					filenum++;
 					fwrite(evtebuf, sizeof(float), NWORD, fout);
@@ -188,5 +204,5 @@ int splitThinnedCorsikaOutput(const char* corsikaOutputFilename, int splitParts)
 	fclose(fout);
 	fclose(fin);
 
-	return EXIT_SUCCESS;
+	exit(EXIT_SUCCESS);
 }

@@ -4,8 +4,8 @@
 *env/
 
 # build/installation artefacts and prerequisites
-lib/
-src/extensions/bin
+bin/
+src/c_routines/bin
 build/
 *.egg-info
 dist/

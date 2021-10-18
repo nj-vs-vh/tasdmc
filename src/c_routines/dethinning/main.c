@@ -23,8 +23,8 @@
 // and only then writing it to file with an expensive syscall
 // set INMENORY_BUFFER_SIZE to some reasonably large constant
 // TODO: determine INMENORY_BUFFER_SIZE from TASDMC_MEMORY_PER_PROCESS_GB dynamically
-#define INMEMORY_BUFFERING  // uncomment to turn buffering on
-#define INPUTBUFFER_SIZE 1024 * 128 // bytes
+#define INMEMORY_BUFFERING			 // uncomment to turn buffering on
+#define INPUTBUFFER_SIZE 1024 * 128	 // bytes
 #define OUTPUTBUFFER_SIZE 1024 * 512 // bytes
 
 #include "./globals.h"
@@ -33,12 +33,28 @@ float coszenith;
 float origin[3], normorig[3];
 float Z0;
 
-int dethinning(
-	const char *particleFilename,
-	const char *longtitudeFilename,
-	const char *outputFilename,
-	bool verbose)
+int main(int argc, char *argv[])
 {
+	// command line arguments parsing
+	if (argc < 3)
+	{
+		fprintf(
+			stderr,
+			"dethinning accepts 2 or 3 command-line arguments:\n"
+			"\tCORSIKA particle (DATnnnnnn) file path\n"
+			"\toutput file path\n"
+			"\t(optional) CORSIKA longtitute (.long) file path\n");
+		exit(EXIT_FAILURE);
+	}
+	const char *particleFilename = argv[1];
+	const char *outputFilename = argv[2];
+	const char *longtitudeFilename;
+	bool withLongtitudeFile = (argc == 4);
+	if (withLongtitudeFile)
+	{
+		longtitudeFilename = argv[3];
+	}
+
 	FILE *fin, *fout, *flong;
 	char longtitudeFileLine[1024];
 
@@ -61,22 +77,30 @@ int dethinning(
 	//Open input file
 	if ((fin = fopen(particleFilename, "rb")) == NULL)
 	{
-		if (verbose)
-			fprintf(stderr, "Cannot open %s file \n", particleFilename);
-		return EXIT_FAILURE;
+		fprintf(stderr, "Cannot open %s file \n", particleFilename);
+		exit(EXIT_FAILURE);
 	}
+
+	// Check output file for writeability
+	if ((fout = fopen(outputFilename, "wb")) == NULL)
+	{
+
+		fprintf(stderr, "Cannot open %s file \n", outputFilename);
+		exit(EXIT_FAILURE);
+	}
+
 	#ifdef INMEMORY_BUFFERING
 	setvbuf(fin, inputBuffer, _IOFBF, INPUTBUFFER_SIZE);
+	setvbuf(fout, outputBuffer, _IOFBF, OUTPUTBUFFER_SIZE);
 	#endif
 
-	//Open longitudinal development file (optional)
-	if ((flong = fopen(longtitudeFilename, "r")) == NULL)
-	{
-		if (verbose)
-			fprintf(stdout, "Not using longitudinal profile for height determination\n");
-	}
-	else
-	{
+	if (withLongtitudeFile) {
+		flong = fopen(longtitudeFilename, "r");
+		if (flong == NULL)
+		{
+			fprintf(stdout, "Cannot open longtitude file %s\n", longtitudeFilename);
+			exit(EXIT_FAILURE);
+		}
 		//Process longitudinal development file to check for preshowering
 		fgets(longtitudeFileLine, 1023, flong);
 		fgets(longtitudeFileLine, 1023, flong);
@@ -99,17 +123,17 @@ int dethinning(
 						   &npart[4], &npart[5],
 						   &npart[6], &npart[7], &npart[8]) != 10)
 				{
-					if (verbose)
-						fprintf(stderr, "Primary particle is non-interacting\n");
-					return EXIT_FAILURE;
+
+					fprintf(stderr, "Primary particle is non-interacting\n");
+					exit(EXIT_FAILURE);
 				}
 				else
 				{
 					if (npart[0] + npart[1] + npart[2] + npart[3] + npart[4] + npart[5] + npart[7] > 1.)
 					{
 						height_long = mo2h(x0, ATMOS_MODEL);
-						if (verbose)
-							fprintf(stdout, "x0=%f; H (from .long file)=%f\n", x0, height_long);
+
+						fprintf(stdout, "x0=%f; H (from .long file)=%f\n", x0, height_long);
 						fclose(flong);
 						continue;
 					}
@@ -117,18 +141,6 @@ int dethinning(
 			}
 		}
 	}
-
-	// Check output file for writeability
-	if ((fout = fopen(outputFilename, "wb")) == NULL)
-	{
-		if (verbose)
-			fprintf(stderr, "Cannot open %s file \n", outputFilename);
-		return EXIT_FAILURE;
-	}
-
-	#ifdef INMEMORY_BUFFERING
-	setvbuf(fout, outputBuffer, _IOFBF, OUTPUTBUFFER_SIZE);
-	#endif
 
 	fwrite(&blockLen2, sizeof(int), 1, fout);
 
@@ -216,7 +228,7 @@ int dethinning(
 					buf2[6] = height_long;
 				}
 				fwrite(buf2, sizeof(float), NWORD2, fout);
-				if (verbose)
+
 				{
 					fprintf(stdout, "Primary Event Direction: %g\t%g\t%g\n",
 							R0[0], R0[1], R0[2]);
@@ -333,13 +345,13 @@ int dethinning(
 				fwrite(&blockLen2, sizeof(int), 1, fout);
 				fclose(fin);
 				fclose(fout);
-				if (verbose)
+
 				{
 					fprintf(stdout, "read %d blocks\n", nBlock);
 					fprintf(stdout, "RUNH: %d, EVTH: %d, PARTSUB: %d, LONG: %d, EVTE: %d, RUNE: %d\n",
 							nRUNH, nEVTH, nPARTSUB, nLONG, nEVTE, nRUNE);
 				}
-				return EXIT_SUCCESS;
+				exit(EXIT_SUCCESS);
 			}
 
 			//Read/write/dethin particles
@@ -438,12 +450,11 @@ int dethinning(
 		fread(&blockLen, sizeof(int), 1, fin);
 	}
 
-	if (verbose)
 	{
 		fprintf(stderr, "CORSIKA EVENT DID NOT END WITH RUNE BANK\n");
 		fprintf(stderr, "read %d blocks\n", nBlock);
 		fprintf(stderr, "RUNH: %d, EVTH: %d, PARTSUB: %d, LONG: %d, EVTE: %d, RUNE: %d\n",
 				nRUNH, nEVTH, nPARTSUB, nLONG, nEVTE, nRUNE);
 	}
-	return EXIT_FAILURE;
+	exit(EXIT_FAILURE);
 }
