@@ -18,11 +18,11 @@ _config = None
 class Global:
     """Namespace class to hold global/pre-installation configuration options"""
 
-    lib_dir = Path(os.environ['TASDMC_LIB_DIR'])
+    bin_dir = Path(os.environ['TASDMC_BIN_DIR'])
     runs_dir = Path(os.environ['TASDMC_RUNS_DIR'])
-    dst2k_dir = Path(os.environ['DST2K_DIR'])
+    sdanalysis_dir = Path(os.environ['SDANALYSIS_DIR'])
     memory_per_process_Gb = float(os.environ['TASDMC_MEMORY_PER_PROCESS_GB'])
-    sdgeant_dst = Path(os.environ['TASDMC_SDGEANT_DST'])
+    data_dir = Path(os.environ['TASDMC_DATA_DIR'])
 
 
 class ConfigNotReadError(Exception):

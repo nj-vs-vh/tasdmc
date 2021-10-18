@@ -1,12 +1,12 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
-from wurlitzer import pipes
 
 from typing import List
 
 from tasdmc import fileio
-from tasdmc import tasdmc_ext
+from tasdmc.c_routines_wrapper import run_dethinning
+
 from .base import Files, FileInFileOutStep
 from .particle_file_splitting import SplitParticleFiles, ParticleFileSplittingStep
 from .exceptions import FilesCheckFailed
@@ -81,5 +81,4 @@ class DethinningStep(FileInFileOutStep):
 
     def _run(self):
         with open(self.output.stdout, 'w') as stdout_file, open(self.output.stderr, 'w') as stderr_file:
-            with pipes(stdout=stdout_file, stderr=stderr_file):
-                tasdmc_ext.run_dethinning(str(self.input_.particle), "", str(self.output.dethinned_particle))
+            run_dethinning(self.input_.particle, self.output.dethinned_particle, stdout=stdout_file, stderr=stderr_file)

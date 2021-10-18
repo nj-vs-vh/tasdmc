@@ -1,11 +1,11 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
-from wurlitzer import pipes
 
 from typing import List
 
-from tasdmc import fileio, config, tasdmc_ext
+from tasdmc import fileio
+from tasdmc.c_routines_wrapper import run_corsika2geant
 from .base import Files, FileInFileOutStep
 from .dethinning import DethinningOutputFiles, DethinningStep
 from .utils import check_file_is_empty
@@ -14,7 +14,7 @@ from .utils import check_file_is_empty
 @dataclass
 class C2GInputFiles(Files):
     dethinning_outputs: List[DethinningOutputFiles]
-    dethined_files_listing: Path  # list of paths stored in text file, as from ls * > file_list.txt
+    dethinned_files_listing: Path  # list of paths stored in text file, as from ls * > file_list.txt
     corsika_event_name: str  # DATnnnnnn common to all files in list
 
     @property
@@ -26,7 +26,7 @@ class C2GInputFiles(Files):
         return self.dethinning_particle_files
 
     def create_listing_file(self):
-        with open(self.dethined_files_listing, 'w') as f:
+        with open(self.dethinned_files_listing, 'w') as f:
             f.writelines([str(pf) + '\n' for pf in self.dethinning_particle_files])
 
     @classmethod
@@ -41,7 +41,7 @@ class C2GInputFiles(Files):
                     + f"but {pf.dethinned_particle.name} doesn't match {corsika_event_name}"
                 )
         return cls(
-            dethined_files_listing=fileio.dethinning_output_files_dir() / (corsika_event_name + '.dethinned_list'),
+            dethinned_files_listing=fileio.dethinning_output_files_dir() / (corsika_event_name + '.dethinned_list'),
             dethinning_outputs=dethinning_outputs,
             corsika_event_name=corsika_event_name,
         )
@@ -73,7 +73,7 @@ class C2GOutputFiles(Files):
                 ' $$$ ',
                 # because now we use corsika2geant as a library, elosses are loaded only on first invocation
                 'eloss_sdgeant: load_elosses: WARNING: energy loss histograms are already loaded',
-            ]
+            ],
         )
 
 
@@ -94,11 +94,11 @@ class Corsika2GeantStep(FileInFileOutStep):
     def _run(self):
         self.input_.create_listing_file()
         with open(self.output.stdout, 'w') as stdout_file, open(self.output.stderr, 'w') as stderr_file:
-            with pipes(stdout=stdout_file, stderr=stderr_file):
-                tasdmc_ext.run_corsika2geant(
-                    str(self.input_.dethined_files_listing),
-                    str(config.Global.sdgeant_dst),
-                    str(self.output.tile)
-                )
+            run_corsika2geant(
+                self.input_.dethinned_files_listing,
+                self.output.tile,
+                stdout=stdout_file,
+                stderr=stderr_file,
+            )
         for temp_file in fileio.c2g_output_files_dir().glob(f"{self.output.tile.name}.tmp???"):
             temp_file.unlink()

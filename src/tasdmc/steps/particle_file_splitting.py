@@ -5,7 +5,8 @@ from pathlib import Path
 from typing import List
 
 from tasdmc import config
-from tasdmc import tasdmc_ext
+from tasdmc.c_routines_wrapper import split_thinned_corsika_output
+
 from .base import Files, FileInFileOutStep
 from .corsika import CorsikaStep, CorsikaOutputFiles
 from .utils import check_particle_file_contents
@@ -50,7 +51,7 @@ class ParticleFileSplittingStep(FileInFileOutStep):
         return f"Splitting CORSIKA particle file {self.input_.particle.name} into {self.split_to} parts"
 
     def _run(self):
-        tasdmc_ext.split_thinned_corsika_output(str(self.input_.particle), self.split_to)
+        split_thinned_corsika_output(self.input_.particle, self.split_to)
 
     @classmethod
     def validate_config(self):

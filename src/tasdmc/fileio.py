@@ -79,3 +79,7 @@ def prepare_run_dir():
         idir_getter().mkdir(exist_ok=config.try_to_continue())
 
     config.dump(configs_dir() / 'run.yaml')
+
+
+class DataFiles:
+    sdgeant = config.Global.data_dir / 'sdgeant.dst'
