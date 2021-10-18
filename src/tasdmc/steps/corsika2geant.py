@@ -8,7 +8,7 @@ from tasdmc import fileio
 from tasdmc.c_routines_wrapper import run_corsika2geant
 from .base import Files, SkippableFileInFileOutStep
 from .dethinning import DethinningOutputFiles, DethinningStep
-from .utils import check_file_is_empty
+from .utils import check_file_is_empty, concatenate_and_hash
 
 
 @dataclass
@@ -45,6 +45,11 @@ class C2GInputFiles(Files):
             dethinning_outputs=dethinning_outputs,
             corsika_event_name=corsika_event_name,
         )
+
+    @property
+    def contents_hash(self) -> str:
+        dethinning_output_hashes = [do.contents_hash for do in self.dethinning_outputs]
+        return concatenate_and_hash(dethinning_output_hashes)
 
 
 @dataclass

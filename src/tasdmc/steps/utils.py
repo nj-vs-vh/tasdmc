@@ -1,8 +1,9 @@
 import os
 from pathlib import Path
 import re
+import hashlib
 
-from typing import List
+from typing import List, Any
 
 from .exceptions import FilesCheckFailed
 
@@ -36,3 +37,29 @@ def check_file_is_empty(file: Path, ignore_patterns: List[str] = [], ignore_stri
             if check_for_ignore and ignore_re.match(line):
                 continue
             raise FilesCheckFailed(f"{file.name} contains unignored strings: {line}\n\tand maybe more...")
+
+
+def file_contents_hash(file_path: Path, hasher_name: str = 'md5') -> str:
+    hasher = hashlib.new(hasher_name)
+    file_size = file_path.stat().st_size
+    with open(file_path, 'rb') as f:
+        if file_size < 1024 * 1024:  # for files smaller than Mb hash is calculated directly
+            hasher.update(f.read())
+        else:
+            # for large files, read several blocks spread across file and use only them in hash
+            n_reads = 1024
+            block_size = 1024
+            jump_size = file_size // n_reads
+            for _ in range(n_reads - 1):
+                hasher.update(f.read1(block_size))
+                f.seek(jump_size, os.SEEK_CUR)
+            # last block is read from the end
+            f.seek(-(block_size + 1), os.SEEK_END)
+            hasher.update(f.read1(block_size))
+    return hasher.hexdigest()
+
+
+def concatenate_and_hash(contents: List[Any], delimiter: str = ':', hasher_name: str = 'md5') -> str:
+    concat_strings = delimiter.join([str(s) for s in contents])
+    hasher = hashlib.new(hasher_name, data=concat_strings.encode('utf-8'))
+    return hasher.hexdigest()

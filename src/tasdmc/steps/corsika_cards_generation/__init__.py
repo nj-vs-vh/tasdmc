@@ -22,12 +22,6 @@ from .corsika_card import (
 )
 
 
-class NoFiles(Files):
-    @property
-    def all(self):
-        return []
-
-
 @dataclass
 class CorsikaCardFiles(Files):
     files: List[Path]
@@ -39,8 +33,8 @@ class CorsikaCardFiles(Files):
 
 @dataclass
 class CorsikaCardsGenerationStep(FileInFileOutStep):
-    input_: NoFiles
     output: CorsikaCardFiles
+    input_: None = None
 
     @classmethod
     def create_and_run(cls) -> CorsikaCardsGenerationStep:
@@ -50,7 +44,7 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
         Because of that, instead of instantiate-then-run, use this class method
         >>> CorsikaInputFilesGeneration.create_and_run()
         """
-        instance = cls(NoFiles(), CorsikaCardFiles([]))
+        instance = cls(CorsikaCardFiles([]))
         instance.run()  # here corsika input files are added to output.all list
         return instance
 

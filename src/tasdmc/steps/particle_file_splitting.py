@@ -27,7 +27,6 @@ class SplitParticleFiles(Files):
             [cof.particle.with_suffix(f'.p{i+1:02d}') for i in range(n_split)]
         )
 
-
     def _check_contents(self):
         for f in self.files:
             check_particle_file_contents(f)

@@ -7,7 +7,7 @@ from typing import List
 from tasdmc import fileio
 from tasdmc.c_routines_wrapper import run_dethinning
 
-from .base import Files, SkippableFileInFileOutStep
+from .base import Files, NotRetainedFiles, SkippableFileInFileOutStep
 from .particle_file_splitting import SplitParticleFiles, ParticleFileSplittingStep
 from .exceptions import FilesCheckFailed
 from .utils import check_particle_file_contents, check_file_is_empty
@@ -30,7 +30,7 @@ class ParticleFile(Files):
 
 
 @dataclass
-class DethinningOutputFiles(Files):
+class DethinningOutputFiles(NotRetainedFiles):
     dethinned_particle: Path
     stdout: Path
     stderr: Path
