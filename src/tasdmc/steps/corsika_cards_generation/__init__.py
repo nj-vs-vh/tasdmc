@@ -172,8 +172,7 @@ def _log10E_bounds_from_config() -> Tuple[float, float]:
         log10E_max = round(float(config.get_key('input_files.log10E_max')), ndigits=1)
         assert log10E_max >= log10E_min, "Maximum primary energy cannot be less than minimal"
         for log10E in (log10E_min, log10E_max):
-            assert (
-                LOG10_E_MIN_POSSIBLE <= log10E <= LOG10_E_MAX_POSSIBLE,
+            assert LOG10_E_MIN_POSSIBLE <= log10E <= LOG10_E_MAX_POSSIBLE, (
                 "Primary energy (both min and max) must be in "
                 + f"[10^{LOG10_E_MIN_POSSIBLE:.1f}, 10^{LOG10_E_MAX_POSSIBLE:.1f}] eV",
             )
