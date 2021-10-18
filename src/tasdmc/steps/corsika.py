@@ -6,7 +6,7 @@ import corsika_wrapper as cw
 from typing import List
 
 from tasdmc import fileio, config
-from .base import Files, FileInFileOutStep
+from .base import Files, SkippableFileInFileOutStep
 from .corsika_cards_generation import CorsikaCardsGenerationStep, CorsikaCardFiles
 from .exceptions import FilesCheckFailed
 from .utils import check_particle_file_contents, check_file_is_empty
@@ -69,7 +69,7 @@ class CorsikaOutputFiles(Files):
         check_particle_file_contents(self.particle)
 
 
-class CorsikaStep(FileInFileOutStep):
+class CorsikaStep(SkippableFileInFileOutStep):
     input_: CorsikaCardFile
     output: CorsikaOutputFiles
 

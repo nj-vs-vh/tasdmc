@@ -6,7 +6,7 @@ from typing import List
 
 from tasdmc import fileio
 from tasdmc.c_routines_wrapper import run_corsika2geant
-from .base import Files, FileInFileOutStep
+from .base import Files, SkippableFileInFileOutStep
 from .dethinning import DethinningOutputFiles, DethinningStep
 from .utils import check_file_is_empty
 
@@ -77,7 +77,7 @@ class C2GOutputFiles(Files):
         )
 
 
-class Corsika2GeantStep(FileInFileOutStep):
+class Corsika2GeantStep(SkippableFileInFileOutStep):
     input_: C2GInputFiles
     output: C2GOutputFiles
 

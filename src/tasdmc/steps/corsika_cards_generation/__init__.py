@@ -51,14 +51,14 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
         >>> CorsikaInputFilesGeneration.create_and_run()
         """
         instance = cls(NoFiles(), CorsikaCardFiles([]))
-        instance.run(force=True)  # here corsika input files are added to output.all list
+        instance.run()  # here corsika input files are added to output.all list
         return instance
 
     @property
     def description(self) -> str:
         return "CORSIKA cards generation"
 
-    def _run(self):
+    def run(self):
         particle, particle_id = _particle_id_from_config()
         progress.info(f'Primary particle: {particle} (id {particle_id})')
 

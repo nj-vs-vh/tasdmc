@@ -7,7 +7,7 @@ from typing import List
 from tasdmc import config
 from tasdmc.c_routines_wrapper import split_thinned_corsika_output
 
-from .base import Files, FileInFileOutStep
+from .base import Files, SkippableFileInFileOutStep
 from .corsika import CorsikaStep, CorsikaOutputFiles
 from .utils import check_particle_file_contents
 
@@ -34,7 +34,7 @@ class SplitParticleFiles(Files):
 
 
 @dataclass
-class ParticleFileSplittingStep(FileInFileOutStep):
+class ParticleFileSplittingStep(SkippableFileInFileOutStep):
     input_: CorsikaOutputFiles
     output: SplitParticleFiles
 

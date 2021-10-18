@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from pathlib import Path
+from concurrent.futures import ProcessPoolExecutor
 
-from typing import List
+from typing import List, Optional
 
 from tasdmc import config, progress
 from .exceptions import FilesCheckFailed
@@ -92,11 +93,36 @@ class FileInFileOutStep(ABC):
     input_: Files
     output: Files
 
-    def run(self, force: bool = False):
+    @abstractmethod
+    def run(self, *args, **kwargs):
+        """Main method for running the step. Must be overriden by subclasses."""
+        pass
+
+    @property
+    @abstractmethod
+    def description(self) -> str:
+        """Step description srting, used for progress monitoring"""
+        pass
+
+    @classmethod
+    def validate_config(self):
+        """Validation of config values relevant to the step. May (and should) be overriden by subclasses"""
+        pass
+
+    
+@dataclass
+class SkippableFileInFileOutStep(FileInFileOutStep):
+    """Abstract subclass representing a FileInFileOutStep that can be skipped if output is already
+    produced and input hasn't changed
+    """
+
+    def run(self, force: bool = False, executor: Optional[ProcessPoolExecutor] = None):
         """Main method for running the step.
 
         Args:
-            force (bool, optional): Skip output check and run case anyway. Defaults to False.
+            force (bool): Skip output check and run case anyway. Defaults to False.
+            executor (ProcessPoolExecutor, optional): If specified, step is run inside executor, e.g. in a
+                                                      dedicated process. Defaults to None (run in the main process).
         """
         if not force and config.try_to_continue() and self.output.files_were_produced():
             progress.info(f"Skipping, output files found: {self.description}")
@@ -107,21 +133,11 @@ class FileInFileOutStep(ABC):
             self._run()
             self.output.assert_files_are_ready()
 
-    @property
     @abstractmethod
-    def description(self) -> str:
-        """Step description srting, used for progress monitoring"""
-        pass
-
     def _run(self):
         """Internal method with 'bare' logic for funning the step, without input/output file checks,
         parallelization etc.
 
-        Should be overriden by subclasses.
+        Must be overriden by subclasses.
         """
-        pass
-
-    @classmethod
-    def validate_config(self):
-        """Validation of config values relevant to the step. May (and should) be overriden by subclasses"""
         pass
