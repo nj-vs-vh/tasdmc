@@ -10,6 +10,6 @@ fi
 
 export TASDMC_BIN_DIR=$TASDMC_DIR/bin
 export TASDMC_RUNS_DIR=$TASDMC_DIR/runs
-export SDANALYSIS_DIR=$(readlink $TASDMC_DIR/../sdanalysis)
+export SDANALYSIS_DIR=$(readlink -f $TASDMC_DIR/../sdanalysis)
 export TASDMC_MEMORY_PER_PROCESS_GB=2
 export TASDMC_DATA_DIR=$TASDMC_DIR/data
