@@ -12,6 +12,7 @@ def _execute_cmd(executable_name: str, args: List[Any], stdout: Optional[TextIO]
         stdout=stdout,
         stderr=stderr,
         capture_output=(stderr is None and stdout is None),
+        check=True,
     )
 
 

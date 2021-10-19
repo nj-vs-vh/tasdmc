@@ -74,9 +74,9 @@ class Files(ABC):
 
     @property
     def to_be_hashed(self) -> Optional[List[Path]]:
-        """List of file Paths that should be used to get Files' hash.
+        """Explicit list of file Paths that should be used to get Files' hash.
         
-        If not overriden by a subclass, all Path and List[Path] fields are used.
+        If not overriden by a subclass and subclass is a dataclass, all Path and List[Path] fields are used.
         """
         return None
 
@@ -128,9 +128,9 @@ class Files(ABC):
     def same_hash_as_stored(self) -> bool:
         stored_hash_path = self._stored_hash_path
         if not stored_hash_path.exists():
-            # self.store_contents_hash()
-            # return True
-            return False
+            self.store_contents_hash()
+            return True
+            # return False
         with open(self._stored_hash_path, 'r') as f:
             stored_hash = f.read()
         return self.contents_hash == stored_hash
