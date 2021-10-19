@@ -59,6 +59,7 @@ class SkippableFileInFileOutStep(FileInFileOutStep):
             progress.info(f"Running: {self.description}")
             self._run()
             self.output.assert_files_are_ready()
+            progress.debug(f"Output files from '{self.description}' size: {self.output.total_size('Mb')} Mb")
             self.input_.store_contents_hash()
 
     @abstractmethod
