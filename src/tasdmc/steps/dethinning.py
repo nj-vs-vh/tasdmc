@@ -7,18 +7,22 @@ from typing import List
 from tasdmc import fileio
 from tasdmc.c_routines_wrapper import run_dethinning
 
-from .base import Files, NotAllRetainedFiles, SkippableFileInFileOutStep
+from .base import NotAllRetainedFiles, SkippableFileInFileOutStep
 from .particle_file_splitting import SplitParticleFiles, ParticleFileSplittingStep
 from .exceptions import FilesCheckFailed
 from .utils import check_particle_file_contents, check_file_is_empty
 
 
 @dataclass
-class ParticleFile(Files):
+class ParticleFile(NotAllRetainedFiles):
     particle: Path
 
     @property
     def must_exist(self) -> List[Path]:
+        return [self.particle]
+
+    @property
+    def not_retained(self) -> List[Path]:
         return [self.particle]
 
     @classmethod

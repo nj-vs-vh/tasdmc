@@ -7,17 +7,21 @@ from typing import List
 from tasdmc import config
 from tasdmc.c_routines_wrapper import split_thinned_corsika_output
 
-from .base import Files, SkippableFileInFileOutStep
+from .base import NotAllRetainedFiles, SkippableFileInFileOutStep
 from .corsika import CorsikaStep, CorsikaOutputFiles
 from .utils import check_particle_file_contents
 
 
 @dataclass
-class SplitParticleFiles(Files):
+class SplitParticleFiles(NotAllRetainedFiles):
     files: List[Path]
 
     @property
     def must_exist(self) -> List[Path]:
+        return self.files
+
+    @property
+    def not_retained(self) -> List[Path]:
         return self.files
 
     @classmethod

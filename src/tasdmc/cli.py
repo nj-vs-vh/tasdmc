@@ -33,5 +33,6 @@ def run(run_config_filename):
         corsika2geant = Corsika2GeantStep.from_dethinning_steps(dethinning_steps)
         corsika2geant.run()
 
+        particle_file_splitting.output.delete_not_retained_files()
         for dethinning_step in dethinning_steps:
             dethinning_step.output.delete_not_retained_files()
