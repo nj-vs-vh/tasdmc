@@ -35,7 +35,7 @@ class SkippableFileInFileOutStep(FileInFileOutStep):
     @property
     @abstractmethod
     def description(self) -> str:
-        """Step description srting, used for progress monitoring"""
+        """Step description string, used for progress monitoring"""
         pass
 
     def run(self, force: bool = False, executor: Optional[ProcessPoolExecutor] = None):

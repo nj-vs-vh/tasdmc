@@ -102,11 +102,15 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
                 )
 
             skipped_cards_count = 0
+
+            def file_index_to_runnr(idx: int, energy_id: int) -> str:
+                return f"{idx * 100 + energy_id:06d}"
+
             for file_index in range(cards_count):
-                runnr = file_index * 100 + energy_id
+                runnr = file_index_to_runnr(file_index, energy_id)
                 card.set_RUNNR(runnr)
                 card.set_random_seeds()
-                card_file = fileio.corsika_input_files_dir() / f"DAT{runnr:06d}.in"
+                card_file = fileio.corsika_input_files_dir() / f"DAT{runnr}.in"
                 self.output.files.append(card_file)
                 if config.try_to_continue() and card_file.exists():
                     skipped_cards_count += 1
@@ -126,7 +130,9 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
             )
             progress.debug(
                 f"PRIMARY {particle_id:d} ENERGY {log10E:.1f} ({energy_id:02d}): "
-                + f"{cards_count:d} cards{skipped_msg}",
+                + f"{cards_count:d} cards: "
+                + f"DAT{file_index_to_runnr(0, energy_id)} ... DAT{file_index_to_runnr(cards_count - 1, energy_id)}"
+                + skipped_msg,
             )
 
     @classmethod

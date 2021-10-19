@@ -1,12 +1,10 @@
 from abc import ABC
 from pathlib import Path
 from dataclasses import fields, is_dataclass
-import hashlib
-import os
 
 from typing import Optional, List, Any, get_args, get_origin
 
-from tasdmc import fileio
+from tasdmc import fileio, progress
 from ..exceptions import FilesCheckFailed
 from ..utils import file_contents_hash, concatenate_and_hash
 
@@ -37,10 +35,17 @@ class Files(ABC):
         
         Should not be overriden, but modified indirectly by overriding must_exist property and _check_contents method.
         """
+        nonexistent_files = []
         for f in self.must_exist:
             if not f.exists():
-                raise FilesCheckFailed(f"{f} (and maybe others) do not exist")
-        self._check_contents()
+                nonexistent_files.append(f)
+        if nonexistent_files:
+            raise FilesCheckFailed(
+                "Following required files do not exist: \n"
+                + "\n".join([f"\t{missing_file}" for missing_file in nonexistent_files])
+            )
+        else:
+            self._check_contents()
 
     def files_were_produced(self) -> bool:
         """Returns bool value indicating if Files' were already produced.
@@ -122,21 +127,20 @@ class Files(ABC):
         return concatenate_and_hash(file_hashes)
 
     def store_contents_hash(self):
+        contents_hash = self.contents_hash
         with open(self._stored_hash_path, 'w') as f:
-            f.write(self.contents_hash)
+            f.write(contents_hash)
 
     def same_hash_as_stored(self) -> bool:
         stored_hash_path = self._stored_hash_path
         if not stored_hash_path.exists():
-            self.store_contents_hash()
-            return True
-            # return False
+            return False
         with open(self._stored_hash_path, 'r') as f:
             stored_hash = f.read()
         return self.contents_hash == stored_hash
 
 
-class NotRetainedFiles(Files):
+class NotAllRetainedFiles(Files):
     """Subclass of Files for cases when some of the files are not retained (for example, they are too big)"""
 
     @property
@@ -148,6 +152,7 @@ class NotRetainedFiles(Files):
 
     def delete_not_retained_files(self):
         """Delete files that are not retained after pipeline end and create .deleted files in their place"""
+        progress.debug(f"Deleting not retained files for {self.__class__.__name__}")
         for f in self.not_retained:
             if f.exists():                
                 with open(_with_deleted_suffix(f), 'w') as del_f:

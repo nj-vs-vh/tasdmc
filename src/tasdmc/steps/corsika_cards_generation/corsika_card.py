@@ -179,8 +179,8 @@ class CorsikaCard:
         crd_replaced = r'{:s} {:s}'.format(name, value)
         self.buf = re.sub(crd_original, Nth(occurrence, occurrence, crd_replaced), self.buf)
 
-    def set_RUNNR(self, runnr):
-        self.replace_card("RUNNR", "{:06d}".format(runnr))
+    def set_RUNNR(self, runnr: str):
+        self.replace_card("RUNNR", runnr)
 
     def set_ATMOD(self, atmod):
         self.replace_card("ATMOD", "{:d}".format(atmod))

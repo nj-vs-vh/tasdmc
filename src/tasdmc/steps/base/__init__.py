@@ -1,10 +1,10 @@
-from .files import Files, NotRetainedFiles
+from .files import Files, NotAllRetainedFiles
 from .step import FileInFileOutStep, SkippableFileInFileOutStep
 
 
 __all__ = [
     'Files',
-    'NotRetainedFiles',
+    'NotAllRetainedFiles',
     'SkippableFileInFileOutStep',
     'FileInFileOutStep',
 ]
