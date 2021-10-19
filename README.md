@@ -40,7 +40,19 @@ Global configuration is done via environment variables. As usual, their `export`
 * `TASDMC_MEMORY_PER_PROCESS_GB` specifies memory available per process in Gb. This affects compilation of some C routines (namely, `corsika2geant`) changing allocated array sizes. The choice depends on the system resources, for example on 64 core, 128 Gb RAM machine we would run 64 processes and to utilize all memory we would set this variable to 2.
 * `TASDMC_DATA_DIR` points to directory with all data files required for simulation. These include: `sdgeant.dst`, (TBD). If files are missing, they will be downloaded at installation and placed there.
 
-An example of all these variables combined in a single script can be found in [`tasdmc_env.sh`](config_examples/tasdmc_env.sh).
+An example of all these variables combined in a single script can be found in [`tasdmc_env.sh`](config_examples/tasdmc_env.sh). It assumes that it will be copied to `tasdmc` package dir and contains logic to specify relative paths from there. For example, use it like this
+
+```bash
+cp config_examples/tasdmc_env.sh .
+# edit tasdmc_env.sh if needed, for example point TASDMC_RUNS_DIR to external storage
+
+# then use commands like these
+echo "source $(pwd)/tasdmc_env.sh" >> ~/.bashrc  # for user-wide activation in bash
+echo "source $(pwd)/tasdmc_env.sh" >> $(python -c "import sys; print(sys.prefix)")/bin/activate  # when using venv
+echo "source $(pwd)/tasdmc_env.sh" >>  $(python -c "import sys; print(sys.prefix)")/etc/conda/activate.d/activate-tasdmc.sh # when using Anaconda
+```
+
+However, you can `export` these variables any other way you want.
 
 ### Finally
 
