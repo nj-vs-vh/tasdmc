@@ -4,8 +4,9 @@ from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from concurrent.futures import ProcessPoolExecutor
 from time import sleep
+from concurrent.futures import Future
 
-from typing import Optional
+from typing import Optional, List
 
 from tasdmc import config, progress
 from .files import Files
@@ -55,38 +56,37 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
         """Step description string, used for progress monitoring"""
         pass
 
-    def run(self, executor: Optional[ProcessPoolExecutor] = None):
+    def run(self, executor: ProcessPoolExecutor, futures_list: List[Future]) -> Future:
         """Main method for running the step.
 
         Args:
-            executor (ProcessPoolExecutor, optional): If specified, step is run inside executor, e.g. in a
-                                                      dedicated process. Defaults to None (run in the main process).
+            executor (ProcessPoolExecutor): ProcessPoolExecutor to submit step to
+            futures_list (list of Future): list of futures to add this run future result into
         """
+        print(f'submitting {self.__class__.__name__} run')
+        futures_list.append(executor.submit(self._run_to_be_submitted))
 
-        def run_step(in_separate_process: bool = False):
-            if in_separate_process:
-                while not self.input_.files_were_produced():
-                    sleep_time = 30  # sec
-                    progress.multiprocessing_debug(
-                        f"Input files for '{self.description}' were not yet produced, sleeping for {sleep_time} sec"
-                    )
-                    sleep(sleep_time)
+    def _run_to_be_submitted(self):
+        print(f'running {self.__class__.__name__}')
+        sleep(3)
 
-            if config.try_to_continue() and self.input_.same_hash_as_stored() and self.output.files_were_produced():
-                progress.info(f"Skipping: {self.description}")
-            else:
-                self.input_.assert_files_are_ready()
-                self.output.prepare_for_step_run()
-                progress.info(f"Running: {self.description}")
-                self._run()
-                self.output.assert_files_are_ready()
-                self.input_.store_contents_hash()
-                progress.debug(f"Output files from '{self.description}' size: {self.output.total_size('Mb')} Mb")
+        while not self.input_.files_were_produced():  # TODO: add checks for when files will never be produced
+            sleep_time = 30  # sec
+            progress.multiprocessing_debug(
+                f"Input files for '{self.description}' were not yet produced, sleeping for {sleep_time} sec"
+            )
+            sleep(sleep_time)
 
-        if executor is None:
-            run_step(in_separate_process=False)
+        if config.try_to_continue() and self.input_.same_hash_as_stored() and self.output.files_were_produced():
+            progress.info(f"Skipping: {self.description}")
         else:
-            executor.submit(run_step, in_separate_process=True)
+            self.input_.assert_files_are_ready()
+            self.output.prepare_for_step_run()
+            progress.info(f"Running: {self.description}")
+            self._run()
+            self.output.assert_files_are_ready()
+            self.input_.store_contents_hash()
+            progress.debug(f"Output files from '{self.description}' size: {self.output.total_size('Mb')} Mb")
 
     @abstractmethod
     def _run(self):

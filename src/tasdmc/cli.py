@@ -21,7 +21,7 @@ def cli():
     pass
 
 
-@cli.command("resources")
+@cli.command("resources", help="Estimate resources that will be taken up by a run")
 @run_config_option()
 def rasources(run_config_filename):
     config.load(run_config_filename)
@@ -30,7 +30,7 @@ def rasources(run_config_filename):
     click.secho(f"RAM: {config.used_ram()} Gb ({resources.available_ram():.2f} Gb available)")
 
 
-@cli.command("run")
+@cli.command("run", help="Run simulation pipeline")
 @run_config_option()
 def run(run_config_filename):
     config.load(run_config_filename)
