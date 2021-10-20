@@ -7,9 +7,9 @@ from typing import List
 from tasdmc import config
 from tasdmc.c_routines_wrapper import split_thinned_corsika_output
 
-from .base import NotAllRetainedFiles, SkippableFileInFileOutStep
+from tasdmc.steps.base import NotAllRetainedFiles, SkippableFileInFileOutStep
 from .corsika import CorsikaStep, CorsikaOutputFiles
-from .utils import check_particle_file_contents
+from tasdmc.steps.utils import check_particle_file_contents
 
 
 @dataclass
@@ -62,7 +62,7 @@ class ParticleFileSplittingStep(SkippableFileInFileOutStep):
 
 
 def _n_split_from_config() -> int:
-    n_split = config.get_key('dethinning.particle_file_split_to')
+    n_split = config.get_key('dethinning.particle_file_split_to', default=config.used_processes())
     if isinstance(n_split, int) and n_split > 0:
         return n_split
     else:

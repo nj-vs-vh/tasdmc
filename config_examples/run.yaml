@@ -18,5 +18,11 @@ corsika:
   default_executable_name: True
 
 dethinning:
-  #  TODO: this should be estimated from memory per process to avoid overflows
-  particle_file_split_to: 6
+  # if not specified, resources.max_processes will be used
+  n_parallel: 6
+
+resources:
+  # since tasdmc has TASDMC_MEMORY_PER_PROCESS_GB configured in build-time, only one of these may
+  # be specified and the other will be inferred; if both are specified, the most conservative will be chosen
+  max_processes: 2
+  max_total_memory: 4  # Gb

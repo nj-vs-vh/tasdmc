@@ -25,5 +25,9 @@ def debug(message: str):
     _secho(message, min_verbosity=2, dim=True)
 
 
+def multiprocessing_debug(message: str):
+    _secho(message, min_verbosity=2, dim=True)
+
+
 def warning(message: str):
     _secho(message, min_verbosity=0, bold=True, fg='red')

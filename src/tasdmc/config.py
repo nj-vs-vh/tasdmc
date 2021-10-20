@@ -11,18 +11,10 @@ import os
 
 from typing import Any, Optional, List, Type
 
+from tasdmc import resources
+
 
 _config = None
-
-
-class Global:
-    """Namespace class to hold global/pre-installation configuration options"""
-
-    bin_dir = Path(os.environ['TASDMC_BIN_DIR'])
-    runs_dir = Path(os.environ['TASDMC_RUNS_DIR'])
-    sdanalysis_dir = Path(os.environ['SDANALYSIS_DIR'])
-    memory_per_process_Gb = float(os.environ['TASDMC_MEMORY_PER_PROCESS_GB'])
-    data_dir = Path(os.environ['TASDMC_DATA_DIR'])
 
 
 class ConfigNotReadError(Exception):
@@ -35,6 +27,16 @@ class ConfigKeyError(KeyError):
 
 class BadConfigValue(ValueError):
     pass
+
+
+class Global:
+    """Namespace class to hold global/pre-installation configuration options"""
+
+    bin_dir = Path(os.environ['TASDMC_BIN_DIR'])
+    runs_dir = Path(os.environ['TASDMC_RUNS_DIR'])
+    sdanalysis_dir = Path(os.environ['SDANALYSIS_DIR'])
+    memory_per_process_Gb = float(os.environ['TASDMC_MEMORY_PER_PROCESS_GB'])
+    data_dir = Path(os.environ['TASDMC_DATA_DIR'])
 
 
 def load(filename: str):
@@ -55,7 +57,10 @@ def validate(steps: Optional[List[Type['FileInFileOutStep']]] = None):  # type: 
         Step.validate_config()
 
 
-def get_key(key: str, key_prefix: Optional[str] = None, default: Optional[Any] = None) -> Any:
+_RAISE_ERROR_ON_MISSING_KEY = object()
+
+
+def get_key(key: str, key_prefix: Optional[str] = None, default: Optional[Any] = _RAISE_ERROR_ON_MISSING_KEY) -> Any:
     """Utility function to get (possibly deeply nested) key from configand get nice error messages
     in case something is wrong.
 
@@ -85,17 +90,22 @@ def get_key(key: str, key_prefix: Optional[str] = None, default: Optional[Any] =
     for level_key in level_keys:
         current_value = current_value.get(level_key)
         if current_value is None:
-            if default is not None:
-                return default
-            else:
+            if default is _RAISE_ERROR_ON_MISSING_KEY:
                 raise ConfigKeyError(
                     f"Config does not contain top-level '{level_key}' key"
                     if not traversed_level_keys
                     else f"Subconfig '{'.'.join(traversed_level_keys)}' does not contain required '{level_key}' key"
                 )
-        traversed_level_keys.append(level_key)
+            else:
+                return default
+        else:
+            traversed_level_keys.append(level_key)
 
     return current_value
+
+
+def run_name() -> str:
+    return get_key('name')
 
 
 def try_to_continue() -> bool:
@@ -104,3 +114,24 @@ def try_to_continue() -> bool:
 
 def verbosity() -> int:
     return get_key('verbosity', default=1)
+
+
+def used_processes() -> int:
+    max_processes_explicit = get_key('resources.max_processes', default=-1)
+    max_memory_explicit = get_key('resources.max_memory', default=-1)
+    if max_memory_explicit == max_processes_explicit == -1:
+        return 1  # if nothing specified, no parallelization
+    if max_memory_explicit < Global.memory_per_process_Gb:
+        raise BadConfigValue(
+            f"Memory constraint is too tight! {max_memory_explicit} Gb is less "
+            + f"than a single-thread requirement ({Global.memory_per_process_Gb} Gb)"
+        )
+    max_processes_inferred = int(max_memory_explicit / Global.memory_per_process_Gb)
+    max_processes_variants = [
+        np for np in [max_processes_explicit, max_processes_inferred, resources.n_cpu()] if np > 0
+    ]
+    return min(max_processes_variants)
+
+
+def used_ram() -> int:
+    return used_processes() * Global.memory_per_process_Gb

@@ -5,3 +5,4 @@ corsika_wrapper @ git+https://github.com/fact-project/corsika_wrapper
 tqdm==4.62.3
 wurlitzer==3.0.2
 gdown==4.0.2
+psutil==5.8.0

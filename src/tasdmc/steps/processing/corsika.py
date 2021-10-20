@@ -6,10 +6,10 @@ import corsika_wrapper as cw
 from typing import List
 
 from tasdmc import fileio, config
-from .base import Files, SkippableFileInFileOutStep
-from .corsika_cards_generation import CorsikaCardsGenerationStep, CorsikaCardFiles
-from .exceptions import FilesCheckFailed
-from .utils import check_particle_file_contents, check_file_is_empty
+from tasdmc.steps.base import Files, SkippableFileInFileOutStep
+from tasdmc.steps.corsika_cards_generation import CorsikaCardsGenerationStep, CorsikaCardFiles
+from tasdmc.steps.exceptions import FilesCheckFailed
+from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty
 
 
 @dataclass

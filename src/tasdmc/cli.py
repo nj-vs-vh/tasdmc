@@ -2,8 +2,18 @@
 
 import click
 
-from tasdmc import config, fileio
-from tasdmc.steps import CorsikaCardsGenerationStep, CorsikaStep, ParticleFileSplittingStep, DethinningStep, Corsika2GeantStep
+from tasdmc import config, fileio, resources, pipeline
+
+
+def run_config_option():
+    return click.option(
+        '-c',
+        '--config',
+        'run_config_filename',
+        default='run.yaml',
+        show_default=True,
+        help='run configuration .yaml file',
+    )
 
 
 @click.group()
@@ -11,28 +21,19 @@ def cli():
     pass
 
 
+@cli.command("resources")
+@run_config_option()
+def rasources(run_config_filename):
+    config.load(run_config_filename)
+    click.secho(f"{config.run_name()} resources:", bold=True)
+    click.secho(f"Processes: {config.used_processes()} (on {resources.n_cpu()} CPUs)")
+    click.secho(f"RAM: {config.used_ram()} Gb ({resources.available_ram():.2f} Gb available)")
+
+
 @cli.command("run")
-@click.option('-c', '--config', 'run_config_filename', default='run.yaml')
+@run_config_option()
 def run(run_config_filename):
     config.load(run_config_filename)
     config.validate()
-
     fileio.prepare_run_dir()
-
-    cards_generation = CorsikaCardsGenerationStep.create_and_run()
-    for corsika_step in CorsikaStep.from_corsika_cards_generation(cards_generation):
-        corsika_step.run()
-
-        particle_file_splitting = ParticleFileSplittingStep.from_corsika_step(corsika_step)
-        particle_file_splitting.run()
-
-        dethinning_steps = DethinningStep.from_particle_file_splitting_step(particle_file_splitting)
-        for dethinning in dethinning_steps:
-            dethinning.run()
-
-        corsika2geant = Corsika2GeantStep.from_dethinning_steps(dethinning_steps)
-        corsika2geant.run()
-
-        particle_file_splitting.output.delete_not_retained_files()
-        for dethinning_step in dethinning_steps:
-            dethinning_step.output.delete_not_retained_files()
+    pipeline.run_standard_pipeline()

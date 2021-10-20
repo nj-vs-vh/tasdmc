@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from concurrent.futures import ProcessPoolExecutor
+from time import sleep
 
 from typing import Optional
 
@@ -46,25 +47,40 @@ class SkippableFileInFileOutStep(FileInFileOutStep):
             executor (ProcessPoolExecutor, optional): If specified, step is run inside executor, e.g. in a
                                                       dedicated process. Defaults to None (run in the main process).
         """
-        if (
-            not force
-            and config.try_to_continue()
-            and self.input_.same_hash_as_stored()
-            and self.output.files_were_produced()
-        ):
-            progress.info(f"Skipping: {self.description}")
+
+        def run_step(in_separate_process: bool = False):
+            if in_separate_process:  # we are in a separate thread, cool
+                while not self.input_.files_were_produced():
+                    sleep_time = 30  # sec
+                    progress.multiprocessing_debug(
+                        f"Input files for '{self.description}' were not yet produced, sleeping for {sleep_time} sec"
+                    )
+                    sleep(sleep_time)
+
+            if (
+                not force
+                and config.try_to_continue()
+                and self.input_.same_hash_as_stored()
+                and self.output.files_were_produced()
+            ):
+                progress.info(f"Skipping: {self.description}")
+            else:
+                self.input_.assert_files_are_ready()
+                self.output.prepare_for_step_run()
+                progress.info(f"Running: {self.description}")
+                self._run()
+                self.output.assert_files_are_ready()
+                self.input_.store_contents_hash()
+                progress.debug(f"Output files from '{self.description}' size: {self.output.total_size('Mb')} Mb")
+
+        if executor is None:
+            run_step(in_separate_process=False)
         else:
-            self.input_.assert_files_are_ready()
-            self.output.prepare_for_step_run()
-            progress.info(f"Running: {self.description}")
-            self._run()
-            self.output.assert_files_are_ready()
-            progress.debug(f"Output files from '{self.description}' size: {self.output.total_size('Mb')} Mb")
-            self.input_.store_contents_hash()
+            executor.submit(run_step, in_separate_process=True)
 
     @abstractmethod
     def _run(self):
-        """Internal method with 'bare' logic for funning the step, without input/output file checks,
+        """Internal method with 'bare' logic for running the step, without input/output file checks,
         parallelization etc.
 
         Must be overriden by subclasses.

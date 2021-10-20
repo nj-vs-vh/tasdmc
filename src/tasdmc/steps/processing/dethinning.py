@@ -7,10 +7,11 @@ from typing import List
 from tasdmc import fileio
 from tasdmc.c_routines_wrapper import run_dethinning
 
-from .base import NotAllRetainedFiles, SkippableFileInFileOutStep
+from tasdmc.steps.base import NotAllRetainedFiles, SkippableFileInFileOutStep
+from tasdmc.steps.exceptions import FilesCheckFailed
+from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty
+
 from .particle_file_splitting import SplitParticleFiles, ParticleFileSplittingStep
-from .exceptions import FilesCheckFailed
-from .utils import check_particle_file_contents, check_file_is_empty
 
 
 @dataclass

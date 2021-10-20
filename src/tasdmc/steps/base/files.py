@@ -23,7 +23,10 @@ class Files(ABC):
         May be overriden by subclasses.
         """
         if not is_dataclass(self):
-            raise TypeError(f"Cannot calculate stored Files' hash path with default method for non-dataclass")
+            raise TypeError(
+                "Cannot automatically infer file paths for non-dataclass Files subclass "
+                + f"{self.__class__.__name__}. Maybe override this property?"
+            )
 
         def is_list_of_paths(t: Any):
             args = get_args(t)
@@ -60,7 +63,7 @@ class Files(ABC):
 
     @property
     def must_exist(self) -> List[Path]:
-        """List of file Paths that must exist for Files to be valid step output. May be overriden by subclasses."""
+        """List of file Paths that must exist for Files to be a valid step output. May be overriden by subclasses."""
         return []
 
     # methods for file checks
@@ -83,28 +86,12 @@ class Files(ABC):
             self._check_contents()
 
     def files_were_produced(self) -> bool:
-        """Returns bool value indicating if Files' were already produced.
-
-        This is not the same as assert_files_are_ready as it also checks for files that may have been deleted
-        because they are listed in not_retained.
-        """
-        try_checking_contents = True
-        for f in self.must_exist:
-            if not f.exists():
-                if f in self.not_retained:  # maybe it was deleted? check if .deleted file exists
-                    try_checking_contents = False  # but there's no point in checking contents anymore
-                    if not Path(str(f) + '.deleted').exists():
-                        return False
-                else:
-                    return False
-
-        if try_checking_contents:
-            try:
-                self._check_contents()
-            except FilesCheckFailed:
-                return False
-
-        return True
+        """Returns bool value indicating if Files' were already produced."""
+        try:
+            self.assert_files_are_ready()
+            return True
+        except FilesCheckFailed:
+            return False
 
     def _check_contents(self):
         """Check Files' contents in a specific way (e.g. checking for errors in stderr file, validating binary files).
@@ -139,7 +126,7 @@ class Files(ABC):
     def _get_file_contents_hash(self, file: Path) -> str:
         if not file.exists():
             raise ValueError(
-                f"Can't compute {self.__class__.__name__}'s contents hash, " + "some files to be hashed do not exist"
+                f"Can't compute {self.__class__.__name__}'s contents hash, some files to be hashed do not exist"
             )
         return file_contents_hash(file, hasher_name='md5')
 
@@ -176,13 +163,13 @@ class NotAllRetainedFiles(Files):
 
     def delete_not_retained_files(self):
         """Delete files that are not retained after pipeline end and create .deleted files in their place"""
-        progress.debug(f"Deleting not retained files for {self.__class__.__name__}")
         for f in self.not_retained:
             if f.exists():
                 with open(_with_deleted_suffix(f), 'w') as del_f:
                     del_f.write(
-                        f'This file indicates that\n\n{f}\n\n'
-                        + 'was produced and then deleted, its hash was\n\n'
+                        f'{f}\nwas produced bytes and then deleted\n\n'
+                        + f'its size was {f.stat().st_size} bytes\n\n'
+                        + 'its contents hash was:\n'
                         + file_contents_hash(f)
                     )
                 f.unlink()
@@ -204,6 +191,30 @@ class NotAllRetainedFiles(Files):
                     + "some files to be hashed do not exist"
                 )
         return file_contents_hash(file, hasher_name='md5')
+
+    def files_were_produced(self) -> bool:
+        """Returns bool value indicating if Files' were already produced.
+
+        This is not the same as assert_files_are_ready as it also checks for files that may have been deleted
+        because they are listed in not_retained.
+        """
+        try_checking_contents = True
+        for f in self.must_exist:
+            if not f.exists():
+                if f in self.not_retained:  # maybe it was deleted? check if .deleted file exists
+                    try_checking_contents = False  # but there's no point in checking contents anymore
+                    if not Path(str(f) + '.deleted').exists():
+                        return False
+                else:
+                    return False
+
+        if try_checking_contents:
+            try:
+                self._check_contents()
+            except FilesCheckFailed:
+                return False
+
+        return True
 
 
 def _with_deleted_suffix(p: Path) -> Path:

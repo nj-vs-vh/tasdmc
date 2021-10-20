@@ -3,10 +3,11 @@ from typing import List, Type
 from .base import FileInFileOutStep
 
 from .corsika_cards_generation import CorsikaCardsGenerationStep
-from .corsika import CorsikaStep
-from .particle_file_splitting import ParticleFileSplittingStep
-from .dethinning import DethinningStep
-from .corsika2geant import Corsika2GeantStep
+from .processing.corsika import CorsikaStep
+from .processing.particle_file_splitting import ParticleFileSplittingStep
+from .processing.dethinning import DethinningStep
+from .processing.corsika2geant import Corsika2GeantStep
+from .auxiliary.cleanup import CleanupStep
 
 
 all_steps: List[Type[FileInFileOutStep]] = [
@@ -15,6 +16,7 @@ all_steps: List[Type[FileInFileOutStep]] = [
     ParticleFileSplittingStep,
     DethinningStep,
     Corsika2GeantStep,
+    CleanupStep,
 ]
 
 

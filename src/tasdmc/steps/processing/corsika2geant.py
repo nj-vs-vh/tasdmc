@@ -6,9 +6,10 @@ from typing import List
 
 from tasdmc import fileio
 from tasdmc.c_routines_wrapper import run_corsika2geant
-from .base import Files, SkippableFileInFileOutStep
+from tasdmc.steps.base import Files, SkippableFileInFileOutStep
+from tasdmc.steps.utils import check_file_is_empty, concatenate_and_hash
+
 from .dethinning import DethinningOutputFiles, DethinningStep
-from .utils import check_file_is_empty, concatenate_and_hash
 
 
 @dataclass
