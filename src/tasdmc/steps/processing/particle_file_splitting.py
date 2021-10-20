@@ -66,8 +66,8 @@ class ParticleFileSplittingStep(FileInFileOutPipelineStep):
 
 
 def _n_split_from_config() -> int:
-    n_split = config.get_key('dethinning.particle_file_split_to', default=config.used_processes())
+    n_split = config.get_key('dethinning.n_parallel', default=config.used_processes())
     if isinstance(n_split, int) and n_split > 0:
         return n_split
     else:
-        raise config.BadConfigValue(f"dethinning.particle_file_split_to is expected to be non-negative integer")
+        raise config.BadConfigValue(f"dethinning.n_parallel is expected to be non-negative integer")
