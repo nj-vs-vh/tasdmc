@@ -2,7 +2,6 @@ name: your-run-name
 if_exists: continue
 #  continue | overwrite | error; defaults to error
 #  use 'continue' to continue interrupted run without rerunning completed steps
-verbosity: 2
 
 input_files:
   particle: proton
@@ -25,4 +24,4 @@ resources:
   # since tasdmc has TASDMC_MEMORY_PER_PROCESS_GB configured in build-time, only one of these may
   # be specified and the other will be inferred; if both are specified, the most conservative will be chosen
   max_processes: 2
-  max_total_memory: 4  # Gb
+  max_memory: 4  # Gb

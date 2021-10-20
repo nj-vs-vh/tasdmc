@@ -112,10 +112,6 @@ def try_to_continue() -> bool:
     return get_key('if_exists') == 'continue'
 
 
-def verbosity() -> int:
-    return get_key('verbosity', default=1)
-
-
 def used_processes() -> int:
     max_processes_explicit = get_key('resources.max_processes', default=-1)
     max_memory_explicit = get_key('resources.max_memory', default=-1)

@@ -5,10 +5,12 @@ from abc import ABC, abstractmethod
 from concurrent.futures import ProcessPoolExecutor
 from time import sleep
 from concurrent.futures import Future
+import traceback
 
 from typing import Optional, List
 
 from tasdmc import config, progress
+from tasdmc.progress import step_progress
 from .files import Files
 
 
@@ -63,30 +65,36 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
             executor (ProcessPoolExecutor): ProcessPoolExecutor to submit step to
             futures_list (list of Future): list of futures to add this run future result into
         """
-        print(f'submitting {self.__class__.__name__} run')
-        futures_list.append(executor.submit(self._run_to_be_submitted))
+        futures_list.append(executor.submit(self._run_in_executor))
 
-    def _run_to_be_submitted(self):
-        print(f'running {self.__class__.__name__}')
-        sleep(3)
+    def _run_in_executor(self):
+        if progress.is_pipeline_failed(self.pipeline_id):
+            progress.multiprocessing_debug(f'Not running {self.__class__.__name__}, pipeline marked as failed')
+            return
 
-        while not self.input_.files_were_produced():  # TODO: add checks for when files will never be produced
+        progress.multiprocessing_debug(f'Running {self.__class__.__name__}')
+        while not self.input_.files_were_produced():
             sleep_time = 30  # sec
             progress.multiprocessing_debug(
                 f"Input files for '{self.description}' were not yet produced, sleeping for {sleep_time} sec"
             )
             sleep(sleep_time)
 
-        if config.try_to_continue() and self.input_.same_hash_as_stored() and self.output.files_were_produced():
-            progress.info(f"Skipping: {self.description}")
-        else:
-            self.input_.assert_files_are_ready()
-            self.output.prepare_for_step_run()
-            progress.info(f"Running: {self.description}")
-            self._run()
-            self.output.assert_files_are_ready()
-            self.input_.store_contents_hash()
-            progress.debug(f"Output files from '{self.description}' size: {self.output.total_size('Mb')} Mb")
+        try:
+            if config.try_to_continue() and self.input_.same_hash_as_stored() and self.output.files_were_produced():
+                step_progress.skipped(self)
+            else:
+                self.input_.assert_files_are_ready()
+                self.output.prepare_for_step_run()
+                step_progress.started(self)
+                self._run()
+                step_progress.completed(self)
+                self.output.assert_files_are_ready()
+                self.input_.store_contents_hash()
+                step_progress.output_size_measured(self, output_size_mb=self.output.total_size('Mb'))    
+        except Exception as e:
+            step_progress.failed(self, errmsg=str(e))
+            progress.mark_pipeline_failed(self.pipeline_id, errmsg=traceback.format_exc())
 
     @abstractmethod
     def _run(self):

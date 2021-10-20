@@ -62,12 +62,35 @@ def input_hashes_dir() -> Path:
     return run_dir() / '_input_files_hashes'
 
 
+@internal_dir
+def logs_dir() -> Path:
+    return run_dir() / '_logs'
+
+
+# individual files
+
+
 def saved_main_process_id_file():
     return run_dir() / 'main_process_id.txt'
 
 
 def saved_run_config_file(run_name: Optional[str] = None):
     return configs_dir(run_name) / 'run.yaml'
+
+
+def multiprocessing_debug_log():
+    return logs_dir() / 'multiprocessing_debug.log'
+
+
+def pipeline_log(pipeline_id: str):
+    return logs_dir() / f'{pipeline_id}.log'
+
+
+def pipeline_failed_file(pipeline_id: str):
+    return logs_dir() / f'{pipeline_id}.failed'
+
+
+# top-level functions
 
 
 def prepare_run_dir():

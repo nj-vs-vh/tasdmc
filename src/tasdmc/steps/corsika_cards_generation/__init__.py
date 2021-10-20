@@ -80,7 +80,7 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
         if low_E_model == 'URQMD':
             card.replace_card("ECUTS", "0.3  0.05  0.00025  0.00025")
 
-        progress.debug('Per-energy bin cards')
+        progress.info_secondary('Per-energy bin cards')
         for E_bin_i in range(1 + int((log10E_max - log10E_min) / LOG10_E_STEP)):
             log10E = log10E_min + E_bin_i * LOG10_E_STEP
             card.set_fixed_log10en(log10E)
@@ -126,7 +126,7 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
                     else f' ({skipped_cards_count}/{cards_count} of cards already found in the run dir)'
                 )
             )
-            progress.debug(
+            progress.info_secondary(
                 f"PRIMARY {particle_id:d} ENERGY {log10E:.1f} ({energy_id:02d}): "
                 + f"{cards_count:d} cards: "
                 + f"DAT{file_index_to_runnr(0, energy_id)} ... DAT{file_index_to_runnr(cards_count - 1, energy_id)}"

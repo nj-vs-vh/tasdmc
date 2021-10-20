@@ -1,6 +1,7 @@
 from abc import ABC
 from pathlib import Path
 from dataclasses import fields, is_dataclass
+from functools import lru_cache
 
 from typing import Optional, List, Any, Literal, get_args, get_origin
 
@@ -131,6 +132,7 @@ class Files(ABC):
         return file_contents_hash(file, hasher_name='md5')
 
     @property
+    @lru_cache()
     def contents_hash(self) -> str:
         file_hashes = []
         for file in self._to_be_hashed_implicit:
