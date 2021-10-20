@@ -27,7 +27,7 @@ def run_standard_pipeline():
         corsika2geant = Corsika2GeantStep.from_dethinning_steps(dethinning_steps)
         corsika2geant.run()
 
-        cleanup =  CleanupStep.from_steps_to_cleanup(
+        cleanup = CleanupStep.from_steps_to_cleanup(
             cleanup_steps=[particle_file_splitting, *dethinning_steps], must_be_completed=corsika2geant
         )
         cleanup.run()

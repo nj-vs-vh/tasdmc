@@ -5,7 +5,7 @@ from pathlib import Path
 
 from typing import List
 
-from tasdmc.steps.base import Files, NotAllRetainedFiles, SkippableFileInFileOutStep
+from tasdmc.steps.base import Files, NotAllRetainedFiles, FileInFileOutPipelineStep
 
 
 @dataclass
@@ -32,18 +32,20 @@ class NoFiles(Files):
 
 
 @dataclass
-class CleanupStep(SkippableFileInFileOutStep):
+class CleanupStep(FileInFileOutPipelineStep):
     input_: FilesToDelete
     output: NoFiles
 
-    cleanup_steps: List[SkippableFileInFileOutStep]
-    must_be_completed: SkippableFileInFileOutStep
+    cleanup_steps: List[FileInFileOutPipelineStep] = None  # defaults are only to please dataclass defaults
+    must_be_completed: FileInFileOutPipelineStep = None
 
     @classmethod
     def from_steps_to_cleanup(
-        cls, cleanup_steps: List[SkippableFileInFileOutStep], must_be_completed: SkippableFileInFileOutStep,
+        cls,
+        cleanup_steps: List[FileInFileOutPipelineStep],
+        must_be_completed: FileInFileOutPipelineStep,
     ) -> CleanupStep:
-        return cls(
+        return CleanupStep(
             input_=FilesToDelete(
                 files_to_delete=[co.output for co in cleanup_steps if isinstance(co.output, NotAllRetainedFiles)],
                 must_exist_files=must_be_completed.output,
@@ -51,6 +53,7 @@ class CleanupStep(SkippableFileInFileOutStep):
             output=NoFiles(),
             cleanup_steps=cleanup_steps,
             must_be_completed=must_be_completed,
+            previous_step=must_be_completed,
         )
 
     @property

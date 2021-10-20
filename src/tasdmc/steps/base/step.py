@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from concurrent.futures import ProcessPoolExecutor
@@ -25,13 +27,27 @@ class FileInFileOutStep(ABC):
 
 
 @dataclass
-class SkippableFileInFileOutStep(FileInFileOutStep):
-    """Abstract subclass representing a FileInFileOutStep that can be skipped if output is already
-    produced and input hasn't changed
+class FileInFileOutPipelineStep(FileInFileOutStep):
+    """Abstract subclass representing a FileInFileOutStep as a part of pipeline. This means that it
+
+    * can be run in parallel with other steps
+    * checks input/output files before doing anything
+    * maintains pipeline status in a dedicated file
     """
 
     input_: Files
     output: Files
+    previous_step: Optional[FileInFileOutPipelineStep] = None
+
+    @property
+    def pipeline_id(self) -> str:
+        """Any string uniquely identifying a pipeline (e.g. DATnnnnnn for standard pipeline).
+
+        Must be overriden for the first step in the pipeline."""
+        if self.previous_step is None:
+            raise ValueError(f"No previous step found for {self.__class__.__name__}, can't get pipeline ID")
+        else:
+            return self.previous_step.pipeline_id
 
     @property
     @abstractmethod
@@ -39,17 +55,16 @@ class SkippableFileInFileOutStep(FileInFileOutStep):
         """Step description string, used for progress monitoring"""
         pass
 
-    def run(self, force: bool = False, executor: Optional[ProcessPoolExecutor] = None):
+    def run(self, executor: Optional[ProcessPoolExecutor] = None):
         """Main method for running the step.
 
         Args:
-            force (bool): Skip output check and run case anyway. Defaults to False.
             executor (ProcessPoolExecutor, optional): If specified, step is run inside executor, e.g. in a
                                                       dedicated process. Defaults to None (run in the main process).
         """
 
         def run_step(in_separate_process: bool = False):
-            if in_separate_process:  # we are in a separate thread, cool
+            if in_separate_process:
                 while not self.input_.files_were_produced():
                     sleep_time = 30  # sec
                     progress.multiprocessing_debug(
@@ -57,12 +72,7 @@ class SkippableFileInFileOutStep(FileInFileOutStep):
                     )
                     sleep(sleep_time)
 
-            if (
-                not force
-                and config.try_to_continue()
-                and self.input_.same_hash_as_stored()
-                and self.output.files_were_produced()
-            ):
+            if config.try_to_continue() and self.input_.same_hash_as_stored() and self.output.files_were_produced():
                 progress.info(f"Skipping: {self.description}")
             else:
                 self.input_.assert_files_are_ready()

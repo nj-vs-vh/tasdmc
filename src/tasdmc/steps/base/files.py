@@ -96,7 +96,7 @@ class Files(ABC):
     def _check_contents(self):
         """Check Files' contents in a specific way (e.g. checking for errors in stderr file, validating binary files).
         Must raise FilesCheckFailed on errors.
-        
+
         Should be overriden by subclasses."""
         pass
 

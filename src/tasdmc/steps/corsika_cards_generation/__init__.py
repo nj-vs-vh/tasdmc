@@ -44,15 +44,13 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
         Because of that, instead of instantiate-then-run, use this class method
         >>> CorsikaInputFilesGeneration.create_and_run()
         """
-        instance = cls(CorsikaCardFiles([]))
+        instance = CorsikaCardsGenerationStep(CorsikaCardFiles([]))
         instance.run()  # here corsika input files are added to output.all list
         return instance
 
-    @property
-    def description(self) -> str:
-        return "CORSIKA cards generation"
-
     def run(self):
+        progress.info('CORSIKA cards generation')
+
         particle, particle_id = _particle_id_from_config()
         progress.info(f'Primary particle: {particle} (id {particle_id})')
 

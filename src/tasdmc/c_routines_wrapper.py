@@ -6,7 +6,9 @@ from typing import TextIO, Optional, List, Any
 from tasdmc import config, fileio
 
 
-def _execute_cmd(executable_name: str, args: List[Any], stdout: Optional[TextIO] = None, stderr: Optional[TextIO] = None):
+def _execute_cmd(
+    executable_name: str, args: List[Any], stdout: Optional[TextIO] = None, stderr: Optional[TextIO] = None
+):
     subprocess.run(
         [config.Global.bin_dir / executable_name, *[str(a) for a in args]],
         stdout=stdout,
@@ -25,4 +27,6 @@ def run_dethinning(particle_file: Path, output_file: Path, **execute_cmd_kwargs)
 
 
 def run_corsika2geant(particle_files_listing: Path, output_file: Path, **execute_cmd_kwargs):
-    _execute_cmd('corsika2geant.run', [particle_files_listing, fileio.DataFiles.sdgeant, output_file], **execute_cmd_kwargs)
+    _execute_cmd(
+        'corsika2geant.run', [particle_files_listing, fileio.DataFiles.sdgeant, output_file], **execute_cmd_kwargs
+    )

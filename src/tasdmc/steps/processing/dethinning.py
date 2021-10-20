@@ -7,7 +7,7 @@ from typing import List
 from tasdmc import fileio
 from tasdmc.c_routines_wrapper import run_dethinning
 
-from tasdmc.steps.base import NotAllRetainedFiles, SkippableFileInFileOutStep
+from tasdmc.steps.base import NotAllRetainedFiles, FileInFileOutPipelineStep
 from tasdmc.steps.exceptions import FilesCheckFailed
 from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty
 
@@ -69,7 +69,7 @@ class DethinningOutputFiles(NotAllRetainedFiles):
 
 
 @dataclass
-class DethinningStep(SkippableFileInFileOutStep):
+class DethinningStep(FileInFileOutPipelineStep):
     input_: ParticleFile
     output: DethinningOutputFiles
 
@@ -78,7 +78,12 @@ class DethinningStep(SkippableFileInFileOutStep):
         cls, particle_file_splitting: ParticleFileSplittingStep
     ) -> List[DethinningStep]:
         particle_files = ParticleFile.from_split_particle_files(particle_file_splitting.output)
-        return [cls(input_=pf, output=DethinningOutputFiles.from_particle_file(pf)) for pf in particle_files]
+        return [
+            DethinningStep(
+                input_=pf, output=DethinningOutputFiles.from_particle_file(pf), previous_step=particle_file_splitting
+            )
+            for pf in particle_files
+        ]
 
     @property
     def description(self) -> str:

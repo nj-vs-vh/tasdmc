@@ -6,7 +6,7 @@ from typing import List
 
 from tasdmc import fileio
 from tasdmc.c_routines_wrapper import run_corsika2geant
-from tasdmc.steps.base import Files, SkippableFileInFileOutStep
+from tasdmc.steps.base import Files, FileInFileOutPipelineStep
 from tasdmc.steps.utils import check_file_is_empty, concatenate_and_hash
 
 from .dethinning import DethinningOutputFiles, DethinningStep
@@ -83,7 +83,7 @@ class C2GOutputFiles(Files):
         )
 
 
-class Corsika2GeantStep(SkippableFileInFileOutStep):
+class Corsika2GeantStep(FileInFileOutPipelineStep):
     input_: C2GInputFiles
     output: C2GOutputFiles
 
@@ -91,7 +91,7 @@ class Corsika2GeantStep(SkippableFileInFileOutStep):
     def from_dethinning_steps(cls, dethinning_steps: List[DethinningStep]) -> Corsika2GeantStep:
         input_ = C2GInputFiles.from_dethinning_outputs([step.output for step in dethinning_steps])
         output = C2GOutputFiles.from_c2g_input_files(input_)
-        return cls(input_, output)
+        return Corsika2GeantStep(input_, output, previous_step=dethinning_steps[0])
 
     @property
     def description(self) -> str:
