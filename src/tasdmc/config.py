@@ -123,9 +123,7 @@ def used_processes() -> int:
             + f"than a single-thread requirement ({Global.memory_per_process_Gb} Gb)"
         )
     max_processes_inferred = int(max_memory_explicit / Global.memory_per_process_Gb)
-    max_processes_variants = [
-        np for np in [max_processes_explicit, max_processes_inferred, system.n_cpu()] if np > 0
-    ]
+    max_processes_variants = [np for np in [max_processes_explicit, max_processes_inferred, system.n_cpu()] if np > 0]
     return min(max_processes_variants)
 
 

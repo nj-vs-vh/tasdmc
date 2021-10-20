@@ -135,10 +135,10 @@ class Files(ABC):
     def contents_hash(self) -> str:
         cached_attrname = '_contents_hash'
         try:
-            return getattr(self, cached_attrname) 
+            return getattr(self, cached_attrname)
         except AttributeError:
             pass
-        
+
         file_hashes = []
         for file in self._to_be_hashed_implicit:
             file_hashes.append(self._get_file_contents_hash(file))

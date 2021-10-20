@@ -58,9 +58,7 @@ def abort(run_name: str):
     if not main_run_process_pid_file.exists():
         click.echo(f"No saved main process ID found for run '{run_name}'")
         return
-    click.secho(
-        f"You are about to kill all processes in run {run_name}! If you are sure, type its name again below:"
-    )
+    click.secho(f"You are about to kill all processes in run {run_name}! If you are sure, type its name again below:")
     run_name_confirmation = input()
     if run_name == run_name_confirmation:
         main_run_process_pid = int(main_run_process_pid_file.read_text())

@@ -73,7 +73,7 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
             return
 
         while not self.input_.files_were_produced():
-            sleep_time = 10  # sec
+            sleep_time = 60  # sec
             progress.multiprocessing_debug(
                 f"Input files for '{self.description}' were not yet produced, sleeping for {sleep_time} sec"
             )
@@ -91,7 +91,7 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
                 step_progress.completed(self)
                 self.output.assert_files_are_ready()
                 self.input_.store_contents_hash()
-                step_progress.output_size_measured(self, output_size_mb=self.output.total_size('Mb'))    
+                step_progress.output_size_measured(self, output_size_mb=self.output.total_size('Mb'))
         except Exception as e:
             step_progress.failed(self, errmsg=str(e))
             progress.mark_pipeline_failed(self.pipeline_id, errmsg=traceback.format_exc())
