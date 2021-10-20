@@ -62,8 +62,42 @@ python setup.py install
 
 ## Usage
 
-`tasdmc` is designed as CLI and configured with human-readable [`.yaml`](https://yaml.org/) files. Note that for each simulation run configuration files are copied to the run directory and are available at any point in the future.
+`tasdmc` is designed as CLI and configured with human-readable [`.yaml`](https://yaml.org/) files.
 
-### Run configuration
+### Configuration files
 
-Run configuration file contains all physical parameters relevant to the simulation (primary particle, energy range, etc) and configuration for (almost) all the simulation steps. See [example](config_examples/run.yaml).
+Run configuration file contains all physical parameters relevant to the simulation (primary particle, energy range, etc) and configuration of (almost) all the simulation steps. See [example](config_examples/run.yaml) for self-explainatory config example:
+
+```yaml
+name: your-run-name
+TBD: 
+```
+
+
+### Commands
+
+1. Start simulation:
+
+```bash
+tasdmc run --config my-run-config.yaml
+```
+
+This is the main `tasdmc` entry point and its behavior greatly depends on passed configuration.
+In most cases `tasdmc` should run in the background. This can be achieved in bash like this:
+
+```bash
+tasdmc run [OPTINS] &
+disown
+```
+
+2. Abort running simulation:
+
+```bash
+tasdmc abort --name my-run-name
+```
+
+3. Estimate resources needed for the run
+
+```bash
+tasdmc resources --config my-run-config.yaml
+```

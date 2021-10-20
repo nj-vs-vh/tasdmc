@@ -67,6 +67,11 @@ def logs_dir() -> Path:
     return run_dir() / 'logs'
 
 
+@internal_dir
+def pipeline_logs_dir() -> Path:
+    return logs_dir() / 'pipeline'
+
+
 # individual files
 
 
@@ -82,12 +87,16 @@ def multiprocessing_debug_log():
     return logs_dir() / 'multiprocessing_debug.log'
 
 
+def cards_gen_info_log():
+    return logs_dir() / 'cards_generation_info.log'
+
+
 def pipeline_log(pipeline_id: str):
-    return logs_dir() / f'{pipeline_id}.log.yaml'
+    return pipeline_logs_dir() / f'{pipeline_id}.yaml'
 
 
 def pipeline_failed_file(pipeline_id: str):
-    return logs_dir() / f'{pipeline_id}.failed'
+    return pipeline_logs_dir() / f'{pipeline_id}.failed'
 
 
 # top-level functions
@@ -124,6 +133,7 @@ def prepare_run_dir():
     saved_main_process_id_file().write_text(str(os.getpid()))
     with open(multiprocessing_debug_log(), 'a') as f:
         f.write(f'\n{"=" * 70}\n\n')
+    cards_gen_info_log().unlink(missing_ok=True)
 
 
 def get_run_config_path(run_name: str) -> Path:

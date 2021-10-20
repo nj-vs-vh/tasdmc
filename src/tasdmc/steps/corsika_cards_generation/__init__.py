@@ -49,22 +49,20 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
         return instance
 
     def run(self):
-        progress.info('CORSIKA cards generation')
-
         particle, particle_id = _particle_id_from_config()
-        progress.info(f'Primary particle: {particle} (id {particle_id})')
+        progress.cards_generation_info(f'Primary particle: {particle} (id {particle_id})')
 
         log10E_min, log10E_max = _log10E_bounds_from_config()
-        progress.info(
+        progress.cards_generation_info(
             f'Energy scale (log10(E / eV)): {log10E_min:.1f} ... {log10E_max:.1f}, with step {LOG10_E_STEP:.1f}'
         )
 
         high_E_model = config.get_key('corsika.high_E_hadronic_interactions_model')
         low_E_model = config.get_key('corsika.low_E_hadronic_interactions_model')
-        progress.info(f'Hadronic interactions models: {high_E_model}/{low_E_model}')
+        progress.cards_generation_info(f'Hadronic interactions models: {high_E_model}/{low_E_model}')
 
         event_number_multiplier = _event_number_multiplier_from_config()
-        progress.info(f"Event numbers are multiplied by {event_number_multiplier:.2f} in each energy bin")
+        progress.cards_generation_info(f"Event numbers are multiplied by {event_number_multiplier:.3f} in each energy bin")
 
         # common corsika card parameters
         card = CorsikaCard()
@@ -80,7 +78,7 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
         if low_E_model == 'URQMD':
             card.replace_card("ECUTS", "0.3  0.05  0.00025  0.00025")
 
-        progress.info_secondary('Per-energy bin cards')
+        progress.cards_generation_info('\nCards per energy bin')
         for E_bin_i in range(1 + int((log10E_max - log10E_min) / LOG10_E_STEP)):
             log10E = log10E_min + E_bin_i * LOG10_E_STEP
             card.set_fixed_log10en(log10E)
@@ -126,7 +124,7 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
                     else f' ({skipped_cards_count}/{cards_count} of cards already found in the run dir)'
                 )
             )
-            progress.info_secondary(
+            progress.cards_generation_info(
                 f"PRIMARY {particle_id:d} ENERGY {log10E:.1f} ({energy_id:02d}): "
                 + f"{cards_count:d} cards: "
                 + f"DAT{file_index_to_runnr(0, energy_id)} ... DAT{file_index_to_runnr(cards_count - 1, energy_id)}"

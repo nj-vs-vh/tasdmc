@@ -33,7 +33,7 @@ def run_standard_pipeline():
                     cleanup_steps=[particle_file_splitting, *dethinning_steps], must_be_completed=corsika2geant
                 )
 
-                if not corsika2geant.output.files_were_produced():
+                if not corsika2geant.output.files_were_produced():  # TODO: remove this
                     particle_file_splitting.run(executor, futures_queue)
                     for dethinning in dethinning_steps:
                         dethinning.run(executor, futures_queue)
