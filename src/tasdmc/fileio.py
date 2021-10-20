@@ -5,6 +5,7 @@ import click
 from pathlib import Path
 import shutil
 from functools import lru_cache
+from datetime import datetime
 
 from typing import Optional
 
@@ -130,10 +131,14 @@ def prepare_run_dir():
         idir_getter().mkdir(exist_ok=config.try_to_continue())
 
     config.dump(saved_run_config_file())
-    saved_main_process_id_file().write_text(str(os.getpid()))
-    with open(multiprocessing_debug_log(), 'a') as f:
+    saved_main_process_id_file().write_text(str(os.getpid()))  # saving currend main process ID
+    with open(multiprocessing_debug_log(), 'a') as f:  # inserting separator into multiprocessing debug log
         f.write(f'\n{"=" * 70}\n\n')
-    cards_gen_info_log().unlink(missing_ok=True)
+    cards_gen_info_log().unlink(missing_ok=True)  # removing old cards generation log
+    for old_pipeline_failed in pipeline_logs_dir().glob("*.failed"):
+        old_pipeline_failed.rename(  # archiving old <pipeline>.failed files so that no pipeline is marked failed
+            str(old_pipeline_failed) + f'.before{datetime.utcnow().isoformat(timespec="seconds")}'
+        )
 
 
 def get_run_config_path(run_name: str) -> Path:
