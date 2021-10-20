@@ -72,13 +72,13 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
             progress.multiprocessing_debug(f'Not running {self.__class__.__name__}, pipeline marked as failed')
             return
 
-        progress.multiprocessing_debug(f'Running {self.__class__.__name__}')
         while not self.input_.files_were_produced():
-            sleep_time = 30  # sec
+            sleep_time = 10  # sec
             progress.multiprocessing_debug(
                 f"Input files for '{self.description}' were not yet produced, sleeping for {sleep_time} sec"
             )
             sleep(sleep_time)
+        progress.multiprocessing_debug(f'Running {self.__class__.__name__}')
 
         try:
             if config.try_to_continue() and self.input_.same_hash_as_stored() and self.output.files_were_produced():

@@ -8,7 +8,6 @@ import yaml
 from typing import Optional, Any
 
 from tasdmc import fileio
-from tasdmc.steps.base.step import FileInFileOutPipelineStep
 from .utils import datetime2str
 
 
@@ -44,7 +43,7 @@ class PipelineStepProgress:
 
     @classmethod
     def from_step(
-        cls, step: FileInFileOutPipelineStep, event_type: EventType, value: Optional[Any] = None
+        cls, step: 'FileInFileOutPipelineStep', event_type: EventType, value: Optional[Any] = None  # type: ignore
     ) -> PipelineStepProgress:
         return PipelineStepProgress(
             event_type,
@@ -57,22 +56,21 @@ class PipelineStepProgress:
         )
 
 
-
-def started(step: FileInFileOutPipelineStep):
+def started(step: 'FileInFileOutPipelineStep'):  # type: ignore
     PipelineStepProgress.from_step(step, EventType.STARTED).save()
 
 
-def skipped(step: FileInFileOutPipelineStep):
+def skipped(step: 'FileInFileOutPipelineStep'):  # type: ignore
     PipelineStepProgress.from_step(step, EventType.SKIPPED).save()
 
 
-def completed(step: FileInFileOutPipelineStep):
+def completed(step: 'FileInFileOutPipelineStep'):  # type: ignore
     PipelineStepProgress.from_step(step, EventType.COMPLETED).save()
 
 
-def failed(step: FileInFileOutPipelineStep, errmsg: str):
+def failed(step: 'FileInFileOutPipelineStep', errmsg: str):  # type: ignore
     PipelineStepProgress.from_step(step, EventType.FAILED, value=errmsg).save()
 
 
-def output_size_measured(step: FileInFileOutPipelineStep, output_size_mb: int):
+def output_size_measured(step: 'FileInFileOutPipelineStep', output_size_mb: int):  # type: ignore
     PipelineStepProgress.from_step(step, EventType.OUTPUT_SIZE_MEASURED, value=output_size_mb).save()

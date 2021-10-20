@@ -6,14 +6,14 @@ from typing import List
 
 from tasdmc import fileio
 from tasdmc.c_routines_wrapper import run_corsika2geant
-from tasdmc.steps.base import Files, FileInFileOutPipelineStep
+from tasdmc.steps.base import Files, NotAllRetainedFiles, FileInFileOutPipelineStep
 from tasdmc.steps.utils import check_file_is_empty, concatenate_and_hash
 
 from .dethinning import DethinningOutputFiles, DethinningStep
 
 
 @dataclass
-class C2GInputFiles(Files):
+class C2GInputFiles(NotAllRetainedFiles):
     dethinning_outputs: List[DethinningOutputFiles]
     dethinned_files_listing: Path  # list of paths stored in text file, as from ls * > file_list.txt
     corsika_event_name: str  # DATnnnnnn common to all files in list
@@ -24,6 +24,10 @@ class C2GInputFiles(Files):
 
     @property
     def must_exist(self) -> List[Path]:
+        return self.dethinning_particle_files
+
+    @property
+    def not_retained(self) -> List[Path]:
         return self.dethinning_particle_files
 
     def create_listing_file(self):

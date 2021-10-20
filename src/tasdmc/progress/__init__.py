@@ -6,7 +6,6 @@ from datetime import datetime
 from pathlib import Path
 
 from tasdmc import fileio
-from tasdmc.steps.base.step import FileInFileOutPipelineStep
 
 from .utils import datetime2str
 
@@ -34,13 +33,8 @@ def _log_text_message(msg: str, log_filename: Path):
         f.write(f"[{datetime2str(datetime.now())}] {msg}\n")
 
 
-def pipeline_info(pipeline_id: str, step: FileInFileOutPipelineStep, message: str):
-    pass
-
-
 def multiprocessing_debug(message: str):
-    pid = str(os.getpid()).ljust(7, ' ')
-    message = f"(pid {pid}) {message}"
+    message = f"(pid {os.getpid()}) {message}"
     _log_text_message(message, fileio.multiprocessing_debug_log())
 
 

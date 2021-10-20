@@ -5,7 +5,7 @@ from functools import lru_cache
 
 from typing import Optional, List, Any, Literal, get_args, get_origin
 
-from tasdmc import fileio, progress
+from tasdmc import fileio
 from ..exceptions import FilesCheckFailed
 from ..utils import file_contents_hash, concatenate_and_hash
 
@@ -132,12 +132,20 @@ class Files(ABC):
         return file_contents_hash(file, hasher_name='md5')
 
     @property
-    @lru_cache()
     def contents_hash(self) -> str:
+        cached_attrname = '_contents_hash'
+        try:
+            return getattr(self, cached_attrname) 
+        except AttributeError:
+            pass
+        
         file_hashes = []
         for file in self._to_be_hashed_implicit:
             file_hashes.append(self._get_file_contents_hash(file))
-        return concatenate_and_hash(file_hashes)
+        contents_hash = concatenate_and_hash(file_hashes)
+
+        setattr(self, cached_attrname, contents_hash)
+        return contents_hash
 
     def store_contents_hash(self):
         contents_hash = self.contents_hash

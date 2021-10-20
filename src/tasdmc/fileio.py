@@ -64,7 +64,7 @@ def input_hashes_dir() -> Path:
 
 @internal_dir
 def logs_dir() -> Path:
-    return run_dir() / '_logs'
+    return run_dir() / 'logs'
 
 
 # individual files
@@ -83,7 +83,7 @@ def multiprocessing_debug_log():
 
 
 def pipeline_log(pipeline_id: str):
-    return logs_dir() / f'{pipeline_id}.log'
+    return logs_dir() / f'{pipeline_id}.log.yaml'
 
 
 def pipeline_failed_file(pipeline_id: str):
@@ -122,6 +122,8 @@ def prepare_run_dir():
 
     config.dump(saved_run_config_file())
     saved_main_process_id_file().write_text(str(os.getpid()))
+    with open(multiprocessing_debug_log(), 'a') as f:
+        f.write(f'\n{"=" * 70}\n\n')
 
 
 def get_run_config_path(run_name: str) -> Path:
