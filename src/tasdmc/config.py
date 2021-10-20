@@ -117,7 +117,7 @@ def used_processes() -> int:
     max_memory_explicit = get_key('resources.max_memory', default=-1)
     if max_memory_explicit == max_processes_explicit == -1:
         return 1  # if nothing specified, no parallelization
-    if max_memory_explicit < Global.memory_per_process_Gb:
+    if 0 < max_memory_explicit < Global.memory_per_process_Gb:
         raise BadConfigValue(
             f"Memory constraint is too tight! {max_memory_explicit} Gb is less "
             + f"than a single-thread requirement ({Global.memory_per_process_Gb} Gb)"
