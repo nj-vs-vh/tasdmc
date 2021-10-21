@@ -2,7 +2,7 @@
 
 import click
 
-from tasdmc import config, fileio, system, pipeline
+from tasdmc import config, fileio, system, pipeline, cleanup
 
 
 def run_config_option(param_name: str):
@@ -41,6 +41,25 @@ def rasources(config_filename: str):
     click.secho(f"{config.run_name()} resources:", bold=True)
     click.secho(f"Processes: {config.used_processes()} (on {system.n_cpu()} CPUs)")
     click.secho(f"RAM: {config.used_ram()} Gb ({system.available_ram():.2f} Gb available)")
+
+
+@cli.command(
+    "_remove_failed_pipelines",
+    help="Delete all files related to pipelines currently marked as .failed; THIS IS INTERNAL/EXPERIMENTAL COMMAND",
+)
+@run_name_argument('name')
+def abort(name: str):
+    config.load(fileio.get_run_config_path(name))
+    failed_pipeline_files = cleanup.get_failed_pipeline_files()
+    if not failed_pipeline_files:
+        click.echo("No failed pipelines found")
+        return
+    click.echo("Failed pipelines to be removed:\n" + "\n".join([f'\t{p}' for p in failed_pipeline_files]))
+    click.echo("\nConfirm? [yes, any other]")
+    confirmation = input()
+    if confirmation == 'yes':
+        for fp in failed_pipeline_files:
+            cleanup.delete_all_pipeline_files(fp)
 
 
 @cli.command("abort", help="Abort execution of run specified by NAME. This will kill all processes in specified run!")
