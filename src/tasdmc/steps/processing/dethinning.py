@@ -92,3 +92,6 @@ class DethinningStep(FileInFileOutPipelineStep):
     def _run(self):
         with open(self.output.stdout, 'w') as stdout_file, open(self.output.stderr, 'w') as stderr_file:
             run_dethinning(self.input_.particle, self.output.dethinned_particle, stdout=stdout_file, stderr=stderr_file)
+
+    def _post_run(self):
+        self.input_.delete_not_retained_files()

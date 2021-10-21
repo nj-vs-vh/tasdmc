@@ -1,10 +1,9 @@
-from setuptools import setup, find_packages, Extension
+from setuptools import setup, find_packages
 from setuptools.command.install import install
 from distutils.command.clean import clean
 
 import subprocess
 import os
-import sys
 from pathlib import Path
 import gdown
 import hashlib

@@ -77,6 +77,7 @@ class C2GOutputFiles(Files):
         )
 
     def _check_contents(self):
+        # TODO: check _gea.dat file contents here!
         check_file_is_empty(
             self.stderr,
             ignore_strings=[
@@ -112,3 +113,6 @@ class Corsika2GeantStep(FileInFileOutPipelineStep):
             )
         for temp_file in fileio.c2g_output_files_dir().glob(f"{self.output.tile.name}.tmp???"):
             temp_file.unlink()
+
+    def _post_run(self):
+        self.input_.delete_not_retained_files()

@@ -67,8 +67,6 @@ class Files(ABC):
         """List of file Paths that must exist for Files to be a valid step output. May be overriden by subclasses."""
         return []
 
-    # methods for file checks
-
     def assert_files_are_ready(self):
         """Check Files if they are ready and raise FilesCheckFailes exception if there's a problem.
 

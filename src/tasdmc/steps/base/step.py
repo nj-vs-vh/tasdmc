@@ -68,17 +68,18 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
         futures_list.append(executor.submit(self._run_in_executor))
 
     def _run_in_executor(self):
-        if progress.is_pipeline_failed(self.pipeline_id):
-            progress.multiprocessing_debug(f"Not running '{self.description}', pipeline marked as failed")
-            return
-
-        while not self.input_.files_were_produced():
+        while not self.input_.files_were_produced() and not progress.is_pipeline_failed(self.pipeline_id):
             sleep_time = 60  # sec
             progress.multiprocessing_debug(
                 f"Input files for '{self.description}' were not yet produced, sleeping for {sleep_time} sec"
             )
             sleep(sleep_time)
-        progress.multiprocessing_debug(f"Running '{self.description}'")
+
+        if progress.is_pipeline_failed(self.pipeline_id):
+            progress.multiprocessing_debug(f"Not running '{self.description}', pipeline marked as failed")
+            return
+        else:
+            progress.multiprocessing_debug(f"Running '{self.description}'")
 
         try:
             if config.try_to_continue() and self.input_.same_hash_as_stored() and self.output.files_were_produced():
@@ -92,6 +93,7 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
                 self.output.assert_files_are_ready()
                 self.input_.store_contents_hash()
                 step_progress.output_size_measured(self, output_size_mb=self.output.total_size('Mb'))
+                self._post_run()
         except Exception as e:
             step_progress.failed(self, errmsg=str(e))
             progress.mark_pipeline_failed(self.pipeline_id, errmsg=traceback.format_exc())
@@ -102,5 +104,12 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
         parallelization etc.
 
         Must be overriden by subclasses.
+        """
+        pass
+
+    def _post_run(self):
+        """Internal method for post-run cleanup.
+
+        May be overriden by subclasses.
         """
         pass
