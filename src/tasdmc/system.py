@@ -53,7 +53,7 @@ def get_children_process_ids(main_pid: int) -> List[int]:
     return [p.pid for p in main_process.children()]
 
 
-def print_process_status(main_pid: int):
+def print_process_status(main_pid: int) -> bool:
     try:
         main_process = psutil.Process(main_pid)
         click.echo("Run is alive!")
@@ -61,7 +61,7 @@ def print_process_status(main_pid: int):
         click.echo("\t" + proc2str(main_process))
     except psutil.NoSuchProcess:
         click.echo("Run is not active")
-        return
+        return False
 
     click.secho(f"\nWorker processes:", bold=True)
     worker_process_ids = set()
@@ -73,4 +73,6 @@ def print_process_status(main_pid: int):
     for p in main_process.children(recursive=True):
         if p.pid not in worker_process_ids:
             click.echo(f"\t{proc2str(p)}")
+    
+    return True
     
