@@ -141,6 +141,10 @@ def prepare_run_dir():
         )
 
 
+def get_saved_main_process_id():
+    return int(saved_main_process_id_file().read_text())
+
+
 def get_run_config_path(run_name: str) -> Path:
     if not run_dir(run_name).exists():
         raise ValueError(f"Run '{run_name}' not found")

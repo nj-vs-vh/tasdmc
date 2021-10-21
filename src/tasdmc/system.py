@@ -2,8 +2,9 @@
 
 import psutil
 from pathlib import Path
-
 import click
+
+from typing import List
 
 
 def available_ram() -> int:
@@ -27,6 +28,10 @@ def available_disk_space(where_file: Path) -> int:
     return psutil.disk_usage(longest_matching_partition).free
 
 
+def proc2str(p: psutil.Process) -> str:
+    return f"{p.pid} ({p.name()})"
+
+
 def kill_all_run_processes_by_main_process_id(pid: int):
     try:
         main_process = psutil.Process(pid)
@@ -39,5 +44,33 @@ def kill_all_run_processes_by_main_process_id(pid: int):
         return
     child_processes = main_process.children(recursive=True)
     for p in [*child_processes, main_process]:
-        click.echo(f"Killing process {p.pid} ({p.name()})")
+        click.echo(f"Killing process {proc2str(p)}")
         p.terminate()
+
+
+def get_children_process_ids(main_pid: int) -> List[int]:
+    main_process = psutil.Process(main_pid)
+    return [p.pid for p in main_process.children()]
+
+
+def print_process_status(main_pid: int):
+    try:
+        main_process = psutil.Process(main_pid)
+        click.echo("Run is alive!")
+        click.secho("\nMain process:", bold=True)
+        click.echo("\t" + proc2str(main_process))
+    except psutil.NoSuchProcess:
+        click.echo("Run is not active")
+        return
+
+    click.secho(f"\nWorker processes:", bold=True)
+    worker_process_ids = set()
+    for p in main_process.children():
+        worker_process_ids.add(p.pid)
+        click.echo(f"\t{proc2str(p)}")
+
+    click.secho(f"\nC routine processes:", bold=True)
+    for p in main_process.children(recursive=True):
+        if p.pid not in worker_process_ids:
+            click.echo(f"\t{proc2str(p)}")
+    
