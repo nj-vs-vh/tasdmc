@@ -10,7 +10,7 @@ def get_failed_pipeline_files():
     return list(fileio.pipeline_logs_dir().glob('*.failed'))
 
 
-def delete_all_pipeline_files(pipeline_failed_path: Path):
+def delete_all_files_from_failed_pipeline(pipeline_failed_path: Path):
     pipeline_id = pipeline_failed_path.name.replace('.failed', '')
     click.echo(f"Cleaning up files for {pipeline_id}")
     for dir in [

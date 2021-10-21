@@ -25,7 +25,7 @@ def cli():
     pass
 
 
-@cli.command("run", help="Run simulation pipeline")
+@cli.command("run", help="Run simulation")
 @run_config_option('config_filename')
 def run(config_filename):
     config.load(config_filename)
@@ -44,8 +44,8 @@ def rasources(config_filename: str):
 
 
 @cli.command(
-    "_remove_failed_pipelines",
-    help="Delete all files related to pipelines currently marked as .failed; THIS IS INTERNAL/EXPERIMENTAL COMMAND",
+    "_cleanup_failed_pipelines",
+    help="Delete all files related to pipelines currently marked as .failed; INTERNAL/EXPERIMENTAL COMMAND",
 )
 @run_name_argument('name')
 def abort(name: str):
@@ -55,11 +55,11 @@ def abort(name: str):
         click.echo("No failed pipelines found")
         return
     click.echo("Failed pipelines to be removed:\n" + "\n".join([f'\t{p}' for p in failed_pipeline_files]))
-    click.echo("\nConfirm? [yes, any other]")
-    confirmation = input()
+    click.echo("\nType 'yes' to confirm")
+    confirmation = input('> ')
     if confirmation == 'yes':
         for fp in failed_pipeline_files:
-            cleanup.delete_all_pipeline_files(fp)
+            cleanup.delete_all_files_from_failed_pipeline(fp)
 
 
 @cli.command("abort", help="Abort execution of run specified by NAME. This will kill all processes in specified run!")
