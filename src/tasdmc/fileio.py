@@ -102,6 +102,9 @@ def pipeline_failed_file(pipeline_id: str):
 # top-level functions
 
 
+RUN_LOG_SEPARATOR = "# " + "=" * 70
+
+
 def prepare_run_dir():
     rd = run_dir()
     if config.try_to_continue():
@@ -120,9 +123,9 @@ def prepare_run_dir():
 
     config.dump(saved_run_config_file())
     saved_main_process_id_file().write_text(str(os.getpid()))  # saving currend main process ID
-    with open(multiprocessing_debug_log(), 'a') as f:  # inserting separator into multiprocessing debug log
-        f.write(f'\n{"=" * 70}\n\n')
-    cards_gen_info_log().unlink(missing_ok=True)  # removing old cards generation log
+    for log_file in [multiprocessing_debug_log(), cards_gen_info_log(), *list(pipeline_logs_dir().glob("*.yaml"))]:
+        with open(log_file, 'a') as f:
+            f.write(RUN_LOG_SEPARATOR + '\n')
     for old_pipeline_failed in pipeline_logs_dir().glob("*.failed"):
         old_pipeline_failed.rename(  # archiving old <pipeline>.failed files so that no pipeline is marked failed
             str(old_pipeline_failed) + f'.before{datetime.utcnow().isoformat(timespec="seconds")}'
