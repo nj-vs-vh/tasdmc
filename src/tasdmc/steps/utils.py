@@ -39,6 +39,15 @@ def check_file_is_empty(file: Path, ignore_patterns: List[str] = [], ignore_stri
             raise FilesCheckFailed(f"{file.name} contains unignored strings: {line}\n\tand maybe more...")
 
 
+def check_last_line_contains(file: Path, must_contain: str):
+    with open(file, 'r') as f:
+        line = ''
+        for line in f:
+            pass
+        if must_contain not in line:
+            raise FilesCheckFailed(f"{file} does not contain '{must_contain}' in the last line")
+
+
 def file_contents_hash(file_path: Path, hasher_name: str = 'md5') -> str:
     hasher = hashlib.new(hasher_name)
     file_size = file_path.stat().st_size

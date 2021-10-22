@@ -9,7 +9,7 @@ from tasdmc import fileio, config
 from tasdmc.steps.base import Files, FileInFileOutPipelineStep
 from tasdmc.steps.corsika_cards_generation import CorsikaCardsGenerationStep, CorsikaCardFiles
 from tasdmc.steps.exceptions import FilesCheckFailed
-from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty
+from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty, check_last_line_contains
 
 
 @dataclass
@@ -62,11 +62,7 @@ class CorsikaOutputFiles(Files):
                     f"{self.longtitude.name} seems too short! "
                     + f"Only {line_count} lines, but {MIN_CORSIKA_LONG_FILE_LINE_COUNT} expected."
                 )
-        with open(self.stdout, 'r') as stdoutfile:
-            for line in stdoutfile:
-                pass
-            if not (isinstance(line, str) and 'END OF RUN' in line):
-                raise FilesCheckFailed(f"{self.stdout.name} does not end with END OF RUN.")
+        check_last_line_contains(self.stdout, 'END OF RUN')
         check_particle_file_contents(self.particle)
 
 

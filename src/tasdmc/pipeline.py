@@ -2,7 +2,7 @@ from concurrent.futures import ProcessPoolExecutor, Future
 
 from typing import List
 
-from tasdmc import config, progress
+from tasdmc import config
 from tasdmc.steps import (
     CorsikaCardsGenerationStep,
     CorsikaStep,
@@ -29,7 +29,7 @@ def run_standard_pipeline():
                 dethinning_steps = DethinningStep.from_particle_file_splitting_step(particle_file_splitting)
                 corsika2geant = Corsika2GeantStep.from_dethinning_steps(dethinning_steps)
 
-                # TODO: rethink this. this allows n_split to be changed dynamically between same run simulations
+                # TODO: rethink this. this allows n_split to be changed between same run simulations
                 # but also kind of side-steps the whole purpose of steps
                 if not corsika2geant.output.files_were_produced():
                     particle_file_splitting.run(executor, futures_queue)

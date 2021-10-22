@@ -18,15 +18,30 @@ def _execute_cmd(
     )
 
 
-def split_thinned_corsika_output(particle_file: Path, n_split: int, **execute_cmd_kwargs):
-    _execute_cmd('corsika_split_th.run', [particle_file, n_split], **execute_cmd_kwargs)
+def split_thinned_corsika_output(particle_file: Path, n_split: int):
+    _execute_cmd('corsika_split_th.run', [particle_file, n_split])
 
 
-def run_dethinning(particle_file: Path, output_file: Path, **execute_cmd_kwargs):
-    _execute_cmd('dethinning.run', [particle_file, output_file], **execute_cmd_kwargs)
+def run_dethinning(particle_file: Path, output_file: Path, stdout_file: Path, stderr_file: Path):
+    with open(stdout_file, 'w') as stdout, open(stderr_file, 'w') as stderr:
+        _execute_cmd('dethinning.run', [particle_file, output_file], stdout, stderr)
 
 
-def run_corsika2geant(particle_files_listing: Path, output_file: Path, **execute_cmd_kwargs):
-    _execute_cmd(
-        'corsika2geant.run', [particle_files_listing, fileio.DataFiles.sdgeant, output_file], **execute_cmd_kwargs
-    )
+def run_corsika2geant(particle_files_listing: Path, output_file: Path, stdout_file: Path, stderr_file: Path):
+    with open(stdout_file, 'w') as stdout, open(stderr_file, 'w') as stderr:
+        _execute_cmd(
+            'corsika2geant.run',
+            [particle_files_listing, fileio.DataFiles.sdgeant, output_file],
+            stdout,
+            stderr,
+        )
+
+
+def check_tile_file(tile_file: Path, stdout_file: Path, stderr_file: Path):
+    with open(stdout_file, 'w') as stdout, open(stderr_file, 'w') as stderr:
+        _execute_cmd(
+            'check_gea_dat_file.run',
+            [tile_file],
+            stdout,
+            stderr,
+        )

@@ -1,13 +1,15 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
+from subprocess import CalledProcessError
 
 from typing import List
 
 from tasdmc import fileio
-from tasdmc.c_routines_wrapper import run_corsika2geant
+from tasdmc.c_routines_wrapper import run_corsika2geant, check_tile_file
 from tasdmc.steps.base import Files, NotAllRetainedFiles, FileInFileOutPipelineStep
-from tasdmc.steps.utils import check_file_is_empty, concatenate_and_hash
+from tasdmc.steps.utils import check_file_is_empty, concatenate_and_hash, check_last_line_contains
+from tasdmc.steps.exceptions import FilesCheckFailed
 
 from .dethinning import DethinningOutputFiles, DethinningStep
 
@@ -77,7 +79,6 @@ class C2GOutputFiles(Files):
         )
 
     def _check_contents(self):
-        # TODO: check _gea.dat file contents here!
         check_file_is_empty(
             self.stderr,
             ignore_strings=[
@@ -86,6 +87,14 @@ class C2GOutputFiles(Files):
                 'eloss_sdgeant: load_elosses: WARNING: energy loss histograms are already loaded',
             ],
         )
+        check_stdout = Path(str(self.tile) + '.check.stdout')
+        check_stderr = Path(str(self.tile) + '.check.stderr')
+        try:
+            check_tile_file(self.tile, check_stdout, check_stderr)
+            check_file_is_empty(check_stderr)
+            check_last_line_contains(check_stdout, 'OK')
+        except CalledProcessError as e:
+            raise FilesCheckFailed(str(e))
 
 
 class Corsika2GeantStep(FileInFileOutPipelineStep):
@@ -104,13 +113,12 @@ class Corsika2GeantStep(FileInFileOutPipelineStep):
 
     def _run(self):
         self.input_.create_listing_file()
-        with open(self.output.stdout, 'w') as stdout_file, open(self.output.stderr, 'w') as stderr_file:
-            run_corsika2geant(
-                self.input_.dethinned_files_listing,
-                self.output.tile,
-                stdout=stdout_file,
-                stderr=stderr_file,
-            )
+        run_corsika2geant(
+            self.input_.dethinned_files_listing,
+            self.output.tile,
+            self.output.stdout,
+            self.output.stderr,
+        )
         for temp_file in fileio.c2g_output_files_dir().glob(f"{self.output.tile.name}.tmp???"):
             temp_file.unlink()
 

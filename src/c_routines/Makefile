@@ -67,7 +67,7 @@ ${BINDIR}/${C2G}.run: ${C2G_OBJS} | ${C2GBINDIR}
 
 DIRS = ${BINDIR} ${DETHBINDIR} ${C2GBINDIR}
 
-STEMS = corsika_split_th ${DETHIN} ${C2G}
+STEMS = corsika_split_th check_gea_dat_file ${DETHIN} ${C2G}
 
 EXECUTABLES = $(addsuffix .run, ${STEMS})
 

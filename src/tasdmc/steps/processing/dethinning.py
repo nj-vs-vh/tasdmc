@@ -9,7 +9,7 @@ from tasdmc.c_routines_wrapper import run_dethinning
 
 from tasdmc.steps.base import NotAllRetainedFiles, FileInFileOutPipelineStep
 from tasdmc.steps.exceptions import FilesCheckFailed
-from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty
+from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty, check_last_line_contains
 
 from .particle_file_splitting import SplitParticleFiles, ParticleFileSplittingStep
 
@@ -60,11 +60,7 @@ class DethinningOutputFiles(NotAllRetainedFiles):
 
     def _check_contents(self):
         check_file_is_empty(self.stderr)
-        with open(self.stdout, 'r') as f:
-            for line in f:
-                line = line.strip()
-            if not (isinstance(line, str) and line.startswith('RUNH: 1') and line.endswith('RUNE: 1')):
-                raise FilesCheckFailed(f"Dethinning stdout {self.stdout.name} does not end with RUNH/RUNE line")
+        check_last_line_contains(self.stdout, 'RUNH: 1')
         check_particle_file_contents(self.dethinned_particle)
 
 
@@ -90,8 +86,7 @@ class DethinningStep(FileInFileOutPipelineStep):
         return f"Dethinning {self.input_.particle.name}"
 
     def _run(self):
-        with open(self.output.stdout, 'w') as stdout_file, open(self.output.stderr, 'w') as stderr_file:
-            run_dethinning(self.input_.particle, self.output.dethinned_particle, stdout=stdout_file, stderr=stderr_file)
+        run_dethinning(self.input_.particle, self.output.dethinned_particle, self.output.stdout, self.output.stderr)
 
     def _post_run(self):
         self.input_.delete_not_retained_files()

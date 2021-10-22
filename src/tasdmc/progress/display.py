@@ -17,5 +17,5 @@ def print_multiprocessing_debug(pids: List[int], n_messages: int):
             if f"pid {pid}" in line:
                 click.secho(line.strip(), dim=True)
                 messages_printed += 1
-            if messages_printed >= n_messages:
+            if '======' in line or messages_printed >= n_messages:
                 break
