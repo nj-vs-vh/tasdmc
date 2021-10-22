@@ -16,6 +16,7 @@ class EventType(Enum):
     SKIPPED = 'skipped'
     COMPLETED = 'completed'
     FAILED = 'failed'
+    OUTPUT_SIZE_MEASURED = 'output_size_measured'  # DEPRECATED, kept for older runs
 
     def __str__(self) -> str:
         return self.value
