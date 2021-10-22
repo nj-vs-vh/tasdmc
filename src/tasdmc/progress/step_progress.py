@@ -16,7 +16,6 @@ class EventType(Enum):
     SKIPPED = 'skipped'
     COMPLETED = 'completed'
     FAILED = 'failed'
-    OUTPUT_SIZE_MEASURED = 'output_size_measured'
 
     def __str__(self) -> str:
         return self.value
@@ -64,13 +63,9 @@ def skipped(step: 'FileInFileOutPipelineStep'):  # type: ignore
     PipelineStepProgress.from_step(step, EventType.SKIPPED).save()
 
 
-def completed(step: 'FileInFileOutPipelineStep'):  # type: ignore
-    PipelineStepProgress.from_step(step, EventType.COMPLETED).save()
+def completed(step: 'FileInFileOutPipelineStep', output_size_mb: int):  # type: ignore
+    PipelineStepProgress.from_step(step, EventType.COMPLETED, value=output_size_mb).save()
 
 
 def failed(step: 'FileInFileOutPipelineStep', errmsg: str):  # type: ignore
     PipelineStepProgress.from_step(step, EventType.FAILED, value=errmsg).save()
-
-
-def output_size_measured(step: 'FileInFileOutPipelineStep', output_size_mb: int):  # type: ignore
-    PipelineStepProgress.from_step(step, EventType.OUTPUT_SIZE_MEASURED, value=output_size_mb).save()

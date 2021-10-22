@@ -89,10 +89,9 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
                 self.output.prepare_for_step_run()
                 step_progress.started(self)
                 self._run()
-                step_progress.completed(self)
                 self.output.assert_files_are_ready()
                 self.input_.store_contents_hash()
-                step_progress.output_size_measured(self, output_size_mb=self.output.total_size('Mb'))
+                step_progress.completed(self, output_size_mb=self.output.total_size('Mb'))
                 self._post_run()
         except Exception as e:
             step_progress.failed(self, errmsg=str(e))
