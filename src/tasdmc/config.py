@@ -109,7 +109,7 @@ def run_name() -> str:
 
 
 def try_to_continue() -> bool:
-    return get_key('if_exists') == 'continue'
+    return get_key('continue', default=False)
 
 
 def used_processes() -> int:

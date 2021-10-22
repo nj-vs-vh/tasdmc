@@ -3,7 +3,6 @@
 import os
 import click
 from pathlib import Path
-import shutil
 from functools import lru_cache
 from datetime import datetime
 
@@ -105,27 +104,16 @@ def pipeline_failed_file(pipeline_id: str):
 
 def prepare_run_dir():
     rd = run_dir()
-    if_exists = config.get_key('if_exists', default='error')
-    if if_exists == 'continue':
+    if config.try_to_continue():
         if rd.exists():
-            click.secho(f"Run directory already exists, trying to continue operation", fg='red', bold=True)
+            click.secho(f"Run already exists, continuing", fg='red', bold=True)
         else:
             rd.mkdir()
-    elif if_exists == 'overwrite':
-        try:
-            shutil.rmtree(rd)
-        except FileNotFoundError:
-            click.secho(f"Run directory existed and was overwritten", fg='red', bold=True)
-        rd.mkdir()
-    elif if_exists == 'error':
+    else:
         try:
             rd.mkdir()
         except FileExistsError:
-            raise ValueError(f"Run directory '{rd.name}' already exists, pick another run name")
-    else:
-        raise ValueError(
-            f"if_exists config key must be 'continue', 'overwrite', or 'error', but {if_exists} was specified"
-        )
+            raise ValueError(f"Run '{rd.name}' already exists, pick another run name or set continue: True in config")
 
     for idir_getter in _internal_dir_getters:
         idir_getter().mkdir(exist_ok=config.try_to_continue())
