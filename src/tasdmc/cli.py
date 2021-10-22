@@ -57,12 +57,9 @@ def abort(name: str, n_last_messages: int):
     config.load(fileio.get_run_config_path(name))
 
     main_process_id = fileio.get_saved_main_process_id()
-    res = system.print_process_status(main_process_id)
-    if not res:
-        return
+    system.print_process_status(main_process_id)
 
-    worker_pids = system.get_children_process_ids(main_process_id)
-    display_progress.print_multiprocessing_debug(worker_pids, n_last_messages)
+    display_progress.print_multiprocessing_debug(n_last_messages)
 
 
 @cli.command("abort", help="Abort execution of run specified by NAME. This will kill all processes in specified run!")
