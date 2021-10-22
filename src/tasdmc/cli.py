@@ -21,17 +21,27 @@ def _run_config_option(param_name: str):
         param_name,
         default='run.yaml',
         show_default=True,
+        type=click.Path(),
         help='run configuration .yaml file',
     )
 
 
 @cli.command("run", help="Run simulation")
 @_run_config_option('config_filename')
-def run(config_filename):
+@click.option("--background/--foreground", default=True, help="Run in background and detach from current terminal")
+def run(config_filename, background):
     config.load(config_filename)
     config.validate()
     fileio.prepare_run_dir()
-    pipeline.run_standard_pipeline()
+    if background:
+        system.run_in_background(
+            pipeline.run_standard_pipeline,
+            main_process_fn=lambda: click.echo(
+                f"Now running in background. Use 'tasdmc ps {config.run_name()}' to check run status"
+            ),
+        )
+    else:
+        pipeline.run_standard_pipeline()
 
 
 @cli.command("resources", help="Estimate resources that will be taken up by a run")
