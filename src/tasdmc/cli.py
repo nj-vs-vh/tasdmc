@@ -28,12 +28,12 @@ def _run_config_option(param_name: str):
 
 @cli.command("run", help="Run simulation")
 @_run_config_option('config_filename')
-@click.option("--background/--foreground", default=True, help="Run in background and detach from current terminal")
-def run(config_filename, background):
+@click.option("--bg/--fg", default=True, help="Run in background and detach from current terminal")
+def run(config_filename, bg):
     config.load(config_filename)
     config.validate()
     fileio.prepare_run_dir()
-    if background:
+    if bg:
         system.run_in_background(
             pipeline.run_standard_pipeline,
             main_process_fn=lambda: click.echo(

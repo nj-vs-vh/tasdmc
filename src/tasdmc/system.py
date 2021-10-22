@@ -1,6 +1,7 @@
 """System-related actions module"""
 
 import os
+import sys
 import psutil
 from pathlib import Path
 import click
@@ -30,12 +31,20 @@ def available_disk_space(where_file: Path) -> int:
 
 
 def run_in_background(background_fn: Callable[[], None], main_process_fn: Callable[[], None]):
-    forked_pid = os.fork()
-    if forked_pid != 0:
-        os.setpgrp()  # this changes forked process group and hence detaches it from terminal
-        background_fn()
+    child_pid = os.fork()
+    if child_pid != 0:
+        grandchild_pid = os.fork()
+        if grandchild_pid != 0:
+            import time
+            time.sleep(3)
+            with open('hello-from-child.txt', 'w') as f:
+                f.write(str(grandchild_pid))
+            background_fn()
+        else:
+            os._exit(0)
     else:
         main_process_fn()
+        sys.exit(0)
 
 
 def _proc2str(p: psutil.Process) -> str:
