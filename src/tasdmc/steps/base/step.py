@@ -58,22 +58,24 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
         """Step description string, used for progress monitoring"""
         pass
 
-    def run(self, executor: ProcessPoolExecutor, futures_list: List[Future]) -> Future:
-        """Main method for running the step.
+    def schedule(self, executor: ProcessPoolExecutor, futures_list: List[Future]) -> Future:
+        """Main method to schedule step's execution in multiprocessing pool
 
         Args:
             executor (ProcessPoolExecutor): ProcessPoolExecutor to submit step to
             futures_list (list of Future): list of futures to add this run future result into
         """
-        futures_list.append(executor.submit(self._run_in_executor))
+        progress.register_pipeline(self.pipeline_id)
+        futures_list.append(executor.submit(self.run, in_executor=True))
 
-    def _run_in_executor(self):
-        while not self.input_.files_were_produced() and not progress.is_pipeline_failed(self.pipeline_id):
-            sleep_time = 60  # sec
-            progress.multiprocessing_debug(
-                f"Input files for '{self.description}' were not yet produced, sleeping for {sleep_time} sec"
-            )
-            sleep(sleep_time)
+    def run(self, in_executor: bool = False):
+        if in_executor:
+            while not self.input_.files_were_produced() and not progress.is_pipeline_failed(self.pipeline_id):
+                sleep_time = 60  # sec
+                progress.multiprocessing_debug(
+                    f"Input files for '{self.description}' were not yet produced, sleeping for {sleep_time} sec"
+                )
+                sleep(sleep_time)
 
         if progress.is_pipeline_failed(self.pipeline_id):
             progress.multiprocessing_debug(f"Not running '{self.description}', pipeline marked as failed")

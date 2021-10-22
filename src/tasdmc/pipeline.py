@@ -24,7 +24,7 @@ def run_standard_pipeline():
         corsika_steps = CorsikaStep.from_corsika_cards_generation(cards_generation)
         for corsika_steps_batch in batches(corsika_steps, n_processes):
             for corsika_step in corsika_steps_batch:  # first running a batch of corsikas in parallel
-                corsika_step.run(executor, futures_queue)
+                corsika_step.schedule(executor, futures_queue)
 
             for corsika_step in corsika_steps_batch:
                 particle_file_splitting = ParticleFileSplittingStep.from_corsika_step(corsika_step)
@@ -35,10 +35,10 @@ def run_standard_pipeline():
                     config.get_key('dethinning._try_to_skip', default=False)
                     and corsika2geant.output.files_were_produced()
                 ):
-                    particle_file_splitting.run(executor, futures_queue)
+                    particle_file_splitting.schedule(executor, futures_queue)
                     for dethinning in dethinning_steps:
-                        dethinning.run(executor, futures_queue)
-                    corsika2geant.run(executor, futures_queue)
+                        dethinning.schedule(executor, futures_queue)
+                    corsika2geant.schedule(executor, futures_queue)
 
         for f in futures_queue:
             f.result()
