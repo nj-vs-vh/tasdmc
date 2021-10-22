@@ -18,6 +18,10 @@ dethinning:
   # if not specified, resources.max_processes will be used
   n_parallel: 6
 
+corsika2geant:
+  # TEMPORARY
+  _try_to_skip_dethinning: True
+
 resources:
   # since tasdmc has TASDMC_MEMORY_PER_PROCESS_GB configured in build-time, only one of these may
   # be specified and the other will be inferred; if both are specified, the most conservative will be chosen

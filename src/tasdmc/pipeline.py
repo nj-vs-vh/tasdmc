@@ -29,9 +29,10 @@ def run_standard_pipeline():
                 dethinning_steps = DethinningStep.from_particle_file_splitting_step(particle_file_splitting)
                 corsika2geant = Corsika2GeantStep.from_dethinning_steps(dethinning_steps)
 
-                # TODO: rethink this. this allows n_split to be changed between same run simulations
-                # but also kind of side-steps the whole purpose of steps
-                if not corsika2geant.output.files_were_produced():
+                if (
+                    config.get_key('corsika2geant._try_to_skip_dethinning', default=False)
+                    and not corsika2geant.output.files_were_produced()
+                ):
                     particle_file_splitting.run(executor, futures_queue)
                     for dethinning in dethinning_steps:
                         dethinning.run(executor, futures_queue)
