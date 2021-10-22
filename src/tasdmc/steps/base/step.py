@@ -65,7 +65,6 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
             executor (ProcessPoolExecutor): ProcessPoolExecutor to submit step to
             futures_list (list of Future): list of futures to add this run future result into
         """
-        pipeline_progress.register(self.pipeline_id)
         futures_list.append(executor.submit(self.run, in_executor=True))
 
     def run(self, in_executor: bool = False):

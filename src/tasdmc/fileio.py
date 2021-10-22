@@ -2,6 +2,7 @@
 
 import os
 import click
+import shutil
 from pathlib import Path
 from functools import lru_cache
 from datetime import datetime
@@ -102,9 +103,6 @@ def pipeline_failed_file(pipeline_id: str):
 # top-level functions
 
 
-RUN_LOG_SEPARATOR = "# " + "=" * 70
-
-
 def prepare_run_dir():
     rd = run_dir()
     if config.try_to_continue():
@@ -118,18 +116,19 @@ def prepare_run_dir():
         except FileExistsError:
             raise ValueError(f"Run '{rd.name}' already exists, pick another run name or set continue: True in config")
 
+    if logs_dir().exists():
+        old_logs_dir_name = f'before-{datetime.utcnow().isoformat(timespec="seconds")}'
+        old_logs_dir = logs_dir() / old_logs_dir_name
+        old_logs_dir.mkdir()
+        for old_log in logs_dir().glob('*'):
+            if not old_log.name.startswith('before'):
+                shutil.move(old_log, old_logs_dir / old_log.name)
+
     for idir_getter in _internal_dir_getters:
         idir_getter().mkdir(exist_ok=config.try_to_continue())
 
     config.dump(saved_run_config_file())
     saved_main_process_id_file().write_text(str(os.getpid()))  # saving currend main process ID
-    for log_file in [multiprocessing_debug_log(), cards_gen_info_log(), *list(pipeline_logs_dir().glob("*.yaml"))]:
-        with open(log_file, 'a') as f:
-            f.write(RUN_LOG_SEPARATOR + '\n')
-    for old_pipeline_failed in pipeline_logs_dir().glob("*.failed"):
-        old_pipeline_failed.rename(  # archiving old <pipeline>.failed files so that no pipeline is marked failed
-            str(old_pipeline_failed) + f'.before{datetime.utcnow().isoformat(timespec="seconds")}'
-        )
 
 
 def get_saved_main_process_id():
