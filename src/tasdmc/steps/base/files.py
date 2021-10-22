@@ -153,7 +153,8 @@ class Files(ABC):
     def same_hash_as_stored(self) -> bool:
         stored_hash_path = self._stored_hash_path
         if not stored_hash_path.exists():
-            return False
+            self.store_contents_hash()  # this is needed for pre-input hashing versions
+            return True
         with open(self._stored_hash_path, 'r') as f:
             stored_hash = f.read()
         return self.contents_hash == stored_hash
