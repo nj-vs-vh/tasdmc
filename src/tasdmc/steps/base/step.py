@@ -10,7 +10,7 @@ import traceback
 from typing import Optional, List
 
 from tasdmc import config, progress
-from tasdmc.progress import step_progress
+from tasdmc.progress import step_progress, pipeline_progress
 from .files import Files
 
 
@@ -65,7 +65,7 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
             executor (ProcessPoolExecutor): ProcessPoolExecutor to submit step to
             futures_list (list of Future): list of futures to add this run future result into
         """
-        progress.register_pipeline(self.pipeline_id)
+        pipeline_progress.register(self.pipeline_id)
         futures_list.append(executor.submit(self.run, in_executor=True))
 
     def run(self, in_executor: bool = False):
@@ -77,7 +77,7 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
                 )
                 sleep(sleep_time)
 
-        if progress.is_pipeline_failed(self.pipeline_id):
+        if pipeline_progress.is_failed(self.pipeline_id):
             progress.multiprocessing_debug(f"Not running '{self.description}', pipeline marked as failed")
             return
         else:
@@ -97,7 +97,7 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
                 self._post_run()
         except Exception as e:
             step_progress.failed(self, errmsg=str(e))
-            progress.mark_pipeline_failed(self.pipeline_id, errmsg=traceback.format_exc())
+            pipeline_progress.mark_failed(self.pipeline_id, errmsg=traceback.format_exc())
 
     @abstractmethod
     def _run(self):

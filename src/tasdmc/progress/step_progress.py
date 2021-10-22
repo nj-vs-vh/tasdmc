@@ -5,10 +5,10 @@ from datetime import datetime
 from enum import Enum
 import yaml
 
-from typing import Optional, Any
+from typing import Dict, Optional, Any
 
 from tasdmc import fileio
-from .utils import datetime2str
+from .utils import datetime2str, str2datetime
 
 
 class EventType(Enum):
@@ -39,6 +39,12 @@ class PipelineStepProgress:
             d.pop('value')
         with open(fileio.pipeline_log(self.pipeline_id), 'a') as f:
             yaml.dump([{key: str(d[key]) for key in sorted(d.keys())}], f)
+
+    @classmethod
+    def load(cls, dump: Dict, pipeline_id: str) -> PipelineStepProgress:
+        dump['timestamp'] = str2datetime(dump['timestamp'])
+        dump['event_type'] = EventType(dump['event_type'])
+        return cls(**dump, pipeline_id=pipeline_id)
 
     @classmethod
     def from_step(

@@ -59,10 +59,18 @@ def _run_name_argument(param_name: str):
     return click.argument(param_name, type=click.STRING)
 
 
-@cli.command("ps", help="Display run NAME's processes status and print last messages from worker processes")
+@cli.command("progress", help="Display progress for run NAME")
+@_run_name_argument('name')
+# @click.option("-n", "n_last_messages", default=1, help="Number of messages from worker processes to print")
+def progress(name: str):
+    config.load(fileio.get_run_config_path(name))
+    display_progress.print_pipelines_progress()
+
+
+@cli.command("ps", help="Display processes status and print last debug messages from worker processes for run NAME")
 @_run_name_argument('name')
 @click.option("-n", "n_last_messages", default=1, help="Number of messages from worker processes to print")
-def abort(name: str, n_last_messages: int):
+def ps(name: str, n_last_messages: int):
     config.load(fileio.get_run_config_path(name))
 
     main_process_id = fileio.get_saved_main_process_id()
@@ -87,7 +95,7 @@ def abort(name: str):
     help="Delete all files related to run NAME's pipelines currently marked as .failed; INTERNAL/EXPERIMENTAL COMMAND",
 )
 @_run_name_argument('name')
-def abort(name: str):
+def cleanup_failed_pipelines(name: str):
     config.load(fileio.get_run_config_path(name))
     failed_pipeline_files = cleanup.get_failed_pipeline_files()
     if not failed_pipeline_files:

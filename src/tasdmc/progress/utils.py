@@ -1,5 +1,12 @@
 from datetime import datetime
 
 
+DATETIME_FMT = r'%d/%m/%y %H:%M:%S'
+
+
 def datetime2str(d: datetime) -> str:
-    return d.strftime(r'%d/%m/%y %H:%M:%S')
+    return d.strftime(DATETIME_FMT)
+
+
+def str2datetime(s: str) -> datetime:
+    return datetime.strptime(s, DATETIME_FMT)
