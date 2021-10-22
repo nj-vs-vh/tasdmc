@@ -32,16 +32,9 @@ def available_disk_space(where_file: Path) -> int:
 
 def run_in_background(background_fn: Callable[[], None], main_process_fn: Callable[[], None]):
     child_pid = os.fork()
-    if child_pid != 0:
-        grandchild_pid = os.fork()
-        if grandchild_pid != 0:
-            import time
-            time.sleep(3)
-            with open('hello-from-child.txt', 'w') as f:
-                f.write(str(grandchild_pid))
-            background_fn()
-        else:
-            os._exit(0)
+    if child_pid == 0:
+        os.setsid()  # creating new session for child process and hence detaching it from current terminal
+        background_fn()
     else:
         main_process_fn()
         sys.exit(0)

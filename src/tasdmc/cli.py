@@ -32,7 +32,6 @@ def _run_config_option(param_name: str):
 def run(config_filename, bg):
     config.load(config_filename)
     config.validate()
-    fileio.prepare_run_dir()
     if bg:
         system.run_in_background(
             pipeline.run_standard_pipeline,
