@@ -5,7 +5,7 @@ if [ "x${BASH_ARGV[0]}" = "x" ]; then
     fi
     TASDMC_DIR=$(pwd)
 else
-    TASDMC_DIR=$(dirname ${BASH_ARGV[0]})
+    TASDMC_DIR=$(readlink -f $(dirname ${BASH_ARGV[0]}))
 fi
 
 export TASDMC_BIN_DIR=$TASDMC_DIR/bin
