@@ -98,28 +98,51 @@ steps. See [example](config_examples/run.yaml) for self-explainatory config exam
 
 ```yaml
 name: your-run-name
-TBD: 
+# will be copied here when finalized :)
 ```
 
 
 ### Commands
 
-1. Start simulation:
+#### `run` - start simulation
 
 ```bash
 tasdmc run --config my-run-config.yaml
 ```
 
-This is the main `tasdmc` entry point and its behavior greatly depends on passed
-configuration. By default simulation is run in the background.
+This is the main `tasdmc` entry point. By default the simulation is started in the background
+and detached from current terminal.
 
-2. Abort running simulation:
+#### `progress` - check simulation progress
+
+Count how many pipelines are completed, running, pending or failed. A pipeline here
+refers to a set of operations on a single CORSIKA input card.
+
+```bash
+tasdmc progress my-run-name
+```
+
+#### `ps` - check simulation status
+
+Check whether the run is currently active, list worker processes, print last multiprocessing debug messages.
+
+```bash
+tasdmc ps my-run-name -n 5  # to print 5 last log messages from each worker process
+```
+
+#### `input` - print simulation inputs
+
+```bash
+tasdmc inputs my-run-name
+```
+
+#### `abort` - abort running simulation
 
 ```bash
 tasdmc abort --name my-run-name
 ```
 
-3. Estimate resources needed for the run
+#### `resources` - estimate resources configured for simulation
 
 ```bash
 tasdmc resources --config my-run-config.yaml
