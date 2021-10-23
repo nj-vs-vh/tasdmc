@@ -61,10 +61,19 @@ def _run_name_argument(param_name: str):
 
 @cli.command("progress", help="Display progress for run NAME")
 @_run_name_argument('name')
-# @click.option("-n", "n_last_messages", default=1, help="Number of messages from worker processes to print")
 def progress(name: str):
     config.load(fileio.get_run_config_path(name))
     display_progress.print_pipelines_progress()
+
+
+raise ValueError(f"IMPLEMENT INPUT COMMAND")
+
+
+@cli.command("input", help="Display progress for run NAME")
+@_run_name_argument('name')
+def inputs(name: str):
+    config.load(fileio.get_run_config_path(name))
+    # TODO
 
 
 @cli.command("ps", help="Display processes status and print last debug messages from worker processes for run NAME")
