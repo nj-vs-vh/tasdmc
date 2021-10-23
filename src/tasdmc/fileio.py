@@ -69,8 +69,8 @@ def logs_dir() -> Path:
 
 
 @internal_dir
-def pipeline_logs_dir() -> Path:
-    return logs_dir() / 'pipeline'
+def pipelines_failed_dir() -> Path:
+    return logs_dir() / 'pipelines_failed'
 
 
 # individual files
@@ -92,12 +92,12 @@ def cards_gen_info_log():
     return logs_dir() / 'cards_generation_info.log'
 
 
-def pipeline_log(pipeline_id: str):
-    return pipeline_logs_dir() / f'{pipeline_id}.yaml'
+def pipelines_log():
+    return logs_dir() / f'pipelines.log'
 
 
 def pipeline_failed_file(pipeline_id: str):
-    return pipeline_logs_dir() / f'{pipeline_id}.failed'
+    return pipelines_failed_dir() / f'{pipeline_id}.failed'
 
 
 # top-level functions

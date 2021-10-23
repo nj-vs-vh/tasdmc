@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-import yaml
 
-from typing import Dict, Optional, Any
+from typing import Optional, Any, List
 
 from tasdmc import fileio
+# from tasdmc.steps.base import FileInFileOutPipelineStep
 from .utils import datetime2str, str2datetime
 
 
@@ -27,25 +27,37 @@ class PipelineStepProgress:
     event_type: EventType
     step_name: str
     step_input_hash: str
-    step_description: str
     timestamp: datetime
     pipeline_id: str
     value: Optional[Any] = None
 
     def save(self):
-        d = asdict(self)
-        d.pop('pipeline_id')
-        d['timestamp'] = datetime2str(self.timestamp)
-        if self.value is None:
-            d.pop('value')
-        with open(fileio.pipeline_log(self.pipeline_id), 'a') as f:
-            yaml.dump([{key: str(d[key]) for key in sorted(d.keys())}], f)
+        export_fields = [
+            datetime2str(self.timestamp),
+            self.pipeline_id,
+            self.step_name,
+            self.step_input_hash,
+            str(self.event_type),
+        ]
+        if self.value is not None:
+            export_fields.append(str(self.value))
+        with open(fileio.pipelines_log(), 'a') as f:
+            f.write(' '.join(export_fields) + '\n')
 
     @classmethod
-    def load(cls, dump: Dict, pipeline_id: str) -> PipelineStepProgress:
-        dump['timestamp'] = str2datetime(dump['timestamp'])
-        dump['event_type'] = EventType(dump['event_type'])
-        return cls(**dump, pipeline_id=pipeline_id)
+    def load(cls) -> List[PipelineStepProgress]:
+        step_progresses = []
+        for line in fileio.pipelines_log().read_text().splitlines():
+            datetime_str, pipeline_id, step_name, step_input_hash, event_type_str, *rest = line.split(' ')
+            step_progresses.append(PipelineStepProgress(
+                timestamp=str2datetime(datetime_str),
+                pipeline_id=pipeline_id,
+                step_name=step_name,
+                step_input_hash=step_input_hash,
+                event_type=EventType(event_type_str),
+                value=rest[0] if rest else None
+            ))
+        return step_progresses
 
     @classmethod
     def from_step(
@@ -55,7 +67,6 @@ class PipelineStepProgress:
             event_type,
             step_name=step.__class__.__name__,
             step_input_hash=step.input_.contents_hash,
-            step_description=step.description,
             timestamp=datetime.utcnow(),
             pipeline_id=step.pipeline_id,
             value=value,

@@ -7,7 +7,7 @@ from tasdmc import fileio
 
 
 def get_failed_pipeline_files():
-    return list(fileio.pipeline_logs_dir().glob('*.failed'))
+    return list(fileio.pipelines_failed_dir().glob('*.failed'))
 
 
 def delete_all_files_from_failed_pipeline(pipeline_failed_path: Path):

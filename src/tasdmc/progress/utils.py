@@ -1,7 +1,7 @@
 from datetime import datetime
 
 
-DATETIME_FMT = r'%d/%m/%y %H:%M:%S'
+DATETIME_FMT = r'%d/%m/%yT%H:%M:%S'
 
 
 def datetime2str(d: datetime) -> str:

@@ -2,22 +2,16 @@ import click
 import re
 import os
 from collections import defaultdict
-from pathlib import Path
-from io import StringIO
-import yaml
-
-from typing import List
 
 from tasdmc import fileio
 from tasdmc.progress.step_progress import EventType, PipelineStepProgress
-from tasdmc.progress import pipeline_progress
 
 
 multiproc_debug_message_re = re.compile(r'.*\(pid (?P<pid>\d+)\)')
 
 
 def print_multiprocessing_debug(n_messages: int):
-    lines_for_last_run = _get_last_run_lines(fileio.multiprocessing_debug_log())
+    lines_for_last_run = fileio.multiprocessing_debug_log().read_text().splitlines()
     lines_for_last_run.reverse()
 
     messages_by_pid = defaultdict(list)
@@ -44,50 +38,35 @@ def print_multiprocessing_debug(n_messages: int):
                 click.secho(line.strip(), dim=True)
 
 
-def load_pipeline_steps(pipeline_id: str) -> List[PipelineStepProgress]:
-    last_run_progress = _get_last_run_lines(fileio.pipeline_log(pipeline_id))
-    return [
-        PipelineStepProgress.load(dump, pipeline_id) for dump in yaml.safe_load(StringIO('\n'.join(last_run_progress)))
-    ]
+def count_pipelines():
+    return sum(1 for _ in fileio.corsika_input_files_dir().iterdir())
 
 
 def print_pipelines_progress():
-    pipelines_total = 0
+    pipeline_stack_by_id = defaultdict(set)
+    for pipeline_step_progress in PipelineStepProgress.load():
+        plid = pipeline_step_progress.pipeline_id
+        if pipeline_stack_by_id[plid] is None:  # pipeline has failed
+            continue
+        if pipeline_step_progress.event_type is EventType.STARTED:
+            pipeline_stack_by_id[plid].add(pipeline_step_progress.step_input_hash)
+        elif pipeline_step_progress.event_type is EventType.COMPLETED:
+            pipeline_stack_by_id[plid].discard(pipeline_step_progress.step_input_hash)
+        elif pipeline_step_progress.event_type is EventType.FAILED:
+            pipeline_stack_by_id[plid] = None
+
+    pipelines_total = count_pipelines()
     pipelines_failed = 0
-    pipelines_pending = 0
     pipelines_completed = 0
     pipelines_running = 0
-    for pipeline_file in fileio.pipeline_logs_dir().glob(fileio.pipeline_log('*').name):
-        pipelines_total += 1
-        pipeline_id = pipeline_file.stem
-        if pipeline_progress.is_failed(pipeline_id):
+    for plid, stack in pipeline_stack_by_id.items():
+        if stack is None:
             pipelines_failed += 1
-            continue
-        pipeline_steps = load_pipeline_steps(pipeline_id)
-        if len(pipeline_steps) == 0:
-            pipelines_pending += 1
-            continue
-        step_stack = set()
-        for step_progress in pipeline_steps:
-            if step_progress.event_type is EventType.STARTED:
-                step_stack.add(step_progress.step_input_hash)
-            elif step_progress.event_type is EventType.COMPLETED:
-                step_stack.discard(step_progress.step_input_hash)
-            elif step_progress.event_type is EventType.FAILED:
-                pipelines_failed += 1
-                break
-        else:  # if not broken out on failed
-            if len(step_stack) == 0:
-                # completed if all (logged) steps in a pipeline were started and completed
-                # this can overestimate number of completed steps if one ended and
-                # the other hasn't started yet but we'll ignore it for now
-                pipelines_completed += 1
-            else:
-                pipelines_running += 1
-    error = pipelines_total - (pipelines_completed + pipelines_failed + pipelines_running + pipelines_pending)
-    if error:
-        click.echo(f"Error in pipeline count: {error} pipelines with unknown status. Counting them as pending.")
-    pipelines_pending += error
+        elif len(stack) == 0:
+            pipelines_completed += 1
+        else:
+            pipelines_running += 1
+    pipelines_pending = pipelines_total - (pipelines_failed + pipelines_completed + pipelines_running)
     display_data = [
         ('completed', 'green', pipelines_completed),
         ('running', 'yellow', pipelines_running),
@@ -101,15 +80,3 @@ def print_pipelines_progress():
     click.echo('')
     for name, color, such_pipelines in display_data:
         click.echo(click.style("■", fg=color) + f" {name} ({such_pipelines} / {pipelines_total})")
-
-
-def _get_last_run_lines(log_filename: Path) -> List[str]:
-    lines_from_last_run = []
-    with open(log_filename, 'r') as f:
-        for line in f:
-            line = line.strip('\n')
-            if line == fileio.RUN_LOG_SEPARATOR:
-                lines_from_last_run.clear()
-            else:
-                lines_from_last_run.append(line)
-    return lines_from_last_run

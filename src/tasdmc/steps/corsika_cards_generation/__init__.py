@@ -45,7 +45,12 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
         >>> CorsikaInputFilesGeneration.create_and_run()
         """
         instance = CorsikaCardsGenerationStep(CorsikaCardFiles([]))
-        instance.run()  # here corsika input files are added to output.all list
+        instance.run()  # here corsika input files are added to output.files list
+        # making sure only generated .in files are there and no others; we'll use .in files for reference!
+        output_files_set = set(instance.output.files)
+        for card_file in fileio.corsika_input_files_dir().iterdir():
+            if card_file not in output_files_set:
+                card_file.unlink()
         return instance
 
     def run(self):
