@@ -66,14 +66,11 @@ def progress(name: str):
     display_progress.print_pipelines_progress()
 
 
-raise ValueError(f"IMPLEMENT INPUT COMMAND")
-
-
 @cli.command("input", help="Display progress for run NAME")
 @_run_name_argument('name')
 def inputs(name: str):
     config.load(fileio.get_run_config_path(name))
-    # TODO
+    click.echo(fileio.cards_gen_info_log().read_text())
 
 
 @cli.command("ps", help="Display processes status and print last debug messages from worker processes for run NAME")
