@@ -73,8 +73,7 @@ def print_pipelines_progress():
         ('pending', 'white', pipelines_pending),
         ('failed', 'red', pipelines_failed),
     ]
-    progress_bar_width = os.get_terminal_size().columns - 2
-    click.echo(" ", nl=False)
+    progress_bar_width = os.get_terminal_size().columns
     for _, color, such_pipelines in display_data:
         click.secho("█" * int(progress_bar_width * such_pipelines / pipelines_total), nl=False, fg=color)
     click.echo('')
