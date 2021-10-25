@@ -33,7 +33,9 @@ pip install -r requirements.txt
    No automatic building is provided for now, so please keep your builds
    and `.yaml` config files (see later) in sync manually.
 2. [`sdanalysis`](https://github.com/nj-vs-vh/ta-sdanalysis): must be cloned 
-   and built from source following README instructions
+   and built from source following README instructions. Make sure that it is also
+   activated (`sdanalysis_env.sh` is sourced) in the same environment `tasdmc`
+   is installed in - README contains specific instructions on how to do it.
 3. `sdgeant.dst`: data file containing pre-computed energy losses inside TA
    surface detector. It is used as a lookup table for detector response calculation
    to avoid running expensive Geant4 simulations for each MC run.
@@ -74,7 +76,7 @@ echo "source $(pwd)/tasdmc_env.sh" >> ~/.bashrc
 # when using venv
 echo "source $(pwd)/tasdmc_env.sh" >> $(python -c "import sys; print(sys.prefix)")/bin/activate
 # when using Anaconda
-echo "source $(pwd)/tasdmc_env.sh" >>  $(python -c "import sys; print(sys.prefix)")/etc/conda/activate.d/activate-tasdmc.sh
+echo "source $(pwd)/tasdmc_env.sh" >> $(python -c "import sys; print(sys.prefix)")/etc/conda/activate.d/activate-tasdmc.sh
 ```
 
 However, you can `export` these variables any other way you want.
