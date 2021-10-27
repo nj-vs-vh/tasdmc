@@ -2,7 +2,8 @@
 
 import click
 from pathlib import Path
-from concurrent.futures import ProcessPoolExecutor, Future
+from concurrent.futures import ProcessPoolExecutor, Future, as_completed
+from tqdm import tqdm
 from datetime import datetime, date
 
 from typing import List
@@ -23,30 +24,44 @@ def extract_calibration(raw_calibration_data_dir: Path, n_threads: int = 1):
     if not raw_calibration_data_dir.exists():
         click.echo(f"Raw calibration data directory {raw_calibration_data_dir} not found, aborting")
         return
+    raw_calibration_data_dir = raw_calibration_data_dir.resolve()
     constants_file = raw_calibration_data_dir / 'const/tasdconst_pass2.dst'
     if not constants_file.exists():
         click.echo(f"Constants file {constants_file} not found, aborting")
         return
+    raw_calibration_files_dir = raw_calibration_data_dir / 'calib'
+    if not constants_file.exists():
+        click.echo(f"Raw calibration data dir {raw_calibration_files_dir} not found, aborting")
+        return
+    all_raw_calibration_files = list(raw_calibration_files_dir.iterdir())
+    if not all_raw_calibration_files:
+        click.echo(f"Raw calibration data dir {raw_calibration_files_dir} is empty, aborting")
+        return
 
-    raw_calibration_files = list((raw_calibration_data_dir / 'calib').iterdir())
-    raw_calibration_by_date = {_date_from_raw_calibration_file(rcf): rcf for rcf in raw_calibration_files}
+    all_raw_calibration_files_by_date = {_date_from_raw_calibration_file(rcf): rcf for rcf in all_raw_calibration_files}
     # calibration always starts on May 11 and ends on May 10
-    start_date = min([d for d in raw_calibration_by_date.keys() if d.month == 5 and d.day == 11])
-    end_date = max([d for d in raw_calibration_by_date.keys() if d.month == 5 and d.day == 10])
+    start_date = min([d for d in all_raw_calibration_files_by_date.keys() if d.month == 5 and d.day == 11])
+    end_date = max([d for d in all_raw_calibration_files_by_date.keys() if d.month == 5 and d.day == 10])
     if end_date < start_date:
         click.echo("Raw calibration files cover less than a year, aborting")
-    raw_calibration_files = [rfc for d, rfc in raw_calibration_by_date.items() if start_date <= d <= end_date]
+        return
+    selected_raw_calibration_files_with_date = [
+        (d, rfc) for d, rfc in all_raw_calibration_files_by_date.items() if start_date <= d <= end_date
+    ]
+    selected_raw_calibration_files_with_date.sort(key=lambda d, _: d)
+    selected_raw_calibration_files = [rfc for _, rfc in selected_raw_calibration_files_with_date]
 
     n_years = end_date.year - start_date.year
     output_files_dir = config.Global.data_dir / f'sdcalib_{n_years}_yrs_from_{start_date.year}_to_{end_date.year}'
     if output_files_dir.exists():
-        click.echo(f"Calibration direcotry {output_files_dir} already exists")
+        click.echo(f"Calibration directory {output_files_dir} already exists")
         return
+    output_files_dir.mkdir()
 
     click.echo(f"Extracting calibration for {n_years} years (from {start_date.isoformat()} to {end_date.isoformat()})")
     with ProcessPoolExecutor(max_workers=n_threads) as executor:
         futures: List[Future] = []
-        for i_epoch, raw_files_in_epoch in enumerate(batches(raw_calibration_files, size=DAYS_IN_EPOCH)):
+        for i_epoch, raw_files_in_epoch in enumerate(batches(selected_raw_calibration_files, size=DAYS_IN_EPOCH)):
             f = executor.submit(
                 run_sdmc_calib_extract,
                 constants_file=constants_file,
@@ -54,4 +69,5 @@ def extract_calibration(raw_calibration_data_dir: Path, n_threads: int = 1):
                 raw_calibration_files=raw_files_in_epoch,
             )
             futures.append(f)
-        [f.result() for f in futures]
+        for _ in tqdm(as_completed(futures), total=len(futures)):
+            pass
