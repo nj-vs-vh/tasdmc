@@ -7,10 +7,15 @@ from tasdmc import config, fileio
 
 
 def _execute_cmd(
-    executable_name: str, args: List[Any], stdout: Optional[TextIO] = None, stderr: Optional[TextIO] = None
+    executable_name: str,
+    args: List[Any],
+    stdout: Optional[TextIO] = None,
+    stderr: Optional[TextIO] = None,
+    global_excutable: bool = False,  # i.e. executable dir is added to $PATH
 ):
+    executable_path = str(config.Global.bin_dir / executable_name) if not global_excutable else executable_name
     subprocess.run(
-        [config.Global.bin_dir / executable_name, *[str(a) for a in args]],
+        [executable_path, *[str(a) for a in args]],
         stdout=stdout,
         stderr=stderr,
         capture_output=(stderr is None and stdout is None),
@@ -45,3 +50,7 @@ def check_tile_file(tile_file: Path, stdout_file: Path, stderr_file: Path):
             stdout,
             stderr,
         )
+
+
+def run_sdmc_calib_extract(constants_file: Path, output_file: Path, raw_calibration_files: List[Path]):
+    _execute_cmd('sdmc_calib_extract.run', ['-c', constants_file, '-o', output_file, *raw_calibration_files], global_excutable=True)

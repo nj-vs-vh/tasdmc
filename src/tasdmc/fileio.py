@@ -7,7 +7,7 @@ from pathlib import Path
 from functools import lru_cache
 from datetime import datetime
 
-from typing import Optional
+from typing import Optional, List
 
 from tasdmc import config
 
@@ -139,3 +139,6 @@ def get_run_config_path(run_name: str) -> Path:
     if not run_dir(run_name).exists():
         raise ValueError(f"Run '{run_name}' not found")
     return saved_run_config_file(run_name)
+
+def get_all_run_names() -> List[str]:
+    return [rd.name for rd in config.Global.runs_dir.iterdir()]
