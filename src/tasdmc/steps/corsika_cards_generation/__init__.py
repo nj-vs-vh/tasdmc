@@ -57,7 +57,7 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
         particle, particle_id = _particle_id_from_config()
         progress.cards_generation_info(f'Primary particle: {particle} (id {particle_id})')
 
-        log10E_min, log10E_max = _log10E_bounds_from_config()
+        log10E_min, log10E_max = log10E_bounds_from_config()
         progress.cards_generation_info(
             f'Energy scale (log10(E / eV)): {log10E_min:.1f} ... {log10E_max:.1f}, with step {LOG10_E_STEP:.1f}'
         )
@@ -67,7 +67,9 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
         progress.cards_generation_info(f'Hadronic interactions models: {high_E_model}/{low_E_model}')
 
         event_number_multiplier = _event_number_multiplier_from_config()
-        progress.cards_generation_info(f"Event numbers are multiplied by {event_number_multiplier:.3f} in each energy bin")
+        progress.cards_generation_info(
+            f"Event numbers are multiplied by {event_number_multiplier:.3f} in each energy bin"
+        )
 
         # common corsika card parameters
         card = CorsikaCard()
@@ -92,7 +94,7 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
             card.set_THIN(params[1], params[2], params[3])
             card.set_THINH(params[4], params[5])
 
-            cards_count = int(params[6] * event_number_multiplier)
+            cards_count = get_cards_count_by_log10E(log10E)
 
             # NOTE: this limitation is eliminated in the latest corsika
             # NRREXT option may be used, files are then named DATnnnnnnnnn istead of DATnnnnnn
@@ -139,7 +141,7 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
     @classmethod
     def validate_config(cls):
         _particle_id_from_config()
-        _log10E_bounds_from_config()
+        log10E_bounds_from_config()
         _event_number_multiplier_from_config()
 
         allowed_high_E_models = ('QGSJETII', 'EPOS')
@@ -152,6 +154,12 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
             raise config.BadConfigValue(
                 f"low_E_hadronic_interactions_model must be one of: {', '.join(allowed_low_E_models)}"
             )
+
+
+def get_cards_count_by_log10E(log10E: float):
+    params = BTS_PAR[log10E]
+    event_number_multiplier = _event_number_multiplier_from_config()
+    return int(params[6] * event_number_multiplier)
 
 
 # config accessors with validation
@@ -167,7 +175,7 @@ def _particle_id_from_config() -> Tuple[str, int]:
         )
 
 
-def _log10E_bounds_from_config() -> Tuple[float, float]:
+def log10E_bounds_from_config() -> Tuple[float, float]:
     try:
         log10E_min = round(float(config.get_key('input_files.log10E_min')), ndigits=1)
         log10E_max = round(float(config.get_key('input_files.log10E_max')), ndigits=1)

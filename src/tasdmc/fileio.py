@@ -140,5 +140,6 @@ def get_run_config_path(run_name: str) -> Path:
         raise ValueError(f"Run '{run_name}' not found")
     return saved_run_config_file(run_name)
 
+
 def get_all_run_names() -> List[str]:
     return [rd.name for rd in config.Global.runs_dir.iterdir()]

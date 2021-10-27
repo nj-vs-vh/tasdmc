@@ -1,4 +1,4 @@
-1. Создание файлов CORSIKA
++ 1. Создание файлов CORSIKA
 
 Для этого потребуются скрипты Димы runcorsd, которые есть на ta.inr.ac.ru:/home/ivanov/ta/prog/runcorsd.
 
@@ -25,7 +25,7 @@ NOTE! Если CORSIKA собрана с моделью низкоэнергет
 
 sed -i 's/ECUTS   0.05  0.05  0.00025  0.00025/ECUTS   0.3  0.05  0.00025  0.00025/g' *.in
 
-2. Запуск CORSIKA
++ 2. Запуск CORSIKA
 
 export RUNCORSD_BINDIR=/storage/vol2/zhezher/corsika-77100/run
 
@@ -52,7 +52,7 @@ mkdir gmd
 
 Для параллельного запуска есть мини-скрипт run_corsika_parallel.sh. Можно скачать, например, с cluster56:/storage/vol2/zhezher/sdmc_ur/runcorsd/run_corsika_parallel.sh. Этот скрипт пишет список in-файлов в файл filelist.txt, делит его на N частей (необходимо уточнять в коде) и запускает каждую часть параллельно. Также в нем прописаны все environmental-переменные, описанные выше.
 
-3. Создание калибровочных файлов sdcalib*bin (optional)
++ 3. Создание калибровочных файлов sdcalib*bin (optional)
 
 Данные файлы содержат калибровочную информацию, необходимую для набрасывания событий на "реальный" детектор.
 
@@ -76,7 +76,7 @@ mkdir gmd
 
 /disk/ta/work/user/zhezher/prog/sdanalysis_2019_alpha
 
-4. Создание *tothrow-файлов
++ 4. Создание *tothrow-файлов
 
 Скрипт sdmc_prep_sdmc_run создает к файлам *gea или файлам *tar.gz карточки, которые показывают, сколько раз тот или иной файл будет необходимо набросить на решетку SD.
 

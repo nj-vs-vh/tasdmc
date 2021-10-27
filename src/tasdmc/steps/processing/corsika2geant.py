@@ -64,6 +64,7 @@ class C2GOutputFiles(Files):
     tile: Path
     stdout: Path
     stderr: Path
+    corsika_event_name: str  # DATnnnnnn common to all files in list
 
     @property
     def must_exist(self) -> List[Path]:
@@ -76,6 +77,7 @@ class C2GOutputFiles(Files):
             tile=outdir / (c2g_input.corsika_event_name + '_gea.dat'),
             stdout=outdir / (c2g_input.corsika_event_name + '.c2g.stdout'),
             stderr=outdir / (c2g_input.corsika_event_name + '.c2g.stderr'),
+            corsika_event_name=c2g_input.corsika_event_name,
         )
 
     def _check_contents(self):

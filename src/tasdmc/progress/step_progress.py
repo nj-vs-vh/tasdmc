@@ -7,6 +7,7 @@ from enum import Enum
 from typing import Optional, Any, List
 
 from tasdmc import fileio
+
 # from tasdmc.steps.base import FileInFileOutPipelineStep
 from .utils import datetime2str, str2datetime
 
@@ -49,14 +50,16 @@ class PipelineStepProgress:
         step_progresses = []
         for line in fileio.pipelines_log().read_text().splitlines():
             datetime_str, pipeline_id, step_name, step_input_hash, event_type_str, *rest = line.split(' ')
-            step_progresses.append(PipelineStepProgress(
-                timestamp=str2datetime(datetime_str),
-                pipeline_id=pipeline_id,
-                step_name=step_name,
-                step_input_hash=step_input_hash,
-                event_type=EventType(event_type_str),
-                value=rest[0] if rest else None
-            ))
+            step_progresses.append(
+                PipelineStepProgress(
+                    timestamp=str2datetime(datetime_str),
+                    pipeline_id=pipeline_id,
+                    step_name=step_name,
+                    step_input_hash=step_input_hash,
+                    event_type=EventType(event_type_str),
+                    value=rest[0] if rest else None,
+                )
+            )
         return step_progresses
 
     @classmethod
