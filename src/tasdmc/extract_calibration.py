@@ -48,7 +48,7 @@ def extract_calibration(raw_calibration_data_dir: Path, n_threads: int = 1):
     selected_raw_calibration_files_with_date = [
         (d, rfc) for d, rfc in all_raw_calibration_files_by_date.items() if start_date <= d <= end_date
     ]
-    selected_raw_calibration_files_with_date.sort(key=lambda d, _: d)
+    selected_raw_calibration_files_with_date.sort(key=lambda d_rfc: d_rfc[0])
     selected_raw_calibration_files = [rfc for _, rfc in selected_raw_calibration_files_with_date]
 
     n_years = end_date.year - start_date.year
