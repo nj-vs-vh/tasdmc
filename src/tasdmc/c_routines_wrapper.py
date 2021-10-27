@@ -52,5 +52,14 @@ def check_tile_file(tile_file: Path, stdout_file: Path, stderr_file: Path):
         )
 
 
-def run_sdmc_calib_extract(constants_file: Path, output_file: Path, raw_calibration_files: List[Path]):
-    _execute_cmd('sdmc_calib_extract.run', ['-c', constants_file, '-o', output_file, *raw_calibration_files], global_excutable=True)
+def run_sdmc_calib_extract(
+    constants_file: Path, output_file: Path, raw_calibration_files: List[Path], stdout_file: Path, stderr_file: Path
+):
+    with open(stdout_file, 'w') as stdout, open(stderr_file, 'w') as stderr:
+        _execute_cmd(
+            'sdmc_calib_extract.run',
+            ['-c', constants_file, '-o', output_file, *raw_calibration_files],
+            stdout,
+            stderr,
+            global_excutable=True,
+        )

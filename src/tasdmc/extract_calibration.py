@@ -5,6 +5,7 @@ from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor, Future, as_completed
 from tqdm import tqdm
 from datetime import datetime, date
+from math import ceil
 
 from typing import List
 
@@ -62,12 +63,18 @@ def extract_calibration(raw_calibration_data_dir: Path, n_threads: int = 1):
     with ProcessPoolExecutor(max_workers=n_threads) as executor:
         futures: List[Future] = []
         for i_epoch, raw_files_in_epoch in enumerate(batches(selected_raw_calibration_files, size=DAYS_IN_EPOCH)):
+            i_epoch_str = str(i_epoch).rjust(ceil(len(selected_raw_calibration_files) / DAYS_IN_EPOCH), '0')
             f = executor.submit(
                 run_sdmc_calib_extract,
                 constants_file=constants_file,
-                output_file=output_files_dir / f'sdcalib_{i_epoch}.bin',
+                output_file=output_files_dir / f'sdcalib_{i_epoch_str}.bin',
+                stdout_file=output_files_dir / f'{i_epoch_str}.stdout.log',
+                stderr_file=output_files_dir / f'{i_epoch_str}.stderr.log',
                 raw_calibration_files=raw_files_in_epoch,
             )
             futures.append(f)
         for _ in tqdm(as_completed(futures), total=len(futures)):
             pass
+    for file in output_files_dir.iterdir():
+        if file.name.endswith('.stdout.log') or file.name.endswith('.stderr.log'):
+            file.unlink()

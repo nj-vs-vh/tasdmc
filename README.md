@@ -106,7 +106,7 @@ name: your-run-name
 
 ### Commands
 
-#### `run` - start simulation
+##### `run` - start simulation
 
 ```bash
 tasdmc run --config my-run-config.yaml
@@ -115,7 +115,9 @@ tasdmc run --config my-run-config.yaml
 This is the main `tasdmc` entry point. By default the simulation is started in the background
 and detached from current terminal.
 
-#### `progress` - check simulation progress
+#### Simulation control and monitoring commands
+
+##### `progress` - check simulation progress
 
 Count how many pipelines are completed, running, pending or failed. A pipeline here
 refers to a set of operations on a single CORSIKA input card.
@@ -124,7 +126,7 @@ refers to a set of operations on a single CORSIKA input card.
 tasdmc progress my-run-name
 ```
 
-#### `ps` - check simulation status
+##### `ps` - check simulation status
 
 Check whether the run is currently active, list worker processes, print last multiprocessing debug messages.
 
@@ -132,20 +134,30 @@ Check whether the run is currently active, list worker processes, print last mul
 tasdmc ps my-run-name -n 5  # to print 5 last log messages from each worker process
 ```
 
-#### `input` - print simulation inputs
+##### `input` - print simulation inputs
 
 ```bash
 tasdmc inputs my-run-name
 ```
 
-#### `abort` - abort running simulation
+##### `abort` - abort running simulation
 
 ```bash
-tasdmc abort --name my-run-name
+tasdmc abort my-run-name
 ```
 
-#### `resources` - estimate resources configured for simulation
+#### Other commands
+
+##### `resources` - estimate resources that would be taken up by a simulation
 
 ```bash
 tasdmc resources --config my-run-config.yaml
+```
+
+##### `extract-calibration` - create compressed calibration (`sdcalib.bin`)
+
+This command replaces deprecated `sdmc_run_sdmc_calib_extract` script from `sdanalysis`.
+
+```bash
+tasdmc extract-calibration -r /full/path/to/raw/calib/data -p 10  # number of processes
 ```
