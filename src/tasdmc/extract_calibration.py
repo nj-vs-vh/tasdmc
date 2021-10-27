@@ -63,7 +63,7 @@ def extract_calibration(raw_calibration_data_dir: Path, n_threads: int = 1):
     with ProcessPoolExecutor(max_workers=n_threads) as executor:
         futures: List[Future] = []
         for i_epoch, raw_files_in_epoch in enumerate(batches(selected_raw_calibration_files, size=DAYS_IN_EPOCH)):
-            i_epoch_str = str(i_epoch).rjust(ceil(len(selected_raw_calibration_files) / DAYS_IN_EPOCH), '0')
+            i_epoch_str = str(i_epoch + 1).rjust(ceil(len(selected_raw_calibration_files) / DAYS_IN_EPOCH), '0')
             f = executor.submit(
                 run_sdmc_calib_extract,
                 constants_file=constants_file,
