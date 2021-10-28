@@ -6,7 +6,7 @@ import subprocess
 import os
 from pathlib import Path
 import gdown
-import hashlib
+from gdown.cached_download import assert_md5sum
 
 
 for required_env_var in ('TASDMC_BIN_DIR', 'SDANALYSIS_DIR', 'TASDMC_MEMORY_PER_PROCESS_GB', 'TASDMC_DATA_DIR'):
@@ -21,14 +21,20 @@ sdgeant_path = Path(os.environ.get('TASDMC_DATA_DIR')) / 'sdgeant.dst'
 if not sdgeant_path.exists():
     sdgeant_path.parent.mkdir(parents=True, exist_ok=True)
     gdown.download(
-        url='https://docs.google.com/uc?export=download&id=1ZTSrrAg2T8bvIDhPuh2ruVShmubwvTWG',
+        url='https://drive.google.com/file/d/1ZTSrrAg2T8bvIDhPuh2ruVShmubwvTWG/view?usp=sharing',
         output=str(sdgeant_path),
     )
-md5 = hashlib.new('md5')
-with open(sdgeant_path, 'rb') as f:
-    md5.update(f.read())
-if md5.hexdigest() != '0cebc42f86e227e2fb2397dd46d7d981':
-    raise OSError(f"{sdgeant_path} has incorrect MD5 hash. Try downloading sdgeant.dst file from Google Drive.")
+assert_md5sum(sdgeant_path, '0cebc42f86e227e2fb2397dd46d7d981')
+
+# checking that atmos.bin is present and has correct md5 hash
+atmos_path = Path(os.environ.get('TASDMC_DATA_DIR')) / 'atmos.bin'
+if not atmos_path.exists():
+    atmos_path.parent.mkdir(parents=True, exist_ok=True)
+    gdown.download(
+        url='https://drive.google.com/file/d/1qZfUNXAyqVg5HwH9BYUGVQ-UDsTwl4FQ/view?usp=sharing',
+        output=str(atmos_path),
+    )
+assert_md5sum(atmos_path, '254c7999be0a48bd65e4bc8cbea4867f')
 
 
 class InstallWithExternalLibs(install):

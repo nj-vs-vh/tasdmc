@@ -14,6 +14,7 @@ from tasdmc import config
 
 class DataFiles:
     sdgeant = config.Global.data_dir / 'sdgeant.dst'
+    atmos = config.Global.data_dir / 'atmos.bin'
 
 
 config.Global.runs_dir.mkdir(exist_ok=True, parents=True)
