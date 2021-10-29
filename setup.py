@@ -21,7 +21,7 @@ sdgeant_path = Path(os.environ.get('TASDMC_DATA_DIR')) / 'sdgeant.dst'
 if not sdgeant_path.exists():
     sdgeant_path.parent.mkdir(parents=True, exist_ok=True)
     gdown.download(
-        url='https://drive.google.com/file/d/1ZTSrrAg2T8bvIDhPuh2ruVShmubwvTWG/view?usp=sharing',
+        id='1ZTSrrAg2T8bvIDhPuh2ruVShmubwvTWG',
         output=str(sdgeant_path),
     )
 assert_md5sum(sdgeant_path, '0cebc42f86e227e2fb2397dd46d7d981')
@@ -31,7 +31,7 @@ atmos_path = Path(os.environ.get('TASDMC_DATA_DIR')) / 'atmos.bin'
 if not atmos_path.exists():
     atmos_path.parent.mkdir(parents=True, exist_ok=True)
     gdown.download(
-        url='https://drive.google.com/file/d/1qZfUNXAyqVg5HwH9BYUGVQ-UDsTwl4FQ/view?usp=sharing',
+        id='1qZfUNXAyqVg5HwH9BYUGVQ-UDsTwl4FQ',
         output=str(atmos_path),
     )
 assert_md5sum(atmos_path, '254c7999be0a48bd65e4bc8cbea4867f')
