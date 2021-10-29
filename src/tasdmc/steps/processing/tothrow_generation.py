@@ -70,9 +70,10 @@ class TothrowGenerationStep(FileInFileOutPipelineStep):
         log10E = round(log10E, ndigits=1)
 
         N0 = _normalizing_constant_from_config()
-        exponent = _exponent_from_config()
+        dndE_exponent = _exponent_from_config()
         log10E_min, _ = log10E_bounds_from_config()
-        n_particles_in_energy_bin = N0 * 10 ** (-exponent * (log10E - log10E_min))
+        dndlogE_exponent = dndE_exponent - 1
+        n_particles_in_energy_bin = N0 * 10 ** (-dndlogE_exponent * (log10E - log10E_min))
         n_particles = int(n_particles_in_energy_bin / get_cards_count_by_log10E(log10E))
 
         # legacy values for backward compatibilty, taken from sdmc_prep_sdmc_run script
