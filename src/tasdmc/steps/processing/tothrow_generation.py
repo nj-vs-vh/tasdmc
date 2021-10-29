@@ -12,9 +12,9 @@ import struct
 import math
 import re
 
-from typing import List
+from typing import List, Tuple
 
-from tasdmc import fileio, config
+from tasdmc import config
 from tasdmc.steps.base import Files, FileInFileOutPipelineStep
 from tasdmc.steps.processing.corsika2geant import C2GOutputFiles, Corsika2GeantStep
 from tasdmc.steps.corsika_cards_generation import get_cards_count_by_log10E, log10E_bounds_from_config
@@ -30,7 +30,14 @@ class TothrowFile(Files):
 
     @classmethod
     def from_corsika2geant_output(cls, c2g_output: C2GOutputFiles):
-        return TothrowFile(c2g_output.tile.parent / (c2g_output.tile.name + '.tothow.txt'))
+        return TothrowFile(c2g_output.tile.parent / (c2g_output.tile.name + '.tothrow.txt'))
+
+    def get_showlib_and_nparticles(self) -> Tuple[Path, int]:
+        self.assert_files_are_ready()
+        with open(self.tothrow, 'r') as f:
+            showlib_file = Path(f.readline().strip().replace('SHOWLIB_FILE', '').strip())
+            n_particles_per_epoch = int(f.readline().strip().replace('NPARTICLE_PER_EPOCH', '').strip())
+        return showlib_file, n_particles_per_epoch
 
 
 class TothrowGenerationStep(FileInFileOutPipelineStep):

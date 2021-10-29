@@ -60,6 +60,11 @@ def c2g_output_files_dir() -> Path:
 
 
 @internal_dir
+def events_dir() -> Path:
+    return run_dir() / 'events'
+
+
+@internal_dir
 def input_hashes_dir() -> Path:
     return run_dir() / '_input_files_hashes'
 

@@ -10,6 +10,7 @@ from tasdmc.steps import (
     DethinningStep,
     Corsika2GeantStep,
     TothrowGenerationStep,
+    EventsGenerationStep,
 )
 from tasdmc.utils import batches
 
@@ -41,8 +42,11 @@ def run_standard_pipeline():
                         dethinning.schedule(executor, futures_queue)
                     corsika2geant.schedule(executor, futures_queue)
 
-                tothrow_generation = TothrowGenerationStep.from_corsika2geant(corsika2geant)
-                tothrow_generation.schedule(executor, futures_queue)
+                tothrow_gen = TothrowGenerationStep.from_corsika2geant(corsika2geant)
+                tothrow_gen.schedule(executor, futures_queue)
+
+                events_generation = EventsGenerationStep.from_corsika2geant_with_tothrow(corsika2geant, tothrow_gen)
+                events_generation.schedule(executor, futures_queue)
 
         for f in futures_queue:
             f.result()

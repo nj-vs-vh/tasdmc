@@ -8,6 +8,7 @@ from .processing.particle_file_splitting import ParticleFileSplittingStep
 from .processing.dethinning import DethinningStep
 from .processing.corsika2geant import Corsika2GeantStep
 from .processing.tothrow_generation import TothrowGenerationStep
+from .processing.event_generation import EventsGenerationStep
 
 
 all_steps: List[Type[FileInFileOutStep]] = [
@@ -17,6 +18,7 @@ all_steps: List[Type[FileInFileOutStep]] = [
     DethinningStep,
     Corsika2GeantStep,
     TothrowGenerationStep,
+    EventsGenerationStep,
 ]
 
 
