@@ -8,7 +8,6 @@ from tasdmc import fileio
 from tasdmc.c_routines_wrapper import run_dethinning
 
 from tasdmc.steps.base import NotAllRetainedFiles, FileInFileOutPipelineStep
-from tasdmc.steps.exceptions import FilesCheckFailed
 from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty, check_last_line_contains
 
 from .particle_file_splitting import SplitParticleFiles, ParticleFileSplittingStep

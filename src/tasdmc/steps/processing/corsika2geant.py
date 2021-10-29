@@ -39,7 +39,7 @@ class C2GInputFiles(NotAllRetainedFiles):
     @classmethod
     def from_dethinning_outputs(cls, dethinning_outputs: List[DethinningOutputFiles]) -> C2GInputFiles:
         if len(dethinning_outputs) == 0:
-            raise ValueError(f"Cannot create C2GInputFiles from empty list of particle files")
+            raise ValueError("Cannot create C2GInputFiles from empty list of particle files")
         corsika_event_name = dethinning_outputs[0].dethinned_particle.name.split('.')[0]  # DATnnnnnn
         for pf in dethinning_outputs:
             if not pf.dethinned_particle.match(f'{fileio.dethinning_output_files_dir()}/{corsika_event_name}.*'):

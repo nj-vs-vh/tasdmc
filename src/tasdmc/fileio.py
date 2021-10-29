@@ -99,7 +99,7 @@ def cards_gen_info_log():
 
 
 def pipelines_log():
-    return logs_dir() / f'pipelines.log'
+    return logs_dir() / 'pipelines.log'
 
 
 def pipeline_failed_file(pipeline_id: str):
@@ -113,7 +113,7 @@ def prepare_run_dir():
     rd = run_dir()
     if config.try_to_continue():
         if rd.exists():
-            click.secho(f"Run already exists, continuing", fg='red', bold=True)
+            click.secho("Run already exists, continuing", fg='red', bold=True)
         else:
             rd.mkdir()
     else:

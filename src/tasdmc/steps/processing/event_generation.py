@@ -95,7 +95,7 @@ class EventsGenerationStep(FileInFileOutPipelineStep):
 
     @property
     def description(self) -> str:
-        return f"Throwing CORSIKA events on SD grid for input TBD"
+        return f"Throwing CORSIKA events on SD grid for {self.input_.c2g_output.corsika_event_name}"
 
     @classmethod
     def from_corsika2geant_with_tothrow(
@@ -229,6 +229,6 @@ def _get_calibration_files_by_epoch() -> Dict[int, Path]:
 
     calibration_file_num_matches = [re.match(r"sdcalib_(\d*).bin", f.name) for f in calibration_files]
     if None in calibration_file_num_matches:
-        raise BadDataFiles(f"Calibration epoch number can't be parsed for some sdcalib_*.bin files")
+        raise BadDataFiles("Calibration epoch number can't be parsed for some sdcalib_*.bin files")
     calibration_file_nums = [int(m.group(1)) for m in calibration_file_num_matches]
     return {num: sdcalib for num, sdcalib in zip(calibration_file_nums, calibration_files)}

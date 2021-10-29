@@ -77,13 +77,13 @@ def get_key(key: str, key_prefix: Optional[str] = None, default: Optional[Any] =
         Any: value in the specified key
     """
     if _config is None:
-        raise ConfigNotReadError(f"Attempt to read config key before it is loaded, run config.load('smth.yaml') first.")
+        raise ConfigNotReadError("Attempt to read config key before it is loaded, run config.load('smth.yaml') first.")
 
     if key_prefix is not None:
         key = key_prefix + '.' + key
     level_keys = key.split('.')
     if not level_keys:
-        raise ConfigKeyError(f'No key specified')
+        raise ConfigKeyError('No key specified')
 
     traversed_level_keys = []
     current_value = _config

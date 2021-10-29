@@ -81,16 +81,15 @@ def concatenate_and_hash(contents: List[Any], delimiter: str = ':', hasher_name:
     return hasher.hexdigest()
 
 
-
 CheckFnArgs = TypeVar("CheckFnArgs")
 
 
 def passed(check_fn: Callable[[CheckFnArgs], None]) -> Callable[[CheckFnArgs], bool]:
     """Wrapper/decorator to call any check function from above but return success flag istead of raising an exception
-    
+
     >>> flag = passed(check_file_is_empty)(my_file, ignored_lines=['smth'])
     """
-    
+
     @wraps(check_fn)
     def wrapped(*args, **kwargs):
         try:

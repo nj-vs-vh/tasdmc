@@ -104,7 +104,7 @@ def _get_sdmc_spctr_executable():
                 sdmc_spctr_candidates.append(executable_file)
 
     if not sdmc_spctr_candidates:
-        raise FileNotFoundError(f"sdmc_spctr_*.run not found on $PATH!")
+        raise FileNotFoundError("sdmc_spctr_*.run not found on $PATH!")
     elif len(sdmc_spctr_candidates) > 1:
         requested_sdmc_spctr_name = config.get_key("throwing.sdmc_spctr_executable_name", default=None)
         if requested_sdmc_spctr_name is None:
@@ -135,7 +135,7 @@ def set_limits_for_sdmc_spctr():
 def test_sdmc_spctr_runnable():
     sdmc_spctr = _get_sdmc_spctr_executable()
     res = _execute_cmd(sdmc_spctr, [], global_=True, check_errors=False)
-    if not 'Usage: ' in res.stderr.decode('utf-8'):
+    if 'Usage: ' not in res.stderr.decode('utf-8'):
         raise OSError(f'{sdmc_spctr} do not work as expected!')
 
 
@@ -144,7 +144,7 @@ def run_sdmc_spctr(
     tile_file: Path, output_events_file: Path, n_particles: int, random_seed: int, epoch: int,
     calibration_file: Path, smear_energies: bool, stdout_file: Path, stderr_file: Path,
 ) -> bool:
-# fmt: on
+    # fmt: on
     """Generating MC events from tile file, given a single epoch calibration. An amount of events is chosen
     from Poisson with a given n_particles mean. Returns success flag. Original C routine help:
 

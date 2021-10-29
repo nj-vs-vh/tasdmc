@@ -30,7 +30,7 @@ def print_multiprocessing_debug(n_messages: int):
         else:
             messages_by_pid[pid].insert(0, line)
 
-    click.secho(f"\nMultiprocessing debug messages by process", bold=True)
+    click.secho("\nMultiprocessing debug messages by process", bold=True)
     for pid in sorted(messages_by_pid.keys()):
         click.secho(f"Process {pid}:", bold=True)
         for line in messages_by_pid[pid]:
