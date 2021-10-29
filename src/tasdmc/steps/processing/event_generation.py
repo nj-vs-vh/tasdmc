@@ -13,10 +13,17 @@ from typing import List, Dict, Iterable, Tuple
 from tasdmc import fileio, config
 from tasdmc.steps.base import Files, FileInFileOutPipelineStep
 from tasdmc.steps.exceptions import FilesCheckFailed, BadDataFiles
+from tasdmc.steps.utils import check_file_is_empty, check_last_line_contains
 from .corsika2geant import C2GOutputFiles, Corsika2GeantStep
 from .tothrow_generation import TothrowFile, TothrowGenerationStep
 
-from tasdmc.c_routines_wrapper import test_sdmc_spctr_runnable, run_sdmc_spctr, set_limits_for_sdmc_spctr
+from tasdmc.c_routines_wrapper import (
+    test_sdmc_spctr_runnable,
+    run_sdmc_spctr,
+    set_limits_for_sdmc_spctr,
+    run_sdmc_tsort,
+    concatenate_dst_files,
+)
 
 
 @dataclass
@@ -43,39 +50,44 @@ class C2GOutputWithTothrowFiles(Files):
 
 @dataclass
 class EventFiles(Files):
-    dst_files_by_epoch: Dict[int, Path]
+    merged_events_file: Path
     stdout: Path
     stderr: Path
+    dst_files_by_epoch: Dict[int, Path]
     calibration_files_by_epoch: Dict[int, Path]
+
+    @property
+    def must_exist(self) -> List[Path]:
+        return [self.stdout, self.stderr, self.merged_events_file]
 
     @classmethod
     def from_input(cls, input_files: C2GOutputWithTothrowFiles) -> EventFiles:
         calibration_by_epoch = _get_calibration_files_by_epoch()
         corsika_event_name = input_files.c2g_output.corsika_event_name
         return EventFiles(
-            dst_files_by_epoch={
-                epoch: fileio.events_dir() / f'{corsika_event_name}_{epoch}.dst.gz'
-                for epoch in calibration_by_epoch.keys()
-            },
+            merged_events_file=fileio.events_dir() / f'{corsika_event_name}.dst.gz',
             stdout=fileio.events_dir() / f'{corsika_event_name}.events.stdout',
             stderr=fileio.events_dir() / f'{corsika_event_name}.events.stderr',
+            dst_files_by_epoch={
+                epoch: fileio.events_dir() / f'{corsika_event_name}_epoch{epoch}.dst.gz'
+                for epoch in calibration_by_epoch.keys()
+            },
             calibration_files_by_epoch=calibration_by_epoch,
         )
 
     def prepare_for_step_run(self):
-        with open(self.stdout, 'a') as f:
-            f.write(f"\n\n{'='*100}\nEVENT GENERATION LOG; STARTED AT {datetime.utcnow().isoformat()}\n{'='*100}\n\n")
-        self.stderr.unlink(missing_ok=True)
+        self.stderr.unlink(missing_ok=True)  # it may not be created in _run but left from previous runs
 
-    def iterate_epochs(self) -> Iterable[Tuple[int, Path, Path]]:
+    def iterate_epochs_files(self) -> Iterable[Tuple[int, Path, Path]]:
         return (
             (epoch, self.dst_files_by_epoch[epoch], self.calibration_files_by_epoch[epoch])
             for epoch in sorted(self.calibration_files_by_epoch.keys())
         )
 
-    @property
-    def must_exist(self) -> List[Path]:
-        return [self.stdout, self.stderr, *self.dst_files_by_epoch.values()]
+    def _check_contents(self):
+        check_file_is_empty(self.stderr, ignore_strings=[" $$$ dst_get_block_ : End of input file reached"])
+        check_last_line_contains(self.stdout, "OK")
+        raise FilesCheckFailed("TEMP: always rerun")  # TODO: remove this and place actual checks
 
 
 class EventsGenerationStep(FileInFileOutPipelineStep):
@@ -98,32 +110,85 @@ class EventsGenerationStep(FileInFileOutPipelineStep):
         n_try = _n_try_from_config()
         smear_energies = _smear_energies_from_config()
         _, n_particles_per_epoch = self.input_.tothrow.get_showlib_and_nparticles()
-        for epoch, event_file, sdcalib_file in self.output.iterate_epochs():
-            # TODO: check if event file already exists here!
-            with open(self.output.stdout, 'a') as f:
-                f.write(
-                    f'\nGENERATING EVENTS FOR EPOCH {epoch}\n'
-                    + f'{n_particles_per_epoch} events, calibration file {sdcalib_file.name}\n'
-                )
+
+        stdout = self.output.stdout.open('w')  # not using 'with open(...)' to save indentation level :)
+        stderr = self.output.stderr.open('w')
+        stdout.write(f"Poissonian mean N particles: {n_particles_per_epoch}\n")
+
+        # generating event file for each epoch
+        events_thrown_by_file = dict()
+        for epoch, epoch_events_file, sdcalib_file in self.output.iterate_epochs_files():
+            epoch_log_file = Path(str(epoch_events_file) + '.log')
+            epoch_log_file.unlink(missing_ok=True)
+
+            if False:  # TODO: check epoch events file is there and seems ok
+                step_stdout.write(f'Events for epoch {epoch} ({sdcalib_file.name}) are already generated\n')
+                continue
+            else:
+                stdout.write(f'Generating events for epoch {epoch} ({sdcalib_file.name})\n')
+
+            # trying multiple times
             for i_try in range(1, n_try + 1):
-                with open(self.output.stdout, 'a') as f:
-                    f.write(f'\nATTEMPT {i_try}/{n_try}\n')
+                stdout.write(f'\tAttempt {i_try}/{n_try}\n')
+                # fmt: off
                 if run_sdmc_spctr(
-                    self.input_.c2g_output.tile,
-                    event_file,
-                    n_particles_per_epoch,
-                    random.randint(1, int(1e6)),
-                    epoch,
-                    sdcalib_file,
-                    smear_energies,
+                    self.input_.c2g_output.tile, epoch_events_file, n_particles_per_epoch, random.randint(1, int(1e6)),
+                    epoch, sdcalib_file, smear_energies, epoch_log_file, epoch_log_file,
                     # TODO: azi.txt file may be specified here
-                    self.output.stdout,
-                    self.output.stderr,
                 ):
                     break
-            else:  # when not broke out of the loop
-                with open(self.output.stderr, 'a') as f:
-                    f.write(f'\nFAILED AFTER {n_try} ATTEMPTS')
+                # fmt: on
+            else:
+                stderr.write(f'Events for epoch {epoch} not generated after {n_try} attempts\n')
+                epoch_events_file.unlink(missing_ok=True)
+                continue
+
+            # counting how many events were actually thrown in the succesfull sdmc_spctr call
+            # NOTE: the distribution of N events thrown may not be actually Poisson due to many attempts made;
+            #       if, for example, attempts with larger N fail, the distribution will be skewed to the left from
+            #       the mean. this needs further investigation...
+            events_thrown_match = re.findall(r"^Number of Events Thrown: (\d*)$", epoch_log_file.read_text(), re.M)
+            if not events_thrown_match:
+                stderr.write(f'Events for epoch {epoch} generated but stdout do not contain number of events thrown\n')
+                epoch_events_file.unlink(missing_ok=True)
+                continue
+            events_thrown = int(events_thrown_match[-1])
+            stdout.write(f'\tEvents actually generated: {events_thrown}\n')
+            events_thrown_by_file[epoch_events_file] = events_thrown
+
+            # if >0 events thrown, sort them by time
+            if events_thrown > 0:
+                # epoch_events_file_sorted_temp = Path(str(epoch_events_file) + '.timesorted')
+                epoch_events_file_stem = epoch_events_file.name.split('.')[0]
+                epoch_events_file_sorted_temp = epoch_events_file.parent / (epoch_events_file_stem + '_timesorted.dst.gz')
+                if run_sdmc_tsort(epoch_events_file, epoch_events_file_sorted_temp, epoch_log_file, epoch_log_file):
+                    epoch_events_file = epoch_events_file_sorted_temp.rename(epoch_events_file)
+                else:
+                    stderr.write(
+                        f'Time-sorting of events in {epoch_events_file.name} failed, see details in {epoch_log_file}\n'
+                    )
+                    epoch_events_file_sorted_temp.unlink(missing_ok=True)
+                    epoch_events_file.unlink(missing_ok=True)
+                    continue
+
+        # if events for all epochs were generated, merge them into one final file
+        if not all(epoch_events_file.exists() for _, epoch_events_file, _ in self.output.iterate_epochs_files()):
+            stderr.write('Some epoch events were not generated, too bad :(\n')
+        else:
+            epoch_event_files_to_merge = [
+                epoch_events_file
+                for _, epoch_events_file, _ in self.output.iterate_epochs_files()
+                if events_thrown_by_file[epoch_events_file] > 0
+            ]
+            concatenate_dst_files(
+                epoch_event_files_to_merge, self.output.merged_events_file, self.output.stdout, self.output.stderr
+            )
+            for _, epoch_events_file, _ in self.output.iterate_epochs_files():
+                epoch_events_file.unlink()
+            stdout.write("\nOK\n")
+
+        stdout.close()
+        stderr.close()
 
     @classmethod
     def validate_config(cls):

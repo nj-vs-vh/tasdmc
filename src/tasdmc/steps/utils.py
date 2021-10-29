@@ -36,7 +36,7 @@ def check_file_is_empty(file: Path, ignore_patterns: List[str] = [], ignore_stri
         for line in f:
             if check_for_ignore and ignore_re.match(line):
                 continue
-            raise FilesCheckFailed(f"{file.name} contains unignored strings: {line}\n\tand maybe more...")
+            raise FilesCheckFailed(f"{file.name} contains unignored strings:\n\t{line.strip()}\n\tand maybe more...")
 
 
 def check_last_line_contains(file: Path, must_contain: str):

@@ -3,6 +3,7 @@ import subprocess
 import resource
 from pathlib import Path
 from functools import lru_cache
+from dataclasses import dataclass
 
 from typing import TextIO, Optional, List, Any
 
@@ -14,10 +15,10 @@ def _execute_cmd(
     args: List[Any],
     stdout: Optional[TextIO] = None,
     stderr: Optional[TextIO] = None,
-    global_excutable: bool = False,  # i.e. executable dir is added to $PATH
+    global_: bool = False,  # i.e. executable dir is added to $PATH
     check_errors: bool = True,
 ):
-    executable_path = str(config.Global.bin_dir / executable_name) if not global_excutable else executable_name
+    executable_path = str(config.Global.bin_dir / executable_name) if not global_ else executable_name
     return subprocess.run(
         [executable_path, *[str(a) for a in args]],
         stdout=stdout,
@@ -27,17 +28,36 @@ def _execute_cmd(
     )
 
 
+@dataclass
+class Pipes:
+    stdout_file: Path
+    stderr_file: Path
+    append: bool = False
+
+    def __enter__(self):
+        if not self.append:
+            self.stdout_file.unlink(missing_ok=True)
+            self.stderr_file.unlink(missing_ok=True)
+        self.stdout = self.stdout_file.open('a')
+        self.stderr = self.stderr_file.open('a')
+        return (self.stdout, self.stderr)
+
+    def __exit__(self, *args):
+        self.stdout.close()
+        self.stderr.close()
+
+
 def split_thinned_corsika_output(particle_file: Path, n_split: int):
     _execute_cmd('corsika_split_th.run', [particle_file, n_split])
 
 
 def run_dethinning(particle_file: Path, output_file: Path, stdout_file: Path, stderr_file: Path):
-    with open(stdout_file, 'w') as stdout, open(stderr_file, 'w') as stderr:
+    with Pipes(stdout_file, stderr_file) as (stdout, stderr):
         _execute_cmd('dethinning.run', [particle_file, output_file], stdout, stderr)
 
 
 def run_corsika2geant(particle_files_listing: Path, output_file: Path, stdout_file: Path, stderr_file: Path):
-    with open(stdout_file, 'w') as stdout, open(stderr_file, 'w') as stderr:
+    with Pipes(stdout_file, stderr_file) as (stdout, stderr):
         _execute_cmd(
             'corsika2geant.run',
             [particle_files_listing, fileio.DataFiles.sdgeant, output_file],
@@ -47,7 +67,7 @@ def run_corsika2geant(particle_files_listing: Path, output_file: Path, stdout_fi
 
 
 def check_tile_file(tile_file: Path, stdout_file: Path, stderr_file: Path):
-    with open(stdout_file, 'w') as stdout, open(stderr_file, 'w') as stderr:
+    with Pipes(stdout_file, stderr_file) as (stdout, stderr):
         _execute_cmd(
             'check_gea_dat_file.run',
             [tile_file],
@@ -59,19 +79,20 @@ def check_tile_file(tile_file: Path, stdout_file: Path, stderr_file: Path):
 def run_sdmc_calib_extract(
     constants_file: Path, output_file: Path, raw_calibration_files: List[Path], stdout_file: Path, stderr_file: Path
 ):
-    with open(stdout_file, 'w') as stdout, open(stderr_file, 'w') as stderr:
+    """Exctracting calibration from a set of per-day raw .dst files and packing it into single epoch calibration"""
+    with Pipes(stdout_file, stderr_file) as (stdout, stderr):
         _execute_cmd(
             'sdmc_calib_extract.run',
             ['-c', constants_file, '-o', output_file, *raw_calibration_files],
             stdout,
             stderr,
-            global_excutable=True,
+            global_=True,
         )
 
 
 @lru_cache(1)
 def _get_sdmc_spctr_executable():
-    # looking for sdmc_spctr executable as it may be compiled with different suffixes
+    """Find sdmc_spctr executable as it may be compiled with different suffixes"""
     sdmc_spctr_candidates: List[Path] = []
     PATH = os.environ['PATH']
     for executables_dir in PATH.split(':'):
@@ -106,68 +127,81 @@ def _get_sdmc_spctr_executable():
 
 
 def set_limits_for_sdmc_spctr():
-    """equivalent to ulimit -s unlimited on command line"""
+    """Equivalent to ulimit -s unlimited on command line"""
     _, hard_stack_limit = resource.getrlimit(resource.RLIMIT_STACK)
     resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, hard_stack_limit))
 
 
 def test_sdmc_spctr_runnable():
     sdmc_spctr = _get_sdmc_spctr_executable()
-    res = _execute_cmd(sdmc_spctr, [], global_excutable=True, check_errors=False)
+    res = _execute_cmd(sdmc_spctr, [], global_=True, check_errors=False)
     if not 'Usage: ' in res.stderr.decode('utf-8'):
         raise OSError(f'{sdmc_spctr} do not work as expected!')
 
 
+# fmt: off
 def run_sdmc_spctr(
-    tile: Path,
-    output_event: Path,
-    n_particles: int,
-    random_seed: int,
-    epoch: int,
-    calibration_file: Path,
-    smear_energies: bool,
-    stdout_file: Path,
-    stderr_file: Path,
+    tile_file: Path, output_events_file: Path, n_particles: int, random_seed: int, epoch: int,
+    calibration_file: Path, smear_energies: bool, stdout_file: Path, stderr_file: Path,
 ) -> bool:
-    """sdmc_spctr help:
+# fmt: on
+    """Generating MC events from tile file, given a single epoch calibration. An amount of events is chosen
+    from Poisson with a given n_particles mean. Returns success flag. Original C routine help:
 
-    Usage: sdmc_spctr_2g_gcc_x86.run [1] [2] [3] [4]
-    [1]: <str> DAT????XX_gea.dat sower library file (last 2 digits XX are the energy channel:
-        XX=00-25: energy from 10^18.0 to 10^20.5 eV
-        XX=26-39: energy from 10^16.6 to 10^17.9 eV
-        XX=80-85: energy from 10^16.0 to 10^16.5 eV
-    [2]: output DST file
-    [3]: <float> Number of events (Poisson mean) to generate
-    [4]: <int> Random seed number
-    [5]: <int> Data set number (for sdcalib_[data set number].bin file,
-    [6]: <str> Calibration file (/full/path/to/sdcalib_[data set number].bin file
-        this number is the TA Date ("Epoch") calculated by TADay2Date function
-    [7]: <str> Binary file with atmospheric muon data (/full/path/to/atmos.bin)
-    [8]: <int> (OPT) Smear energies in 0.1 log10 bin according to E^-2? 1=YES,0-NO; default: 1
-    [9]: <str> (OPT) Provide an ASCII file with azimuthal angles to use
-                    1 column ASCII file, each line is azimuthal angle in degrees
-                    CCW from East, along the shower propagation direction
-                    By default, azimuthal angles are sampled randomly
+    > Usage: sdmc_spctr_2g_gcc_x86.run [1] [2] [3] [4]
+    > [1]: <str> DAT????XX_gea.dat sower library file (last 2 digits XX are the energy channel:
+    >     XX=00-25: energy from 10^18.0 to 10^20.5 eV
+    >     XX=26-39: energy from 10^16.6 to 10^17.9 eV
+    >     XX=80-85: energy from 10^16.0 to 10^16.5 eV
+    > [2]: output DST file
+    > [3]: <float> Number of events (Poisson mean) to generate
+    > [4]: <int> Random seed number
+    > [5]: <int> Data set number (for sdcalib_[data set number].bin file,
+    > [6]: <str> Calibration file (/full/path/to/sdcalib_[data set number].bin file
+    >     this number is the TA Date ("Epoch") calculated by TADay2Date function
+    > [7]: <str> Binary file with atmospheric muon data (/full/path/to/atmos.bin)
+    > [8]: <int> (OPT) Smear energies in 0.1 log10 bin according to E^-2? 1=YES,0-NO; default: 1
+    > [9]: <str> (OPT) Provide an ASCII file with azimuthal angles to use
+    >                 1 column ASCII file, each line is azimuthal angle in degrees
+    >                 CCW from East, along the shower propagation direction
+    >                 By default, azimuthal angles are sampled randomly
     """
 
-    try:
-        with open(stdout_file, 'a') as stdout, open(stderr_file, 'a') as stderr:
-            _execute_cmd(
-                _get_sdmc_spctr_executable(),
-                [
-                    tile,
-                    output_event,
-                    n_particles,
-                    random_seed,
-                    epoch,
-                    calibration_file,
-                    fileio.DataFiles.atmos,
-                    1 if smear_energies else 0,
-                ],
-                stdout=stdout,
-                stderr=stderr,
-                global_excutable=True,
-            )
-        return True
-    except subprocess.CalledProcessError:
-        return False
+    with Pipes(stdout_file, stderr_file, append=True) as (stdout, stderr):
+        res = _execute_cmd(
+            _get_sdmc_spctr_executable(),
+            [
+                tile_file,
+                output_events_file,
+                n_particles,
+                random_seed,
+                epoch,
+                calibration_file,
+                fileio.DataFiles.atmos,
+                1 if smear_energies else 0,
+            ],
+            stdout=stdout,
+            stderr=stderr,
+            global_=True,
+            check_errors=False,
+        )
+    return res.returncode == 0
+
+
+def run_sdmc_tsort(events_file: Path, output_events_file: Path, stdout_file: Path, stderr_file: Path) -> bool:
+    """Sorting events inside .dst.gz file by arrival time. Returns success flag"""
+    with Pipes(stdout_file, stderr_file, append=True) as (stdout, stderr):
+        res = _execute_cmd(
+            'sdmc_tsort.run',
+            [events_file, '-o1f', output_events_file],
+            stdout,
+            stderr,
+            global_=True,
+            check_errors=False,
+        )
+    return res.returncode == 0
+
+
+def concatenate_dst_files(source_files: List[Path], output_file: Path, stdout_file: Path, stderr_file: Path):
+    with Pipes(stdout_file, stderr_file, append=True) as (stdout, stderr):
+        _execute_cmd('dstcat.run', ['-o', output_file, *source_files], stdout, stderr, global_=True)
