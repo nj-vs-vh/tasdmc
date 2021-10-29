@@ -203,5 +203,10 @@ def run_sdmc_tsort(events_file: Path, output_events_file: Path, stdout_file: Pat
 
 
 def concatenate_dst_files(source_files: List[Path], output_file: Path, stdout_file: Path, stderr_file: Path):
-    with Pipes(stdout_file, stderr_file, append=True) as (stdout, stderr):
+    with Pipes(stdout_file, stderr_file) as (stdout, stderr):
         _execute_cmd('dstcat.run', ['-o', output_file, *source_files], stdout, stderr, global_=True)
+
+
+def list_events_in_dst_file(file: Path) -> List[str]:
+    res = _execute_cmd('dstlist.run', [file], global_=True)
+    return res.stdout.decode('utf-8').splitlines()

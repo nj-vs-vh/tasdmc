@@ -6,14 +6,13 @@ from pathlib import Path
 import re
 from functools import lru_cache
 import random
-from datetime import datetime
 
 from typing import List, Dict, Iterable, Tuple
 
 from tasdmc import fileio, config
 from tasdmc.steps.base import Files, FileInFileOutPipelineStep
 from tasdmc.steps.exceptions import FilesCheckFailed, BadDataFiles
-from tasdmc.steps.utils import check_file_is_empty, check_last_line_contains
+from tasdmc.steps.utils import check_file_is_empty, check_last_line_contains, check_dst_file_not_empty, passed
 from .corsika2geant import C2GOutputFiles, Corsika2GeantStep
 from .tothrow_generation import TothrowFile, TothrowGenerationStep
 
@@ -87,7 +86,7 @@ class EventFiles(Files):
     def _check_contents(self):
         check_file_is_empty(self.stderr, ignore_strings=[" $$$ dst_get_block_ : End of input file reached"])
         check_last_line_contains(self.stdout, "OK")
-        raise FilesCheckFailed("TEMP: always rerun")  # TODO: remove this and place actual checks
+        check_dst_file_not_empty(self.merged_events_file)
 
 
 class EventsGenerationStep(FileInFileOutPipelineStep):
@@ -111,8 +110,9 @@ class EventsGenerationStep(FileInFileOutPipelineStep):
         smear_energies = _smear_energies_from_config()
         _, n_particles_per_epoch = self.input_.tothrow.get_showlib_and_nparticles()
 
-        stdout = self.output.stdout.open('w')  # not using 'with open(...)' to save indentation level :)
-        stderr = self.output.stderr.open('w')
+        #                TODO: these are temporary ↓
+        stdout = self.output.stdout.open('w', buffering=1)  # not using 'with open(...)' to save indentation level :)
+        stderr = self.output.stderr.open('w', buffering=1)
         stdout.write(f"Poissonian mean N particles: {n_particles_per_epoch}\n")
 
         # generating event file for each epoch
@@ -121,8 +121,9 @@ class EventsGenerationStep(FileInFileOutPipelineStep):
             epoch_log_file = Path(str(epoch_events_file) + '.log')
             epoch_log_file.unlink(missing_ok=True)
 
-            if False:  # TODO: check epoch events file is there and seems ok
-                step_stdout.write(f'Events for epoch {epoch} ({sdcalib_file.name}) are already generated\n')
+            # TODO: check epoch events file contents also!
+            if epoch_events_file.exists() and check_dst_file_not_empty(epoch_events_file):
+                stdout.write(f'Events for epoch {epoch} ({sdcalib_file.name}) are already generated\n')
                 continue
             else:
                 stdout.write(f'Generating events for epoch {epoch} ({sdcalib_file.name})\n')
@@ -131,13 +132,14 @@ class EventsGenerationStep(FileInFileOutPipelineStep):
             for i_try in range(1, n_try + 1):
                 stdout.write(f'\tAttempt {i_try}/{n_try}\n')
                 # fmt: off
-                if run_sdmc_spctr(
+                sdmc_spctr_exited_ok = run_sdmc_spctr(
                     self.input_.c2g_output.tile, epoch_events_file, n_particles_per_epoch, random.randint(1, int(1e6)),
                     epoch, sdcalib_file, smear_energies, epoch_log_file, epoch_log_file,
-                    # TODO: azi.txt file may be specified here
-                ):
-                    break
+                    # TODO: azi.txt file may be passed here
+                )
                 # fmt: on
+                if sdmc_spctr_exited_ok and passed(check_last_line_contains)(epoch_log_file, must_contain="Done"):
+                    break
             else:
                 stderr.write(f'Events for epoch {epoch} not generated after {n_try} attempts\n')
                 epoch_events_file.unlink(missing_ok=True)
@@ -160,7 +162,9 @@ class EventsGenerationStep(FileInFileOutPipelineStep):
             if events_thrown > 0:
                 # epoch_events_file_sorted_temp = Path(str(epoch_events_file) + '.timesorted')
                 epoch_events_file_stem = epoch_events_file.name.split('.')[0]
-                epoch_events_file_sorted_temp = epoch_events_file.parent / (epoch_events_file_stem + '_timesorted.dst.gz')
+                epoch_events_file_sorted_temp = epoch_events_file.parent / (
+                    epoch_events_file_stem + '_timesorted.dst.gz'
+                )
                 if run_sdmc_tsort(epoch_events_file, epoch_events_file_sorted_temp, epoch_log_file, epoch_log_file):
                     epoch_events_file = epoch_events_file_sorted_temp.rename(epoch_events_file)
                 else:
@@ -180,8 +184,9 @@ class EventsGenerationStep(FileInFileOutPipelineStep):
                 for _, epoch_events_file, _ in self.output.iterate_epochs_files()
                 if events_thrown_by_file[epoch_events_file] > 0
             ]
+            concatenate_log = Path(str(self.output.merged_events_file) + '.log')
             concatenate_dst_files(
-                epoch_event_files_to_merge, self.output.merged_events_file, self.output.stdout, self.output.stderr
+                epoch_event_files_to_merge, self.output.merged_events_file, concatenate_log, concatenate_log
             )
             for _, epoch_events_file, _ in self.output.iterate_epochs_files():
                 epoch_events_file.unlink()

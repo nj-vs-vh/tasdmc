@@ -2,9 +2,11 @@ import os
 from pathlib import Path
 import re
 import hashlib
+from functools import wraps
 
-from typing import List, Any
+from typing import List, Any, Callable, TypeVar
 
+from tasdmc.c_routines_wrapper import list_events_in_dst_file
 from .exceptions import FilesCheckFailed
 
 
@@ -41,11 +43,16 @@ def check_file_is_empty(file: Path, ignore_patterns: List[str] = [], ignore_stri
 
 def check_last_line_contains(file: Path, must_contain: str):
     with open(file, 'r') as f:
-        line = ''
+        last_line = ''
         for line in f:
-            pass
-        if must_contain not in line:
-            raise FilesCheckFailed(f"{file} does not contain '{must_contain}' in the last line")
+            if line.strip():
+                last_line = line
+        if must_contain not in last_line:
+            raise FilesCheckFailed(f"{file} does not contain '{must_contain}' in the last line ('{last_line}')")
+
+
+def check_dst_file_not_empty(file: Path):
+    return len(list_events_in_dst_file(file)) > 0
 
 
 def file_contents_hash(file_path: Path, hasher_name: str = 'md5') -> str:
@@ -72,3 +79,24 @@ def concatenate_and_hash(contents: List[Any], delimiter: str = ':', hasher_name:
     concat_strings = delimiter.join([str(s) for s in contents])
     hasher = hashlib.new(hasher_name, data=concat_strings.encode('utf-8'))
     return hasher.hexdigest()
+
+
+
+CheckFnArgs = TypeVar("CheckFnArgs")
+
+
+def passed(check_fn: Callable[[CheckFnArgs], None]) -> Callable[[CheckFnArgs], bool]:
+    """Wrapper/decorator to call any check function from above but return success flag istead of raising an exception
+    
+    >>> flag = passed(check_file_is_empty)(my_file, ignored_lines=['smth'])
+    """
+    
+    @wraps(check_fn)
+    def wrapped(*args, **kwargs):
+        try:
+            check_fn(*args, **kwargs)
+            return True
+        except FilesCheckFailed:
+            return False
+
+    return wrapped
