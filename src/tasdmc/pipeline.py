@@ -15,8 +15,8 @@ from tasdmc.steps import (
 from tasdmc.utils import batches
 
 
-def run_standard_pipeline():
-    fileio.prepare_run_dir()
+def run_standard_pipeline(continuing: bool):
+    fileio.prepare_run_dir(continuing)
 
     cards_generation = CorsikaCardsGenerationStep.create_and_run()
     n_processes = config.used_processes()

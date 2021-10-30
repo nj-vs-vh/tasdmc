@@ -112,10 +112,19 @@ name: your-run-name
 tasdmc run --config my-run-config.yaml
 ```
 
-This is the main `tasdmc` entry point. By default the simulation is started in the background
-and detached from current terminal.
+##### `abort` - abort running simulation
 
-#### Simulation control and monitoring commands
+```bash
+tasdmc abort my-run-name
+```
+
+##### `continue` - continue aborted simulation
+
+```bash
+tasdmc continue my-run-name
+```
+
+#### Simulation monitoring commands
 
 ##### `progress` - check simulation progress
 
@@ -138,12 +147,6 @@ tasdmc ps my-run-name -n 5  # to print 5 last log messages from each worker proc
 
 ```bash
 tasdmc inputs my-run-name
-```
-
-##### `abort` - abort running simulation
-
-```bash
-tasdmc abort my-run-name
 ```
 
 #### Other commands

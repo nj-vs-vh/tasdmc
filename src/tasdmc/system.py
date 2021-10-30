@@ -44,9 +44,17 @@ def _proc2str(p: psutil.Process) -> str:
     return f"{p.pid} ({p.name()})"
 
 
-def kill_all_run_processes_by_main_process_id(pid: int):
+def process_alive(pid: int) -> bool:
     try:
-        main_process = psutil.Process(pid)
+        psutil.Process(pid)
+        return True
+    except psutil.NoSuchProcess:
+        return False
+
+
+def abort_run(main_pid: int):
+    try:
+        main_process = psutil.Process(main_pid)
     except psutil.NoSuchProcess:
         click.echo(
             "Main process has already been killed! "

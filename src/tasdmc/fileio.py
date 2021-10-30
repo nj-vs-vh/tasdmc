@@ -82,7 +82,7 @@ def pipelines_failed_dir() -> Path:
 # individual files
 
 
-def saved_main_process_id_file():
+def saved_main_pid_file():
     return run_dir() / 'main.pid'
 
 
@@ -112,10 +112,7 @@ def pipeline_failed_file(pipeline_id: str):
 def prepare_run_dir(continuing: bool = False):
     rd = run_dir()
     if continuing:
-        if rd.exists():
-            click.secho("Run already exists, continuing")
-        else:
-            rd.mkdir()
+        rd.mkdir(exist_ok=True)
     else:
         try:
             rd.mkdir()
@@ -137,11 +134,11 @@ def prepare_run_dir(continuing: bool = False):
         idir_getter().mkdir(exist_ok=continuing)
 
     config.dump(saved_run_config_file())
-    saved_main_process_id_file().write_text(str(os.getpid()))  # saving currend main process ID
+    saved_main_pid_file().write_text(str(os.getpid()))  # saving currend main process ID
 
 
-def get_saved_main_process_id():
-    return int(saved_main_process_id_file().read_text())
+def get_saved_main_pid():
+    return int(saved_main_pid_file().read_text())
 
 
 def get_run_config_path(run_name: str) -> Path:
