@@ -67,7 +67,7 @@ class EventFiles(Files):
         max_epoch_len = len(str(max(calibration_by_epoch.keys())))
         dst_file_by_epoch = {}
         for epoch in calibration_by_epoch.keys():
-            epoch_str = f"0{max_epoch_len}d".format(epoch)
+            epoch_str = format(epoch, f"0{max_epoch_len}d")
             dst_file_by_epoch[epoch] = fileio.events_dir() / f'{corsika_event_name}_epoch{epoch_str}.dst.gz'
         return EventFiles(
             merged_events_file=fileio.events_dir() / f'{corsika_event_name}.dst.gz',
