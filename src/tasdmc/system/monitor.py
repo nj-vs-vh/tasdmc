@@ -18,7 +18,9 @@ def run_system_monitor():
         time_before_measurement = time.time()
 
         processes = get_run_processes(fileio.get_saved_main_pid())
-        if processes is not None:
+        if processes is None:
+            return
+        for _ in range(5):  # trying several times
             try:
                 running_processes = [p for p in processes if p.status() == psutil.STATUS_RUNNING and p.pid != os.getpid()]
                 if running_processes:
@@ -30,6 +32,7 @@ def run_system_monitor():
                         + " MEM " + " ".join(f"{m:.3f}" for m in memory_used)
                         + f" DISK {directory_size(fileio.run_dir()):.3f}/{available_disk_space(fileio.run_dir()):.3f}"
                     )
+                    break
             except Exception:
                 pass
 
