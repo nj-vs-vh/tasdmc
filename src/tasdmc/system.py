@@ -88,13 +88,15 @@ def print_process_status(main_pid: int):
 
     click.secho("\nWorker processes:", bold=True)
     worker_process_ids = set()
-    for p in main_process.children():
+    for i, p in enumerate(main_process.children()):
         worker_process_ids.add(p.pid)
-        click.echo(f"\t{_proc2str(p)}")
+        click.echo(f"\t{i + 1}. {_proc2str(p)}")
 
     click.secho("\nC routine processes:", bold=True)
+    i = 0
     for p in main_process.children(recursive=True):
         if p.pid not in worker_process_ids:
-            click.echo(f"\t{_proc2str(p)}")
+            click.echo(f"\t{i + 1}. {_proc2str(p)}")
+            i += 1
 
     return True

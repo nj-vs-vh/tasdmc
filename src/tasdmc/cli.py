@@ -60,7 +60,7 @@ def _load_config_by_run_name(name: str) -> bool:
         config.load(fileio.get_run_config_path(name))
         return True
     except ValueError as e:
-        click.secho(str(e), fg='red')
+        click.secho(str(e))
         return False
 
 

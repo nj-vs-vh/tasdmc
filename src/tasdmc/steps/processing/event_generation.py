@@ -53,8 +53,8 @@ class EventFiles(Files):
     merged_events_file: Path
     stdout: Path
     stderr: Path
-    dst_files_by_epoch: Dict[int, Path]
-    calibration_files_by_epoch: Dict[int, Path]
+    dst_file_by_epoch: Dict[int, Path]
+    calibration_file_by_epoch: Dict[int, Path]
 
     @property
     def must_exist(self) -> List[Path]:
@@ -62,17 +62,19 @@ class EventFiles(Files):
 
     @classmethod
     def from_input(cls, input_files: C2GOutputWithTothrowFiles) -> EventFiles:
-        calibration_by_epoch = _get_calibration_files_by_epoch()
         corsika_event_name = input_files.c2g_output.corsika_event_name
+        calibration_by_epoch = _get_calibration_files_by_epoch()
+        max_epoch_len = len(str(max(calibration_by_epoch.keys())))
+        dst_file_by_epoch = {}
+        for epoch in calibration_by_epoch.keys():
+            epoch_str = f"0{max_epoch_len}d".format(epoch)
+            dst_file_by_epoch[epoch] = fileio.events_dir() / f'{corsika_event_name}_epoch{epoch_str}.dst.gz'
         return EventFiles(
             merged_events_file=fileio.events_dir() / f'{corsika_event_name}.dst.gz',
             stdout=fileio.events_dir() / f'{corsika_event_name}.events.stdout',
             stderr=fileio.events_dir() / f'{corsika_event_name}.events.stderr',
-            dst_files_by_epoch={
-                epoch: fileio.events_dir() / f'{corsika_event_name}_epoch{epoch}.dst.gz'
-                for epoch in calibration_by_epoch.keys()
-            },
-            calibration_files_by_epoch=calibration_by_epoch,
+            dst_file_by_epoch=dst_file_by_epoch,
+            calibration_file_by_epoch=calibration_by_epoch,
         )
 
     def prepare_for_step_run(self):
@@ -80,8 +82,8 @@ class EventFiles(Files):
 
     def iterate_epochs_files(self) -> Iterable[Tuple[int, Path, Path]]:
         return (
-            (epoch, self.dst_files_by_epoch[epoch], self.calibration_files_by_epoch[epoch])
-            for epoch in sorted(self.calibration_files_by_epoch.keys())
+            (epoch, self.dst_file_by_epoch[epoch], self.calibration_file_by_epoch[epoch])
+            for epoch in sorted(self.calibration_file_by_epoch.keys())
         )
 
     def _check_contents(self):
