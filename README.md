@@ -124,6 +124,13 @@ tasdmc abort my-run-name
 tasdmc continue my-run-name
 ```
 
+##### `config` - view and update run's configuration
+
+```bash
+tasdmc config view my-run-name
+tasdmc config update my-run-name -c my-updated-run-config.yaml
+```
+
 #### Simulation monitoring commands
 
 ##### `progress` - check simulation progress

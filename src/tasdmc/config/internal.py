@@ -15,7 +15,7 @@ def load(filename: str):
 
 def dump(filename: Path):
     with open(filename, 'w') as f:
-        yaml.dump(_config, f)
+        yaml.dump(_config, f, sort_keys=False)
 
 
 def get_config():

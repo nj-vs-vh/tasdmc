@@ -5,7 +5,7 @@ from pathlib import Path
 
 from tasdmc import config, fileio, system, pipeline, cleanup, extract_calibration
 from tasdmc.progress import display as display_progress
-from tasdmc.config.update_config import update_config
+from tasdmc.config.actions import update_config, view_config
 
 
 @click.group()
@@ -49,7 +49,6 @@ def run(config_filename):
 
 
 def _run_name_argument(param_name: str):
-
     def autocomplete(ctx, param, incomplete):
         return [run_name for run_name in fileio.get_all_run_names() if run_name.startswith(incomplete)]
 
@@ -87,13 +86,21 @@ def continue_run(name: str):
     _run_standard_pipeline_in_background(continuing=True)
 
 
-@cli.command("update-config", help="Update config of run NAME")
+@cli.command("config", help="Operations with configuration of run NAME: view, update")
 @_run_config_option('new_config_filename')
+@click.argument(
+    'action', type=click.STRING, shell_complete=lambda *p: [a for a in ['update', 'view'] if a.startswith(p[2])]
+)
 @_run_name_argument('name')
-def update_config_in_run(name: str, new_config_filename: str):
+def update_config_in_run(action: str, name: str, new_config_filename: str):
     if not _load_config_by_run_name(name):
         return
-    update_config(new_config_filename)
+    if action == 'update':
+        update_config(new_config_filename)
+    elif action == 'view':
+        view_config()
+    else:
+        click.echo(f"Unknown action '{action}'; available actions are 'update' and 'view'")
 
 
 @cli.command("progress", help="Display progress for run NAME")

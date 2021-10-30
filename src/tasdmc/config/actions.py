@@ -2,11 +2,11 @@
 This module contains heuristics about how a user can update their config."""
 
 from __future__ import annotations
-from pathlib import Path
 from dataclasses import dataclass
 import yaml
 from dictdiffer import diff
 import click
+import sys
 
 from typing import Any, Optional, List, Dict, Tuple
 
@@ -100,6 +100,10 @@ def update_config(new_config_path: str):
     for cc in config_changes:
         click.echo(f"\t{cc}")
     
+    if 'name' in [cc.key for cc in config_changes]:
+        click.echo("Attempt to update run's name, aborting")
+        return
+    
     config.load(new_config_path)
     try:
         config.validate()
@@ -112,3 +116,8 @@ def update_config(new_config_path: str):
     if confirmation == 'yes':
         config.dump(fileio.saved_run_config_file())
         click.echo(f"You will need to abort-continue run {config.run_name()} for changes to take effect")
+
+
+def view_config():
+    click.echo(f"Run config for '{config.run_name()}':\n")
+    yaml.dump(get_config(), sys.stdout, indent=4, sort_keys=False)

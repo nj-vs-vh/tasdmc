@@ -116,11 +116,11 @@ def prepare_run_dir(continuing: bool = False):
     else:
         try:
             rd.mkdir()
-        except FileExistsError:
+        except FileExistsError as fee:
             raise ValueError(
                 f"Run '{rd.name}' already exists, pick another run name. "
-                + f"To continue aborted run, use 'tasdmc up {rd.name}' command"
-            )
+                + f"To continue aborted run, use 'tasdmc continue {rd.name}'"
+            ) from fee
 
     if logs_dir().exists():
         old_logs_dir_name = f'before-{datetime.utcnow().isoformat(timespec="seconds")}'
