@@ -69,7 +69,7 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
 
     def run(self, in_executor: bool = False):
         if in_executor:
-            while not self.input_.files_were_produced() and not progress.is_pipeline_failed(self.pipeline_id):
+            while not self.input_.files_were_produced() and not pipeline_progress.is_failed(self.pipeline_id):
                 sleep_time = 60  # sec
                 progress.multiprocessing_debug(
                     f"Input files for '{self.description}' were not yet produced, sleeping for {sleep_time} sec"
