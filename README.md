@@ -134,7 +134,7 @@ Check whether the run is currently active, list worker processes, print last mul
 tasdmc ps my-run-name -n 5  # to print 5 last log messages from each worker process
 ```
 
-##### `input` - print simulation inputs
+##### `inputs` - print simulation inputs
 
 ```bash
 tasdmc inputs my-run-name
@@ -147,12 +147,6 @@ tasdmc abort my-run-name
 ```
 
 #### Other commands
-
-##### `resources` - estimate resources that would be taken up by a simulation
-
-```bash
-tasdmc resources --config my-run-config.yaml
-```
 
 ##### `extract-calibration` - create compressed calibration (`sdcalib.bin`)
 

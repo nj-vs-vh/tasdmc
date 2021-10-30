@@ -37,20 +37,11 @@ def run(config_filename, bg):
         system.run_in_background(
             pipeline.run_standard_pipeline,
             main_process_fn=lambda: click.echo(
-                f"Now running in background. Use 'tasdmc ps {config.run_name()}' to check run status"
+                f"Running in the background. Use 'tasdmc ps {config.run_name()}' to check run status"
             ),
         )
     else:
         pipeline.run_standard_pipeline()
-
-
-@cli.command("resources", help="Estimate resources that will be taken up by a run")
-@_run_config_option('config_filename')
-def rasources(config_filename: str):
-    config.load(config_filename)
-    click.secho(f"{config.run_name()} resources:", bold=True)
-    click.secho(f"Processes: {config.used_processes()} (on {system.n_cpu()} CPUs)")
-    click.secho(f"RAM: {config.used_ram()} Gb ({system.available_ram():.2f} Gb available)")
 
 
 # esixting run commands
@@ -71,7 +62,7 @@ def progress(name: str):
     display_progress.print_pipelines_progress()
 
 
-@cli.command("input", help="Display progress for run NAME")
+@cli.command("inputs", help="Display inputs for run NAME")
 @_run_name_argument('name')
 def inputs(name: str):
     config.load(fileio.get_run_config_path(name))
@@ -83,10 +74,8 @@ def inputs(name: str):
 @click.option("-n", "n_last_messages", default=1, help="Number of messages from worker processes to print")
 def ps(name: str, n_last_messages: int):
     config.load(fileio.get_run_config_path(name))
-
     main_process_id = fileio.get_saved_main_process_id()
     system.print_process_status(main_process_id)
-
     display_progress.print_multiprocessing_debug(n_last_messages)
 
 

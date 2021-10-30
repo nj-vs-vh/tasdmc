@@ -1,5 +1,4 @@
 name: your-run-name
-continue: True  # if run already exists, try to continue; defaults to False
 
 input_files:
   particle: proton

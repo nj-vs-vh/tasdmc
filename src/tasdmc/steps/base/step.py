@@ -83,7 +83,7 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
             progress.multiprocessing_debug(f"Running '{self.description}'")
 
         try:
-            if config.try_to_continue() and self.input_.same_hash_as_stored() and self.output.files_were_produced():
+            if self.input_.same_hash_as_stored() and self.output.files_were_produced():
                 step_progress.skipped(self)
             else:
                 self.input_.assert_files_are_ready()

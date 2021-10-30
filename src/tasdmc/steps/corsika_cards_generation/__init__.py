@@ -115,7 +115,7 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
                 card.set_random_seeds()
                 card_file = fileio.corsika_input_files_dir() / f"DAT{runnr}.in"
                 self.output.files.append(card_file)
-                if config.try_to_continue() and card_file.exists():
+                if card_file.exists():
                     skipped_cards_count += 1
                     continue
                 else:

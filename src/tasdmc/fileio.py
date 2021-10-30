@@ -83,7 +83,7 @@ def pipelines_failed_dir() -> Path:
 
 
 def saved_main_process_id_file():
-    return run_dir() / 'main_process_id.txt'
+    return run_dir() / 'main.pid'
 
 
 def saved_run_config_file(run_name: Optional[str] = None):
@@ -109,18 +109,21 @@ def pipeline_failed_file(pipeline_id: str):
 # top-level functions
 
 
-def prepare_run_dir():
+def prepare_run_dir(continuing: bool = False):
     rd = run_dir()
-    if config.try_to_continue():
+    if continuing:
         if rd.exists():
-            click.secho("Run already exists, continuing", fg='red', bold=True)
+            click.secho("Run already exists, continuing")
         else:
             rd.mkdir()
     else:
         try:
             rd.mkdir()
         except FileExistsError:
-            raise ValueError(f"Run '{rd.name}' already exists, pick another run name or set continue: True in config")
+            raise ValueError(
+                f"Run '{rd.name}' already exists, pick another run name. "
+                + f"To continue aborted run, use 'tasdmc up {rd.name}' command"
+            )
 
     if logs_dir().exists():
         old_logs_dir_name = f'before-{datetime.utcnow().isoformat(timespec="seconds")}'
@@ -131,7 +134,7 @@ def prepare_run_dir():
                 shutil.move(old_log, old_logs_dir / old_log.name)
 
     for idir_getter in _internal_dir_getters:
-        idir_getter().mkdir(exist_ok=config.try_to_continue())
+        idir_getter().mkdir(exist_ok=continuing)
 
     config.dump(saved_run_config_file())
     saved_main_process_id_file().write_text(str(os.getpid()))  # saving currend main process ID

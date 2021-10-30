@@ -108,10 +108,6 @@ def run_name() -> str:
     return get_key('name')
 
 
-def try_to_continue() -> bool:
-    return get_key('continue', default=False)
-
-
 def used_processes() -> int:
     max_processes_explicit = get_key('resources.max_processes', default=-1)
     max_memory_explicit = get_key('resources.max_memory', default=-1)
