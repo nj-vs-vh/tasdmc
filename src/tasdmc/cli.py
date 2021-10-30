@@ -29,12 +29,8 @@ def _run_config_option(param_name: str):
 
 
 def _run_standard_pipeline_in_background(continuing: bool):
-    system.run_in_background(
-        background_fn=lambda: pipeline.run_standard_pipeline(continuing),
-        main_process_fn=lambda: click.echo(
-            f"Running in the background. Use 'tasdmc ps {config.run_name()}' to check run status"
-        ),
-    )
+    system.run_in_background(pipeline.run_standard_pipeline, continuing)
+    click.echo(f"Running in the background. Use 'tasdmc ps {config.run_name()}' to check run status")
 
 
 @cli.command("run", help="Run simulation")

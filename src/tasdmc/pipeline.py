@@ -2,7 +2,7 @@ from concurrent.futures import ProcessPoolExecutor, Future
 
 from typing import List
 
-from tasdmc import config, fileio
+from tasdmc import config, fileio, system
 from tasdmc.steps import (
     CorsikaCardsGenerationStep,
     CorsikaStep,
@@ -16,11 +16,14 @@ from tasdmc.utils import batches
 
 
 def run_standard_pipeline(continuing: bool):
+    system.set_process_title("tasdmc main")
     fileio.prepare_run_dir(continuing)
 
     cards_generation = CorsikaCardsGenerationStep.create_and_run()
     n_processes = config.used_processes()
-    with ProcessPoolExecutor(max_workers=n_processes) as executor:
+    with ProcessPoolExecutor(
+        max_workers=n_processes, initializer=lambda: system.set_process_title("tasdmc worker")
+    ) as executor:
         futures_queue: List[Future] = []
 
         corsika_steps = CorsikaStep.from_corsika_cards_generation(cards_generation)
