@@ -1,6 +1,3 @@
-"""Progress monitoring module"""
-
-import click
 import os
 from datetime import datetime
 from pathlib import Path

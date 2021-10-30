@@ -2,7 +2,7 @@ import time
 import psutil
 import os
 
-from tasdmc import config, progress, fileio
+from tasdmc import config, logs, fileio
 from .resources import available_disk_space, directory_size
 from .processes import set_process_title, get_run_processes
 from .utils import bytes2Gb
@@ -25,7 +25,7 @@ def run_system_monitor():
             cpu_percents = [p.cpu_percent(0.3) for p in running_processes]
             #                    same as top‘s RES column
             memory_used = [bytes2Gb(p.memory_info().rss) for p in running_processes]
-            progress.system_resources_info(
+            logs.system_resources_info(
                 "CPU " + " ".join(f"{cp:.3f}" for cp in cpu_percents)
                 + " MEM " + " ".join(f"{m:.3f}" for m in memory_used)
                 + f" DISK {directory_size(fileio.run_dir()):.3f}/{available_disk_space(fileio.run_dir()):.3f}"

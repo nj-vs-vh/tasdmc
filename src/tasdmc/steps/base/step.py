@@ -9,8 +9,8 @@ import traceback
 
 from typing import Optional, List
 
-from tasdmc import config, progress
-from tasdmc.progress import step_progress, pipeline_progress
+from tasdmc import logs
+from tasdmc.logs import step_progress, pipeline_progress
 from .files import Files
 
 
@@ -55,7 +55,7 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
     @property
     @abstractmethod
     def description(self) -> str:
-        """Step description string, used for progress monitoring"""
+        """Step description string, used for logging"""
         pass
 
     def schedule(self, executor: ProcessPoolExecutor, futures_list: List[Future]) -> Future:
@@ -71,16 +71,16 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
         if in_executor:
             while not self.input_.files_were_produced() and not pipeline_progress.is_failed(self.pipeline_id):
                 sleep_time = 60  # sec
-                progress.multiprocessing_debug(
+                logs.multiprocessing_debug(
                     f"Input files for '{self.description}' were not yet produced, sleeping for {sleep_time} sec"
                 )
                 sleep(sleep_time)
 
         if pipeline_progress.is_failed(self.pipeline_id):
-            progress.multiprocessing_debug(f"Not running '{self.description}', pipeline marked as failed")
+            logs.multiprocessing_debug(f"Not running '{self.description}', pipeline marked as failed")
             return
         else:
-            progress.multiprocessing_debug(f"Running '{self.description}'")
+            logs.multiprocessing_debug(f"Running '{self.description}'")
 
         try:
             if self.input_.same_hash_as_stored() and self.output.files_were_produced():

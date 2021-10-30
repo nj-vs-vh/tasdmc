@@ -4,7 +4,7 @@ import click
 from pathlib import Path
 
 from tasdmc import config, fileio, system, pipeline, cleanup, extract_calibration
-from tasdmc.progress import display as display_progress
+from tasdmc.logs import display as display_logs
 from tasdmc.config.actions import update_config, view_config
 
 
@@ -104,7 +104,7 @@ def update_config_in_run(action: str, name: str, new_config_filename: str):
 def run_progress(name: str):
     if not _load_config_by_run_name(name):
         return
-    display_progress.print_pipelines_progress()
+    display_logs.print_pipelines_progress()
 
 
 @cli.command("inputs", help="Display inputs for run NAME")
@@ -122,7 +122,7 @@ def run_process_status(name: str, n_last_messages: int):
     if not _load_config_by_run_name(name):
         return
     system.print_process_status(fileio.get_saved_main_pid())
-    display_progress.print_multiprocessing_debug(n_last_messages)
+    display_logs.print_multiprocessing_debug(n_last_messages)
 
 
 @cli.command(

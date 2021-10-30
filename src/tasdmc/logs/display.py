@@ -4,7 +4,7 @@ import os
 from collections import defaultdict
 
 from tasdmc import fileio
-from tasdmc.progress.step_progress import EventType, PipelineStepProgress
+from tasdmc.logs.step_progress import EventType, PipelineStepProgress
 
 
 multiproc_debug_message_re = re.compile(r'.*\(pid (?P<pid>\d+)\)')
