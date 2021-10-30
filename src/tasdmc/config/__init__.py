@@ -5,28 +5,17 @@ This module serves as a global singleton object:
 >>> config.get_key('your.key.here')
 """
 
-import yaml
 from pathlib import Path
 import os
 
 from typing import Any, Optional, List, Type
 
 from tasdmc import system
+from .exceptions import BadConfigValue, ConfigNotReadError, ConfigKeyError
+from .internal import get_config, dump, load
 
 
-_config = None
-
-
-class ConfigNotReadError(Exception):
-    pass
-
-
-class ConfigKeyError(KeyError):
-    pass
-
-
-class BadConfigValue(ValueError):
-    pass
+__all__ = [dump, load]
 
 
 class Global:
@@ -39,22 +28,15 @@ class Global:
     data_dir = Path(os.environ['TASDMC_DATA_DIR'])
 
 
-def load(filename: str):
-    global _config
-    with open(filename, 'r') as f:
-        _config = yaml.safe_load(f)
-
-
-def dump(filename: Path):
-    with open(filename, 'w') as f:
-        yaml.dump(_config, f)
-
 
 def validate(steps: Optional[List[Type['FileInFileOutStep']]] = None):  # type: ignore
     if steps is None:
         from tasdmc.steps import all_steps as steps
     for Step in steps:
-        Step.validate_config()
+        try:
+            Step.validate_config()
+        except Exception as e:
+            raise BadConfigValue(f"Config validation for {Step.__name__} failed: {e}")
 
 
 _RAISE_ERROR_ON_MISSING_KEY = object()
@@ -76,7 +58,8 @@ def get_key(key: str, key_prefix: Optional[str] = None, default: Optional[Any] =
     Returns:
         Any: value in the specified key
     """
-    if _config is None:
+    config = get_config()
+    if config is None:
         raise ConfigNotReadError("Attempt to read config key before it is loaded, run config.load('smth.yaml') first.")
 
     if key_prefix is not None:
@@ -86,7 +69,7 @@ def get_key(key: str, key_prefix: Optional[str] = None, default: Optional[Any] =
         raise ConfigKeyError('No key specified')
 
     traversed_level_keys = []
-    current_value = _config
+    current_value = config
     for level_key in level_keys:
         current_value = current_value.get(level_key)
         if current_value is None:

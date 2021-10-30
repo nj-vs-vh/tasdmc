@@ -70,4 +70,4 @@ def _n_split_from_config() -> int:
     if isinstance(n_split, int) and n_split > 0:
         return n_split
     else:
-        raise config.BadConfigValue("dethinning.n_parallel is expected to be non-negative integer")
+        raise ValueError("dethinning.n_parallel is expected to be non-negative integer")

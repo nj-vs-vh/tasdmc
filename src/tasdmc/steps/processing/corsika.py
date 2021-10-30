@@ -95,29 +95,26 @@ class CorsikaStep(FileInFileOutPipelineStep):
 
     @classmethod
     def validate_config(self):
-        try:
-            corsika_path = Path(config.get_key('corsika.path'))
-            assert corsika_path.exists(), f"CORSIKA executable {corsika_path} does not exist"
+        corsika_path = Path(config.get_key('corsika.path'))
+        assert corsika_path.exists(), f"CORSIKA executable {corsika_path} does not exist"
 
-            if config.get_key('corsika.default_executable_name', default=True):
-                common_msg_end = (
-                    ". This was inferred from CORSIKA executable name. "
-                    + "If you use custom name, set corsika.default_executable_name to False."
-                )
-                # quick hacks relying on default CORSIKA naming strategy, not to be relied upon
-                corsika_exe_name = corsika_path.name.lower()
-                assert 'thin' in corsika_exe_name, (
-                    "CORSIKA seems to be compiled without THINning option" + common_msg_end
-                )
-                low_E_hadr_model: str = config.get_key('corsika.low_E_hadronic_interactions_model')
-                assert low_E_hadr_model.lower() in corsika_exe_name, "Low energy hadronic seems incorrect"
-                high_E_hadr_model: str = config.get_key('corsika.high_E_hadronic_interactions_model')
-                high_E_hadr_model_to_executable_name_part = {
-                    'QGSJETII': 'QGSII',
-                    'EPOS': 'EPOS',
-                }
-                assert (
-                    high_E_hadr_model_to_executable_name_part[high_E_hadr_model].lower() in corsika_exe_name
-                ), "High energy hadronic seems incorrect"
-        except AssertionError as e:
-            raise config.BadConfigValue(str(e))
+        if config.get_key('corsika.default_executable_name', default=True):
+            common_msg_end = (
+                ". This was inferred from CORSIKA executable name. "
+                + "If you use custom name, set corsika.default_executable_name to False."
+            )
+            # quick hacks relying on default CORSIKA naming strategy, not to be relied upon
+            corsika_exe_name = corsika_path.name.lower()
+            assert 'thin' in corsika_exe_name, (
+                "CORSIKA seems to be compiled without THINning option" + common_msg_end
+            )
+            low_E_hadr_model: str = config.get_key('corsika.low_E_hadronic_interactions_model')
+            assert low_E_hadr_model.lower() in corsika_exe_name, "Low energy hadronic seems incorrect"
+            high_E_hadr_model: str = config.get_key('corsika.high_E_hadronic_interactions_model')
+            high_E_hadr_model_to_executable_name_part = {
+                'QGSJETII': 'QGSII',
+                'EPOS': 'EPOS',
+            }
+            assert (
+                high_E_hadr_model_to_executable_name_part[high_E_hadr_model].lower() in corsika_exe_name
+            ), "High energy hadronic seems incorrect"

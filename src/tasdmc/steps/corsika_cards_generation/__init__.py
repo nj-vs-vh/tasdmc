@@ -146,12 +146,12 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
 
         allowed_high_E_models = ('QGSJETII', 'EPOS')
         if config.get_key('corsika.high_E_hadronic_interactions_model') not in allowed_high_E_models:
-            raise config.BadConfigValue(
+            raise ValueError(
                 f"high_E_hadronic_interactions_model must be one of: {', '.join(allowed_high_E_models)}"
             )
         allowed_low_E_models = ('FLUKA', 'URQMD', 'GHEISHA')
         if config.get_key('corsika.low_E_hadronic_interactions_model') not in allowed_low_E_models:
-            raise config.BadConfigValue(
+            raise ValueError(
                 f"low_E_hadronic_interactions_model must be one of: {', '.join(allowed_low_E_models)}"
             )
 
@@ -170,7 +170,7 @@ def _particle_id_from_config() -> Tuple[str, int]:
     try:
         return particle, PARTICLE_ID_BY_NAME[particle]
     except KeyError:
-        raise config.BadConfigValue(
+        raise ValueError(
             f'Unknown particle "{particle}", must be one of: {", ".join(PARTICLE_ID_BY_NAME.keys())}'
         )
 
@@ -188,7 +188,7 @@ def log10E_bounds_from_config() -> Tuple[float, float]:
             assert log10E in BTS_PAR.keys(), f"No known BTS infile generation parameters for log10E = {log10E}"
         return log10E_min, log10E_max
     except (ValueError, AssertionError) as e:
-        raise config.BadConfigValue(str(e))
+        raise ValueError(str(e))
 
 
 def _event_number_multiplier_from_config() -> float:
@@ -198,6 +198,6 @@ def _event_number_multiplier_from_config() -> float:
         assert event_number_multiplier > 0
         return event_number_multiplier
     except (ValueError, AssertionError):
-        raise config.BadConfigValue(
+        raise ValueError(
             f"Event number multiplier must be non-negative float, but {event_number_multiplier} is specified"
         )
