@@ -17,7 +17,6 @@ class EventType(Enum):
     SKIPPED = 'skipped'
     COMPLETED = 'completed'
     FAILED = 'failed'
-    OUTPUT_SIZE_MEASURED = 'output_size_measured'  # DEPRECATED, kept for older runs
 
     def __str__(self) -> str:
         return self.value
@@ -49,15 +48,26 @@ class PipelineStepProgress:
     def load(cls) -> List[PipelineStepProgress]:
         step_progresses = []
         for line in fileio.pipelines_log().read_text().splitlines():
-            datetime_str, pipeline_id, step_name, step_input_hash, event_type_str, *rest = line.split(' ')
+            try:
+                datetime_str, pipeline_id, step_name, step_input_hash, event_type_str, *rest = line.split(' ')
+            except ValueError:
+                continue
+            rest = ' '.join(rest)
+            event_type=EventType(event_type_str)
+            if event_type is EventType.COMPLETED and rest:
+                value = float(rest)
+            elif event_type is EventType.FAILED and rest:
+                value = rest
+            else:
+                value = None
             step_progresses.append(
                 PipelineStepProgress(
                     timestamp=str2datetime(datetime_str),
                     pipeline_id=pipeline_id,
                     step_name=step_name,
                     step_input_hash=step_input_hash,
-                    event_type=EventType(event_type_str),
-                    value=rest[0] if rest else None,
+                    event_type=event_type,
+                    value=value,
                 )
             )
         return step_progresses
@@ -89,4 +99,4 @@ def completed(step: 'FileInFileOutPipelineStep', output_size_mb: int):  # type: 
 
 
 def failed(step: 'FileInFileOutPipelineStep', errmsg: str):  # type: ignore
-    PipelineStepProgress.from_step(step, EventType.FAILED, value=errmsg).save()
+    PipelineStepProgress.from_step(step, EventType.FAILED, value=errmsg.replace('\n', ' ')).save()
