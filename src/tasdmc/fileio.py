@@ -1,7 +1,6 @@
 """File input-output for all routines in the package"""
 
 import os
-import click
 import shutil
 from pathlib import Path
 from functools import lru_cache
@@ -76,7 +75,7 @@ def logs_dir() -> Path:
 
 @internal_dir
 def pipelines_failed_dir() -> Path:
-    return logs_dir() / 'pipelines_failed'
+    return logs_dir() / 'failed_pipelines'
 
 
 # individual files
@@ -88,6 +87,10 @@ def saved_main_pid_file():
 
 def saved_run_config_file(run_name: Optional[str] = None):
     return configs_dir(run_name) / 'run.yaml'
+
+
+def system_resources_log():
+    return logs_dir() / 'system_resources.log'
 
 
 def multiprocessing_debug_log():

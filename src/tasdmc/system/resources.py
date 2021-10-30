@@ -1,10 +1,11 @@
 import psutil
 from pathlib import Path
 
+from .utils import bytes2Gb
+
 
 def available_ram() -> int:
-    """Available RAM in Gb"""
-    return psutil.virtual_memory().available / (1024 ** 3)
+    return bytes2Gb(psutil.virtual_memory().available)
 
 
 def n_cpu() -> int:
@@ -12,12 +13,8 @@ def n_cpu() -> int:
 
 
 def available_disk_space(where_file: Path) -> int:
-    """Available disk space on the same partition as where_file in bytes"""
-    partitions = [dp.mountpoint for dp in psutil.disk_partitions()]
-    matching_partitions = []
-    for partition in partitions:
-        if where_file.match(partition + '/**'):
-            matching_partitions.append(partition)
+    return bytes2Gb(psutil.disk_usage(str(where_file)).free)
 
-    longest_matching_partition = max(matching_partitions, key=len)
-    return psutil.disk_usage(longest_matching_partition).free
+
+def directory_size(dir: Path) -> int:
+    return bytes2Gb(sum(f.stat().st_size for f in dir.glob('**/*') if f.is_file()))

@@ -121,8 +121,7 @@ def run_inputs(name: str):
 def run_process_status(name: str, n_last_messages: int):
     if not _load_config_by_run_name(name):
         return
-    main_pid = fileio.get_saved_main_pid()
-    system.print_process_status(main_pid)
+    system.print_process_status(fileio.get_saved_main_pid())
     display_progress.print_multiprocessing_debug(n_last_messages)
 
 

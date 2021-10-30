@@ -12,12 +12,14 @@ from tasdmc.steps import (
     TothrowGenerationStep,
     EventsGenerationStep,
 )
+from tasdmc.system.monitor import run_system_monitor
 from tasdmc.utils import batches
 
 
 def run_standard_pipeline(continuing: bool):
     system.set_process_title("tasdmc main")
     fileio.prepare_run_dir(continuing)
+    system.run_in_background(run_system_monitor, keep_session=True)
 
     cards_generation = CorsikaCardsGenerationStep.create_and_run()
     n_processes = config.used_processes()

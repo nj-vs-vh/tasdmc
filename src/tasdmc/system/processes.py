@@ -2,7 +2,7 @@ import psutil
 import setproctitle
 import click
 
-from typing import List
+from typing import List, Optional
 
 
 def set_process_title(title: str):
@@ -40,9 +40,12 @@ def abort_run(main_pid: int):
             click.echo("Process already killed")
 
 
-def get_children_process_ids(main_pid: int) -> List[int]:
-    main_process = psutil.Process(main_pid)
-    return [p.pid for p in main_process.children()]
+def get_run_processes(main_pid: int) -> Optional[List[psutil.Process]]:
+    try:
+        main_process = psutil.Process(main_pid)
+        return [main_process, *main_process.children(recursive=True)]
+    except psutil.NoSuchProcess:
+        return None
 
 
 def print_process_status(main_pid: int):

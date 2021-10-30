@@ -13,22 +13,20 @@ from .utils import datetime2str
 # command-line messages
 
 
-def warning(message: str):
-    click.secho(message, bold=True, fg='red')
-
-
-# file logs
+def system_resources_info(message: str):
+    message = f"[{datetime2str(datetime.now())}] {message}"
+    _log_text_message(message, fileio.system_resources_log())
 
 
 def cards_generation_info(message: str):
-    _log_text_message(message + '\n', fileio.cards_gen_info_log())
+    _log_text_message(message, fileio.cards_gen_info_log())
 
 
 def multiprocessing_debug(message: str):
-    message = f"[{datetime2str(datetime.now())}] (pid {os.getpid()}) {message}\n"
+    message = f"[{datetime2str(datetime.now())}] (pid {os.getpid()}) {message}"
     _log_text_message(message, fileio.multiprocessing_debug_log())
 
 
 def _log_text_message(msg: str, log_filename: Path):
     with open(log_filename, 'a') as f:
-        f.write(msg)
+        f.write(msg + '\n')
