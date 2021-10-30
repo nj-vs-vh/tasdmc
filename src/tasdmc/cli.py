@@ -60,7 +60,7 @@ def _load_config_by_run_name(name: str) -> bool:
         return False
 
 
-@cli.command("abort", help="Abort execution of run NAME. This will kill all its processes immediately!")
+@cli.command("abort", help="Abort execution of run NAME")
 @_run_name_argument('name')
 def abort_run(name: str):
     if not _load_config_by_run_name(name):
@@ -71,7 +71,7 @@ def abort_run(name: str):
         system.abort_run(main_pid=fileio.get_saved_main_pid())
 
 
-@cli.command("continue", help="Continue execution of aborted run NAME")
+@cli.command("continue", help="Continue aborted execution of aborted run NAME")
 @_run_name_argument('name')
 def continue_run(name: str):
     if not _load_config_by_run_name(name):
@@ -122,7 +122,8 @@ def run_process_status(name: str, n_last_messages: int):
     if not _load_config_by_run_name(name):
         return
     system.print_process_status(fileio.get_saved_main_pid())
-    display_logs.print_multiprocessing_debug(n_last_messages)
+    if n_last_messages:
+        display_logs.print_multiprocessing_debug(n_last_messages)
 
 
 @cli.command(
