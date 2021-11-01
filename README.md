@@ -133,7 +133,7 @@ tasdmc config update my-run-name -c my-updated-run-config.yaml
 
 #### Simulation monitoring commands
 
-##### `progress` - check simulation progress
+##### `progress` - simulation progress
 
 Count how many pipelines are completed, running, pending or failed. A pipeline here
 refers to a set of operations on a single CORSIKA input card.
@@ -142,12 +142,20 @@ refers to a set of operations on a single CORSIKA input card.
 tasdmc progress my-run-name
 ```
 
-##### `ps` - check simulation status
+##### `ps` - simulation processes status
 
 Check whether the run is currently active, list worker processes, print last multiprocessing debug messages.
 
 ```bash
 tasdmc ps my-run-name -n 5  # to print 5 last log messages from each worker process
+```
+
+##### `resources` - simulation resource usage
+
+Check utilization of system resources (CPU, RAM, disk) by run and plot them in time
+
+```bash
+tasdmc resources my-run-name
 ```
 
 ##### `inputs` - print simulation inputs

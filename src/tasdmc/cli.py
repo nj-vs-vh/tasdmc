@@ -126,6 +126,14 @@ def run_process_status(name: str, n_last_messages: int):
         display_logs.print_multiprocessing_debug(n_last_messages)
 
 
+@cli.command("resources", help="Display system resources utilization for run NAME")
+@_run_name_argument('name')
+def system_resources(name: str):
+    if not _load_config_by_run_name(name):
+        return
+    display_logs.print_system_monitoring()
+
+
 @cli.command(
     "_cleanup_failed_pipelines",
     help="Delete all files related to run NAME's pipelines currently marked as .failed; INTERNAL/EXPERIMENTAL COMMAND",
