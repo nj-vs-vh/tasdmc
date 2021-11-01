@@ -65,6 +65,7 @@ def _load_config_by_run_name(name: str) -> bool:
             click.echo(f"Did you mean '{single_matching_run_name}?' [Yes, no]")
             confirmation = input('> ')
             if confirmation != 'no':
+                click.echo()
                 run_config_path = fileio.get_run_config_path(single_matching_run_name)
     if run_config_path is None:
         return False
