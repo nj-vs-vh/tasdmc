@@ -1,6 +1,7 @@
 import time
 import psutil
 import os
+import sys
 
 from tasdmc import config, logs, fileio
 from .resources import available_disk_space, directory_size
@@ -19,7 +20,7 @@ def run_system_monitor():
 
         processes = get_run_processes(fileio.get_saved_main_pid())
         if processes is None:
-            return
+            sys.exit(0)
         for _ in range(5):  # trying several times
             try:
                 running_processes = [p for p in processes if p.status() == psutil.STATUS_RUNNING and p.pid != os.getpid()]
