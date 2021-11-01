@@ -202,6 +202,13 @@ class EventsGenerationStep(FileInFileOutPipelineStep):
         stdout.close()
         stderr.close()
 
+        # TEMP: sometimes this step partially fails for no obvious reason;
+        #       here we explicitly throw an error and send the detailed report to failed pipelines
+        #       hence it will be accessible even after continued runs in logs/before-YYYY-MM-DDThh:mm:ss
+        stderr_text = self.output.stderr.read_text().strip()
+        if stderr_text:
+            raise FilesCheckFailed(f"Step partially failed:\n{stderr_text}")
+
     @classmethod
     def validate_config(cls):
         set_limits_for_sdmc_spctr()

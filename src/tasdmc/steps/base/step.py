@@ -96,7 +96,13 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
                 self._post_run()
         except Exception as e:
             step_progress.failed(self, errmsg=str(e))
-            pipeline_progress.mark_failed(self.pipeline_id, errmsg=traceback.format_exc())
+            pipeline_progress.mark_failed(
+                self.pipeline_id,
+                errmsg=(
+                    f"Pipeline failed on step {self.__class__.__name__} ({self.input_.contents_hash}) "
+                    + f"with traceback:\n\n{traceback.format_exc()}"
+                ),
+            )
 
     @abstractmethod
     def _run(self):
