@@ -48,16 +48,29 @@ def _run_name_argument(param_name: str):
     def autocomplete(ctx, param, incomplete):
         return [run_name for run_name in fileio.get_all_run_names() if run_name.startswith(incomplete)]
 
-    return click.argument(param_name, type=click.STRING, shell_complete=autocomplete)
+    return click.argument(param_name, type=click.STRING, default="", shell_complete=autocomplete)
 
 
 def _load_config_by_run_name(name: str) -> bool:
+    run_config_path = None
     try:
-        config.load(fileio.get_run_config_path(name))
-        return True
-    except ValueError as e:
-        click.secho(str(e))
+        assert len(name), "No run name specified"
+        run_config_path = fileio.get_run_config_path(name)
+    except (AssertionError, ValueError) as exc:
+        all_run_names = fileio.get_all_run_names()
+        click.echo(f"{exc}, following runs exist:\n" + "\n".join([f"\t{r}" for r in all_run_names]))
+        matching_run_names = [rn for rn in all_run_names if rn.startswith(name)]
+        if len(matching_run_names) == 1:
+            single_matching_run_name = matching_run_names[0]
+            click.echo(f"Did you mean '{single_matching_run_name}?' [yes, No]")
+            confirmation = input('> ')
+            if confirmation:
+                run_config_path = fileio.get_run_config_path(single_matching_run_name)
+    if run_config_path is None:
         return False
+    else:
+        config.load(run_config_path)
+        return True
 
 
 @cli.command("abort", help="Abort execution of run NAME")
