@@ -141,11 +141,29 @@ def run_process_status(name: str, n_last_messages: int):
 
 
 @cli.command("resources", help="Display system resources utilization for run NAME")
+@click.option(
+    "-t",
+    "--absolute-datetime",
+    "absolute_datetime",
+    default=False,
+    is_flag=True,
+    help="If set to True, X axis on plots represent absolute datetimes in UTC; otherwise Run evaluation Time is used",
+)
+@click.option(
+    "-p",
+    "--include-previous",
+    "include_previous_runs",
+    default=False,
+    is_flag=True,
+    help="If set to True, all previous run execution logs will be merged into one timeline",
+)
 @_run_name_argument('name')
-def system_resources(name: str):
+def system_resources(name: str, include_previous_runs: bool, absolute_datetime: bool):
     if not _load_config_by_run_name(name):
         return
-    display_logs.print_system_monitoring()
+    display_logs.print_system_monitoring(
+        include_previous_runs=include_previous_runs, evaluation_time_as_x=(not absolute_datetime)
+    )
 
 
 @cli.command(

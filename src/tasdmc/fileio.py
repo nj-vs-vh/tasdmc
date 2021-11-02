@@ -140,6 +140,14 @@ def prepare_run_dir(continuing: bool = False):
     saved_main_pid_file().write_text(str(os.getpid()))  # saving currend main process ID
 
 
+def get_previous_logs_dirs() -> List[Path]:
+    before_dirs = []
+    for d in logs_dir().iterdir():
+        if d.is_dir() and d.name.startswith('before'):
+            before_dirs.append(d)
+    return before_dirs
+
+
 def get_saved_main_pid():
     return int(saved_main_pid_file().read_text())
 
