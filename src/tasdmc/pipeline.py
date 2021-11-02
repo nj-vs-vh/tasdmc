@@ -68,5 +68,4 @@ def run_standard_pipeline(continuing: bool):
         for step in steps:
             step.schedule(executor, futures_queue)
         for f in futures_queue:
-            time.sleep(1)
             f.result()

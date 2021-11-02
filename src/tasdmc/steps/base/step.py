@@ -6,6 +6,7 @@ from concurrent.futures import ProcessPoolExecutor
 from time import sleep
 from concurrent.futures import Future
 import traceback
+from random import random
 
 from typing import Optional, List
 
@@ -69,6 +70,7 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
 
     def run(self, in_executor: bool = False):
         if in_executor:
+            sleep(3 * random())  # in hopes of avoiding race condition for simultaneously running steps
             while not self.input_.files_were_produced() and not pipeline_progress.is_failed(self.pipeline_id):
                 sleep_time = 60  # sec
                 logs.multiprocessing_debug(
