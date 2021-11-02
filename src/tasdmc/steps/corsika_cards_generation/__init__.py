@@ -13,7 +13,7 @@ from typing import List, Tuple
 from tasdmc import config, fileio, logs
 from ..base import Files, FileInFileOutStep
 from .corsika_card import (
-    CorsikaCard,
+    CorsikaCardData,
     BTS_PAR,
     PARTICLE_ID_BY_NAME,
     LOG10_E_MAX_POSSIBLE,
@@ -23,7 +23,7 @@ from .corsika_card import (
 
 
 @dataclass
-class CorsikaCardFiles(Files):
+class CorsikaCardsSet(Files):
     files: List[Path]
 
     @property
@@ -33,7 +33,7 @@ class CorsikaCardFiles(Files):
 
 @dataclass
 class CorsikaCardsGenerationStep(FileInFileOutStep):
-    output: CorsikaCardFiles
+    output: CorsikaCardsSet
     input_: None = None
 
     @classmethod
@@ -44,7 +44,7 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
         Because of that, instead of instantiate-then-run, use this class method
         >>> CorsikaInputFilesGeneration.create_and_run()
         """
-        instance = CorsikaCardsGenerationStep(CorsikaCardFiles([]))
+        instance = CorsikaCardsGenerationStep(CorsikaCardsSet([]))
         instance.run()  # here corsika input files are added to output.files list
         # making sure only generated .in files are there and no others; we'll use .in files for reference!
         output_files_set = set(instance.output.files)
@@ -72,27 +72,27 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
         )
 
         # common corsika card parameters
-        card = CorsikaCard()
-        card.set_USER(getpass.getuser())
-        card.set_HOST("chpc")
-        card.set_PRMPAR(particle_id)
-        card.replace_card("DIRECT", str(fileio.corsika_output_files_dir()) + '/')  # directing .long and particle file
+        cd = CorsikaCardData()
+        cd.set_USER(getpass.getuser())
+        cd.set_HOST("chpc")
+        cd.set_PRMPAR(particle_id)
+        cd.replace_card("DIRECT", str(fileio.corsika_output_files_dir()) + '/')  # directing .long and particle file
 
         if high_E_model == 'EPOS':
-            card.add_EPOS_CARDS()
+            cd.add_EPOS_CARDS()
 
         # as noted by Yana Zhezher, CORSIKA fails with this model and default ECUTS
         if low_E_model == 'URQMD':
-            card.replace_card("ECUTS", "0.3  0.05  0.00025  0.00025")
+            cd.replace_card("ECUTS", "0.3  0.05  0.00025  0.00025")
 
         logs.cards_generation_info('\nCards per energy bin')
         for E_bin_i in range(1 + int((log10E_max - log10E_min) / LOG10_E_STEP)):
             log10E = log10E_min + E_bin_i * LOG10_E_STEP
-            card.set_fixed_log10en(log10E)
+            cd.set_fixed_log10en(log10E)
             params = BTS_PAR[log10E]
             energy_id = int(params[0])
-            card.set_THIN(params[1], params[2], params[3])
-            card.set_THINH(params[4], params[5])
+            cd.set_THIN(params[1], params[2], params[3])
+            cd.set_THINH(params[4], params[5])
 
             cards_count = get_cards_count_by_log10E(log10E)
 
@@ -111,8 +111,8 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
 
             for file_index in range(cards_count):
                 runnr = file_index_to_runnr(file_index, energy_id)
-                card.set_RUNNR(runnr)
-                card.set_random_seeds()
+                cd.set_RUNNR(runnr)
+                cd.set_random_seeds()
                 card_file = fileio.corsika_input_files_dir() / f"DAT{runnr}.in"
                 self.output.files.append(card_file)
                 if card_file.exists():
@@ -120,7 +120,7 @@ class CorsikaCardsGenerationStep(FileInFileOutStep):
                     continue
                 else:
                     with open(card_file, "w") as f:
-                        f.write(card.buf + "\n")
+                        f.write(cd.buf + "\n")
 
             skipped_msg = (
                 ''

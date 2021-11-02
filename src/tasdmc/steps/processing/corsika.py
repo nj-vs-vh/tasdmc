@@ -7,13 +7,13 @@ from typing import List
 
 from tasdmc import fileio, config
 from tasdmc.steps.base import Files, FileInFileOutPipelineStep
-from tasdmc.steps.corsika_cards_generation import CorsikaCardsGenerationStep, CorsikaCardFiles
+from tasdmc.steps.corsika_cards_generation import CorsikaCardsGenerationStep, CorsikaCardsSet
 from tasdmc.steps.exceptions import FilesCheckFailed
 from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty, check_last_line_contains
 
 
 @dataclass
-class CorsikaCardFile(Files):
+class CorsikaCard(Files):
     card: Path
 
     @property
@@ -21,8 +21,8 @@ class CorsikaCardFile(Files):
         return [self.card]
 
     @classmethod
-    def from_corsika_card_files(cls, corsika_card_files: CorsikaCardFiles) -> List[CorsikaCardFile]:
-        return [cls(card) for card in corsika_card_files.files]
+    def from_corsika_cards_set(cls, ccfs: CorsikaCardsSet) -> List[CorsikaCard]:
+        return [cls(card) for card in ccfs.files]
 
 
 @dataclass
@@ -41,8 +41,8 @@ class CorsikaOutputFiles(Files):
             f.unlink(missing_ok=True)
 
     @classmethod
-    def from_corsika_card_file(cls, corsika_card_file: CorsikaCardFile) -> CorsikaOutputFiles:
-        particle_file_path = fileio.corsika_output_files_dir() / corsika_card_file.card.stem
+    def from_corsika_card(cls, corsika_card: CorsikaCard) -> CorsikaOutputFiles:
+        particle_file_path = fileio.corsika_output_files_dir() / corsika_card.card.stem
         return cls(
             particle_file_path,
             particle_file_path.with_suffix('.long'),
@@ -67,7 +67,7 @@ class CorsikaOutputFiles(Files):
 
 
 class CorsikaStep(FileInFileOutPipelineStep):
-    input_: CorsikaCardFile
+    input_: CorsikaCard
     output: CorsikaOutputFiles
 
     @property
@@ -79,9 +79,17 @@ class CorsikaStep(FileInFileOutPipelineStep):
         return self.output.particle.name
 
     @classmethod
+    def _from_corsika_cards_set(cls, ccs: CorsikaCardsSet) -> List[CorsikaStep]:
+        inputs = CorsikaCard.from_corsika_cards_set(ccs)
+        return [CorsikaStep(input_, CorsikaOutputFiles.from_corsika_card(input_)) for input_ in inputs]
+
+    @classmethod
     def from_corsika_cards_generation(cls, corsika_cards_generation: CorsikaCardsGenerationStep) -> List[CorsikaStep]:
-        inputs = CorsikaCardFile.from_corsika_card_files(corsika_cards_generation.output)
-        return [CorsikaStep(input_, CorsikaOutputFiles.from_corsika_card_file(input_)) for input_ in inputs]
+        return cls._from_corsika_cards_set(corsika_cards_generation.output)
+
+    @classmethod
+    def from_corsika_card_paths(cls, card_paths: List[Path]) -> List[CorsikaStep]:
+        return cls._from_corsika_cards_set(CorsikaCardsSet(card_paths))
 
     def _run(self):
         input_file = self.input_.card

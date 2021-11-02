@@ -152,7 +152,9 @@ EPOPAR fname copy  none                !dummy output file for epos
 '''
 
 
-class CorsikaCard:
+class CorsikaCardData:
+    """Previously known as corcard, renamed for readability"""
+
     def __init__(self):
         self.buf = BTS_SAMPLE_CARD_FILE.strip()
         self.epos_cards_added = False
