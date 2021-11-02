@@ -109,7 +109,7 @@ class Files(ABC):
         return None
 
     @property
-    def _to_be_hashed_implicit(self) -> List[Path]:
+    def _to_be_hashed(self) -> List[Path]:
         if self.to_be_hashed is not None:
             return self.to_be_hashed
         else:
@@ -118,7 +118,7 @@ class Files(ABC):
     @property
     def _stored_hash_path(self) -> Path:
         """Hash is stored in a file with class name and file paths' (not content!) hash"""
-        paths_id = concatenate_and_hash(self._to_be_hashed_implicit)
+        paths_id = concatenate_and_hash(self._to_be_hashed)
         return fileio.input_hashes_dir() / f"{self.__class__.__name__}.{paths_id}"
 
     def _get_file_contents_hash(self, file: Path) -> str:
@@ -137,7 +137,7 @@ class Files(ABC):
             pass
 
         file_hashes = []
-        for file in self._to_be_hashed_implicit:
+        for file in self._to_be_hashed:
             file_hashes.append(self._get_file_contents_hash(file))
         contents_hash = concatenate_and_hash(file_hashes)
 
@@ -152,8 +152,7 @@ class Files(ABC):
     def same_hash_as_stored(self) -> bool:
         stored_hash_path = self._stored_hash_path
         if not stored_hash_path.exists():
-            self.store_contents_hash()  # this is needed for pre-input hashing versions
-            return True
+            return False
         with open(self._stored_hash_path, 'r') as f:
             stored_hash = f.read()
         return self.contents_hash == stored_hash

@@ -1,6 +1,6 @@
 from typing import List, Type
 
-from .base import FileInFileOutStep
+from .base import FileInFileOutStep, FileInFileOutPipelineStep
 
 from .corsika_cards_generation import CorsikaCardsGenerationStep
 from .processing.corsika import CorsikaStep
