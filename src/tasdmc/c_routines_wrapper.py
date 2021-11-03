@@ -96,7 +96,7 @@ def _get_sdmc_spctr_executable():
     """Find sdmc_spctr executable as it may be compiled with different suffixes"""
     sdmc_spctr_candidates: List[Path] = []
     PATH = os.environ['PATH']
-    for executables_dir in PATH.split(':'):
+    for executables_dir in set(PATH.split(':')):
         executables_dir = executables_dir.strip()
         if not executables_dir:
             continue

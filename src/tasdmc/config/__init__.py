@@ -36,7 +36,7 @@ def validate(steps: Optional[List[Type['FileInFileOutStep']]] = None):  # type: 
         try:
             Step.validate_config()
         except Exception as e:
-            raise BadConfigValue(f"Config validation for {Step.__name__} failed: {e}")
+            raise BadConfigValue(f"Config validation for {Step.__name__} failed: {e}") from e
 
 
 _RAISE_ERROR_ON_MISSING_KEY = object()
