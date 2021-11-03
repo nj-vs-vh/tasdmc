@@ -107,8 +107,8 @@ class TothrowGenerationStep(FileInFileOutPipelineStep):
         _normalizing_constant_from_config()
 
 
-def dnde_exponent_from_config() -> int:
-    return int(config.get_key('throwing.dnde_exponent'))
+def dnde_exponent_from_config() -> float:
+    return float(config.get_key('throwing.dnde_exponent'))
 
 
 def _normalizing_constant_from_config() -> float:

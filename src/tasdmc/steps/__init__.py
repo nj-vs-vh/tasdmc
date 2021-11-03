@@ -9,6 +9,7 @@ from .processing.dethinning import DethinningStep
 from .processing.corsika2geant import Corsika2GeantStep
 from .processing.tothrow_generation import TothrowGenerationStep
 from .processing.event_generation import EventsGenerationStep
+from .processing.spectral_sampling import SpectralSamplingStep
 
 
 all_steps: List[Type[FileInFileOutStep]] = [
@@ -19,6 +20,7 @@ all_steps: List[Type[FileInFileOutStep]] = [
     Corsika2GeantStep,
     TothrowGenerationStep,
     EventsGenerationStep,
+    SpectralSamplingStep,
 ]
 
 

@@ -64,6 +64,11 @@ def events_dir() -> Path:
 
 
 @internal_dir
+def spectral_sampled_events_dir() -> Path:
+    return run_dir() / 'spectral_sampled_events'
+
+
+@internal_dir
 def input_hashes_dir() -> Path:
     return run_dir() / '_input_files_hashes'
 

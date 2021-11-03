@@ -9,8 +9,6 @@ from enum import Enum
 from typing import TextIO, Optional, List, Any
 
 from tasdmc import config, fileio
-from tasdmc.steps.corsika_cards_generation import log10E_bounds_from_config
-from tasdmc.steps.processing.tothrow_generation import dnde_exponent_from_config
 
 
 def _execute_cmd(
@@ -102,7 +100,10 @@ def _get_sdmc_spctr_executable():
         executables_dir = executables_dir.strip()
         if not executables_dir:
             continue
-        for executable_file in Path(executables_dir).iterdir():
+        executables_dir = Path(executables_dir)
+        if not executables_dir.exists():
+            continue
+        for executable_file in executables_dir.iterdir():
             if executable_file.name.startswith('sdmc_spctr'):
                 sdmc_spctr_candidates.append(executable_file)
 
@@ -226,27 +227,25 @@ class TargetSpectrum(Enum):
     E_MINUS_3 = 3  # dN/dE ~ E^-3 power law
 
 
-
 # fmt: off
 
 def run_spectral_sampling(
     events_file: Path,
     output_file: Path,
     target_spectrum: TargetSpectrum,
+    log10E_min: float,
+    dndE_exponent_source: float,
     stdout_file: Path,
     stderr_file: Path,
 ):
-    log10E_min = log10E_bounds_from_config()[0] - (0.1 / 2)
-    E_min = 10 ** (log10E_min - 18)  # EeV, as expected by sdmc_conv_e2_to_spctr
     with Pipes(stdout_file, stderr_file) as (stdout, stderr):
         _execute_cmd(
             'sdmc_conv_e2_to_spctr.run',
             [
                 '-o', output_file,
                 '-s', target_spectrum.value,
-                # '-i', float(config.get_key("throwing.dnde_exponent")),
-                '-i', dnde_exponent_from_config(),  # input spectrum spectral index
-                '-e', E_min,
+                '-i', dndE_exponent_source,
+                '-e', 10 ** (log10E_min - 18),  # log10(E/eV) => EeV
                 events_file,
             ],
             stdout,

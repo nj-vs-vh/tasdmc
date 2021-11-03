@@ -38,6 +38,9 @@ throwing:  # determines how CORSIKA showers will be 'thrown' onto the SD grid to
                                                     # epoch; these files can be created from raw
                                                     # calibration data with 'extract-calibration'
 
+spectral_sampling:
+  target: HiRes # HiRes | TASD2015 | E_minus_3; target spectrum for generated MC events
+
 resources:
   max_processes: 2
   max_memory: 4  # Gb

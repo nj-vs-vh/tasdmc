@@ -13,6 +13,7 @@ from tasdmc.steps import (
     Corsika2GeantStep,
     TothrowGenerationStep,
     EventsGenerationStep,
+    SpectralSamplingStep,
     FileInFileOutPipelineStep,
 )
 from tasdmc.system.monitor import run_system_monitor
@@ -50,6 +51,8 @@ def standard_pipeline_steps(
             steps.append(tothrow_gen)
             events_generation = EventsGenerationStep.from_corsika2geant_with_tothrow(corsika2geant, tothrow_gen)
             steps.append(events_generation)
+            spctr_sampling = SpectralSamplingStep.from_events_generation(events_generation)
+            steps.append(spctr_sampling)
     return steps
 
 
