@@ -77,7 +77,7 @@ class TothrowGenerationStep(FileInFileOutPipelineStep):
         log10E = round(log10E, ndigits=1)
 
         N0 = _normalizing_constant_from_config()
-        dndE_exponent = _exponent_from_config()
+        dndE_exponent = dnde_exponent_from_config()
         log10E_min, _ = log10E_bounds_from_config()
         dndlogE_exponent = dndE_exponent - 1
         n_particles_in_energy_bin = N0 * 10 ** (-dndlogE_exponent * (log10E - log10E_min))
@@ -103,11 +103,11 @@ class TothrowGenerationStep(FileInFileOutPipelineStep):
 
     @classmethod
     def validate_config(self):
-        _exponent_from_config()
+        dnde_exponent_from_config()
         _normalizing_constant_from_config()
 
 
-def _exponent_from_config() -> int:
+def dnde_exponent_from_config() -> int:
     return int(config.get_key('throwing.dnde_exponent'))
 
 

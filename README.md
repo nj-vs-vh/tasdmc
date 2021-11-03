@@ -152,10 +152,10 @@ tasdmc ps my-run-name -n 5  # to print 5 last log messages from each worker proc
 
 ##### `resources` - simulation resource usage
 
-Check utilization of system resources (CPU, RAM, disk) by run and plot them in time
+Check utilization of system resources (CPU, RAM, disk) by run and plot their values change with time
 
 ```bash
-tasdmc resources my-run-name
+tasdmc resources my-run-name -p  # -p merges all previous instances of the run into one timeline
 ```
 
 ##### `inputs` - print simulation inputs

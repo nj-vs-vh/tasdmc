@@ -4,10 +4,13 @@ import resource
 from pathlib import Path
 from functools import lru_cache
 from dataclasses import dataclass
+from enum import Enum
 
 from typing import TextIO, Optional, List, Any
 
 from tasdmc import config, fileio
+from tasdmc.steps.corsika_cards_generation import log10E_bounds_from_config
+from tasdmc.steps.processing.tothrow_generation import dnde_exponent_from_config
 
 
 def _execute_cmd(
@@ -139,12 +142,17 @@ def test_sdmc_spctr_runnable():
         raise OSError(f'{sdmc_spctr} do not work as expected!')
 
 
-# fmt: off
 def run_sdmc_spctr(
-    tile_file: Path, output_events_file: Path, n_particles: int, random_seed: int, epoch: int,
-    calibration_file: Path, smear_energies: bool, stdout_file: Path, stderr_file: Path,
+    tile_file: Path,
+    output_events_file: Path,
+    n_particles: int,
+    random_seed: int,
+    epoch: int,
+    calibration_file: Path,
+    smear_energies: bool,
+    stdout_file: Path,
+    stderr_file: Path,
 ) -> bool:
-    # fmt: on
     """Generating MC events from tile file, given a single epoch calibration. An amount of events is chosen
     from Poisson with a given n_particles mean. Returns success flag. Original C routine help:
 
@@ -210,3 +218,40 @@ def concatenate_dst_files(source_files: List[Path], output_file: Path, stdout_fi
 def list_events_in_dst_file(file: Path) -> List[str]:
     res = _execute_cmd('dstlist.run', [file], global_=True)
     return res.stdout.decode('utf-8').splitlines()
+
+
+class TargetSpectrum(Enum):
+    HIRES2008 = 1  # according to PRL 2008 (https://doi.org/10.1103/PhysRevLett.100.101101)
+    TASD2015 = 2  # according to ICRC 2015 paper
+    E_MINUS_3 = 3  # dN/dE ~ E^-3 power law
+
+
+
+# fmt: off
+
+def run_spectral_sampling(
+    events_file: Path,
+    output_file: Path,
+    target_spectrum: TargetSpectrum,
+    stdout_file: Path,
+    stderr_file: Path,
+):
+    log10E_min = log10E_bounds_from_config()[0] - (0.1 / 2)
+    E_min = 10 ** (log10E_min - 18)  # EeV, as expected by sdmc_conv_e2_to_spctr
+    with Pipes(stdout_file, stderr_file) as (stdout, stderr):
+        _execute_cmd(
+            'sdmc_conv_e2_to_spctr.run',
+            [
+                '-o', output_file,
+                '-s', target_spectrum.value,
+                # '-i', float(config.get_key("throwing.dnde_exponent")),
+                '-i', dnde_exponent_from_config(),  # input spectrum spectral index
+                '-e', E_min,
+                events_file,
+            ],
+            stdout,
+            stderr,
+            global_=True,
+        )
+
+# fmt: on
