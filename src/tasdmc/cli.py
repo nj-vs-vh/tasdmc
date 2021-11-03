@@ -79,9 +79,9 @@ def _load_config_by_run_name(name: str) -> bool:
 def abort_run(name: str):
     if not _load_config_by_run_name(name):
         return
-    click.secho(f"You are about to kill run '{name}'!\nIf you are sure, type its name again below:")
+    click.secho(f"You are about to kill run '{config.run_name()}'!\nIf you are sure, type its name again below:")
     run_name_confirmation = input('> ')
-    if name == run_name_confirmation:
+    if run_name_confirmation == config.run_name():
         system.abort_run(main_pid=fileio.get_saved_main_pid())
 
 
