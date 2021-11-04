@@ -74,7 +74,7 @@ to `tasdmc` package dir and contains logic to specify relative paths from there.
 For example, use it like this:
 
 ```bash
-cp config_examples/tasdmc_env.sh .
+cp config-examples/tasdmc_env.sh .
 # edit tasdmc_env.sh if needed, for example point TASDMC_RUNS_DIR to external storage
 
 # then use commands like these
@@ -103,7 +103,7 @@ python setup.py install
 
 Run configuration file contains all physical parameters relevant to the simulation
 (primary particle, energy range, etc) and configuration of (almost) all the simulation
-steps. See [example](config_examples/run.yaml) for self-explainatory config example:
+steps. See [example](config-examples/run.yaml) for self-explainatory config example:
 
 ```yaml
 name: your-run-name
