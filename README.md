@@ -47,7 +47,7 @@ pip install -r requirements.txt
 2. `atmos.bin` (~240 Mb): contains atmospheric muon data. If not present, will be downloaded at installation.
 3. Calibration files: raw calibration data (`tasdcalib_pass2_YYMMDD.dst`, total of ~104 Gb) should
    be compressed to calibration by epoch (`sdcalib_???.bin`, total of ~33 Gb) ready to be used in
-   pipeline. This may be done with [`tasdmc extract-calibration` command](##### `extract-calibration` - create compressed calibration (`sdcalib.bin`)).
+   pipeline. This may be done with [`tasdmc extract-calibration` command](#extract-calibration---create-compressed-calibration-files).
 
 
 ### Pre-installation configuration
@@ -64,8 +64,8 @@ be placed in `.bashrc` or any other activation script.
   The choice depends on the system resources, for example on 64 core, 128 Gb RAM
   machine we would run 64 processes and to utilize all memory we would set this
   variable to 2.
-* `TASDMC_DATA_DIR` points to directory with all data files required for simulation,
-  see [details](### Data files).
+* `TASDMC_DATA_DIR` points to directory with all the data files required for simulation,
+  see [details](#data-files).
 
 An example of all these variables combined in a single script can be found in
 [`tasdmc_env.sh`](config_examples/tasdmc_env.sh). It assumes that it will be copied
@@ -172,7 +172,7 @@ tasdmc inputs my-run-name
 
 #### Other commands
 
-##### `extract-calibration` - create compressed calibration (`sdcalib.bin`)
+##### `extract-calibration` - create compressed calibration files
 
 This command replaces deprecated `sdmc_run_sdmc_calib_extract` script from `sdanalysis`.
 
