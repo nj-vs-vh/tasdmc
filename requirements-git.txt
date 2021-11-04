@@ -1,0 +1,2 @@
+corsika_wrapper @ git+https://github.com/fact-project/corsika_wrapper
+plotext @ git+https://github.com/nj-vs-vh/plotext.git

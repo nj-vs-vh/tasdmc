@@ -21,11 +21,10 @@ __all__ = [dump, load]
 class Global:
     """Namespace class to hold global/pre-installation configuration options"""
 
-    bin_dir = Path(os.environ['TASDMC_BIN_DIR'])
     runs_dir = Path(os.environ['TASDMC_RUNS_DIR'])
-    sdanalysis_dir = Path(os.environ['SDANALYSIS_DIR'])
-    memory_per_process_Gb = float(os.environ['TASDMC_MEMORY_PER_PROCESS_GB'])
     data_dir = Path(os.environ['TASDMC_DATA_DIR'])
+    bin_dir = Path(os.environ['TASDMC_BIN_DIR'])
+    memory_per_process_Gb = float(os.environ['TASDMC_MEMORY_PER_PROCESS_GB'])
 
 
 

@@ -6,23 +6,23 @@ simulation in a reliable, transparent, configurable and reproducible way.
 
 ## Installation
 
-First things first:
+Before installing the package, you must define a `TASDMC_STORAGE_DIR` environment variable
+pointing to a directory that will be used to store all the runs data and auxiliary files.
+Note that this directory will occupy significant amount of disk space (up to hundreds of Gb),
+at least for standard simulations.
+
+For example:
+```bash
+export TASDMC_STORAGE_DIR=~/tasdmc-storage 
+```
+
+Installation is done with `conda` package manager (see e.g. [`miniconda`](https://docs.conda.io/en/latest/miniconda.html)).
 
 ```bash
-# clone repo
-git clone https://github.com/nj-vs-vh/tasdmc.git
-
-# recommended: create virtual environment for the package (with `conda`, `venv`, `virtualenv`, ...)
-# example for `venv`:
-python -m venv taenv
-source taenv/bin/activate
-
-# go to cloned repository dir
-cd tasdmc
-
-# install Python dependencies
-pip install -r requirements.txt
+TBD...
 ```
+
+For non-linux64 systems or development purposes, see [manual installation instructions](docs/MANUAL-INSTALL.md).
 
 ### External dependencies
 
@@ -32,11 +32,6 @@ pip install -r requirements.txt
    THINning version (option 2a in v77402); compile and remove temporary files.
    No automatic building is provided for now, so please keep your builds
    and `.yaml` config files (see later) in sync manually.
-2. [`sdanalysis`](https://github.com/nj-vs-vh/ta-sdanalysis): must be cloned 
-   and built from source following README instructions. Make sure that it is also
-   activated (`sdanalysis_env.sh` is sourced) in the same environment `tasdmc`
-   is installed in - README contains specific instructions on how to do it.
-   > :warning: the linked version of `sdanalysis` is required, older installations may not work!
 
 ### Data files
 
@@ -50,49 +45,6 @@ pip install -r requirements.txt
    be compressed to calibration by epoch (`sdcalib_???.bin`, total of ~33 Gb) ready to be used in
    pipeline. This may be done with [`tasdmc extract-calibration` command](#extract-calibration---create-compressed-calibration-files).
 
-
-### Pre-installation configuration
-
-Global configuration is done via environment variables. As usual, their `export`'s may
-be placed in `.bashrc` or any other activation script.
-
-* `TASDMC_BIN_DIR` controls where compiled C routines will be placed.
-* `TASDMC_RUNS_DIR` controls where all the run directories will be created. Note that
-  run directories usually require significant amount of disk space.
-* `SDANALYSIS_DIR` points to the `sdanalysis` directory (see prerequisites).
-* `TASDMC_MEMORY_PER_PROCESS_GB` specifies memory available per process in Gb.
-  This affects compilation of some C routines, changing allocated array sizes.
-  The choice depends on the system resources, for example on 64 core, 128 Gb RAM
-  machine we would run 64 processes and to utilize all memory we would set this
-  variable to 2.
-* `TASDMC_DATA_DIR` points to directory with all the data files required for simulation,
-  see [details](#data-files).
-
-An example of all these variables combined in a single script can be found in
-[`tasdmc_env.sh`](config_examples/tasdmc_env.sh). It assumes that it will be copied
-to `tasdmc` package dir and contains logic to specify relative paths from there.
-For example, use it like this:
-
-```bash
-cp config-examples/tasdmc_env.sh .
-# edit tasdmc_env.sh if needed, for example point TASDMC_RUNS_DIR to external storage
-
-# then use commands like these
-# for user-wide activation in bash
-echo "source $(pwd)/tasdmc_env.sh" >> ~/.bashrc
-# when using venv
-echo "source $(pwd)/tasdmc_env.sh" >> $(python -c "import sys; print(sys.prefix)")/bin/activate
-# when using Anaconda
-echo "source $(pwd)/tasdmc_env.sh" >> $(python -c "import sys; print(sys.prefix)")/etc/conda/activate.d/activate-tasdmc.sh
-```
-
-However, you can `export` these variables any other way you want.
-
-### Finally
-
-```bash
-python setup.py install
-```
 
 ## Usage
 
