@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 from functools import lru_cache
 import random
+from gdown.cached_download import assert_md5sum
 
 from typing import List, Dict, Iterable, Tuple
 
@@ -215,7 +216,8 @@ class EventsGenerationStep(FileInFileOutPipelineStep):
         test_sdmc_spctr_runnable()
         _n_try_from_config()
         _smear_energies_from_config()
-        assert fileio.DataFiles.atmos.exists(), "atmos.bin file not found!"
+        assert fileio.DataFiles.atmos.exists(), f"{fileio.DataFiles.atmos} file not found!"
+        assert_md5sum(fileio.DataFiles.atmos, '254c7999be0a48bd65e4bc8cbea4867f')
         _get_calibration_files_by_epoch()
 
 

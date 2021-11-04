@@ -2,6 +2,8 @@
 
 import click
 from pathlib import Path
+import gdown
+from gdown.cached_download import assert_md5sum
 
 from tasdmc import config, fileio, system, pipeline, cleanup, extract_calibration
 from tasdmc.logs import display as display_logs
@@ -209,3 +211,16 @@ def cleanup_failed_pipelines(name: str):
 )
 def extract_calibration_cmd(raw_data_dir, parallel_threads):
     extract_calibration.extract_calibration(Path(raw_data_dir), parallel_threads)
+
+
+@cli.command("download-data-files")
+def download_data_files():
+    for data_file, gdrive_id, expected_md5 in (
+        (fileio.DataFiles.sdgeant, '1ZTSrrAg2T8bvIDhPuh2ruVShmubwvTWG', '0cebc42f86e227e2fb2397dd46d7d981'),
+        (fileio.DataFiles.atmos, '1qZfUNXAyqVg5HwH9BYUGVQ-UDsTwl4FQ', '254c7999be0a48bd65e4bc8cbea4867f'),
+    ):
+        pass
+        if not data_file.exists():
+            data_file.parent.mkdir(parents=True, exist_ok=True)
+            gdown.download(id=gdrive_id, output=str(data_file))
+        assert_md5sum(data_file, expected_md5)

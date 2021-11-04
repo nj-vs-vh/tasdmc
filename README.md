@@ -43,8 +43,9 @@ pip install -r requirements.txt
 1. `sdgeant.dst` (~145 Mb): contains pre-computed energy losses inside TA surface detector.
    It is used as a lookup table for detector response calculation to avoid running
    expensive Geant4 simulations for each MC run. If it's not present on your system
-   (at `$TASDMC_DATA_DIR/sdgeant.dst`), it will be automatically downloaded at installation.
-2. `atmos.bin` (~240 Mb): contains atmospheric muon data. If not present, will be downloaded at installation.
+   (at `$TASDMC_DATA_DIR/sdgeant.dst`), it can be downloaded with `tasdmc download-data-files`.
+2. `atmos.bin` (~240 Mb): contains atmospheric muon data, can be downloaded with 
+   `tasdmc download-data-files`.
 3. Calibration files: raw calibration data (`tasdcalib_pass2_YYMMDD.dst`, total of ~104 Gb) should
    be compressed to calibration by epoch (`sdcalib_???.bin`, total of ~33 Gb) ready to be used in
    pipeline. This may be done with [`tasdmc extract-calibration` command](#extract-calibration---create-compressed-calibration-files).
@@ -178,4 +179,10 @@ This command replaces deprecated `sdmc_run_sdmc_calib_extract` script from `sdan
 
 ```bash
 tasdmc extract-calibration -r /full/path/to/raw/calib/data -p 10  # number of processes
+```
+
+##### `download-data-files` - download required data files
+
+```bash
+tasdmc download-data-files
 ```

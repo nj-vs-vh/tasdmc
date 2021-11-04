@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from subprocess import CalledProcessError
+from gdown.cached_download import assert_md5sum
 
 from typing import List
 
@@ -126,3 +127,8 @@ class Corsika2GeantStep(FileInFileOutPipelineStep):
 
     def _post_run(self):
         self.input_.delete_not_retained_files()
+
+    @classmethod
+    def validate_config(cls):
+        assert fileio.DataFiles.sdgeant.exists(), f"{fileio.DataFiles.sdgeant} file not found"
+        assert_md5sum(fileio.DataFiles.sdgeant, '0cebc42f86e227e2fb2397dd46d7d981')
