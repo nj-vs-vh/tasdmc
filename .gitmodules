@@ -1,3 +1,4 @@
 [submodule "src/sdanalysis"]
 	path = src/sdanalysis
 	url = https://github.com/nj-vs-vh/ta-sdanalysis
+	branch = main
