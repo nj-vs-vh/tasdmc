@@ -169,9 +169,7 @@ class EventsGenerationStep(FileInFileOutPipelineStep):
             if events_thrown > 0:
                 # epoch_events_file_sorted_temp = Path(str(epoch_events_file) + '.timesorted')
                 epoch_events_file_stem = epoch_events_file.name.split('.')[0]
-                epoch_events_file_unsorted = epoch_events_file.parent / (
-                    epoch_events_file_stem + '_unsorted.dst.gz'
-                )
+                epoch_events_file_unsorted = epoch_events_file.parent / (epoch_events_file_stem + '_unsorted.dst.gz')
                 epoch_events_file.rename(epoch_events_file_unsorted)
                 if run_sdmc_tsort(epoch_events_file_unsorted, epoch_events_file, epoch_log_file, epoch_log_file):
                     epoch_events_file_unsorted.unlink()
@@ -216,7 +214,9 @@ class EventsGenerationStep(FileInFileOutPipelineStep):
         test_sdmc_spctr_runnable()
         _n_try_from_config()
         _smear_energies_from_config()
-        assert fileio.DataFiles.atmos.exists(), f"{fileio.DataFiles.atmos} file not found!"
+        assert (
+            fileio.DataFiles.atmos.exists()
+        ), f"{fileio.DataFiles.atmos} file not found, use 'tasdmc download-data-files'"
         assert_md5sum(fileio.DataFiles.atmos, '254c7999be0a48bd65e4bc8cbea4867f')
         _get_calibration_files_by_epoch()
 
