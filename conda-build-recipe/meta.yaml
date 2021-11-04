@@ -5,7 +5,16 @@ package:
 source:
   path: ../
 
-build:
-  script_env:
-    - MYVAR
-    - ANOTHER_VAR
+requirements:
+  build:
+    - python 3.9
+    - pip
+    - root
+    - bz2file
+    - setuptools
+  run:
+    - python 3.9
+
+about:
+  home: https://github.com/nj-vs-vh/tasdmc
+  summary: Telescope Array Surface Detector Monte Carlo simulation pipeline
