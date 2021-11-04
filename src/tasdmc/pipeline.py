@@ -59,10 +59,11 @@ def standard_pipeline_steps(
 def run_standard_pipeline(continuing: bool):
     system.set_process_title("tasdmc main")
     fileio.prepare_run_dir(continuing)
-    system.run_in_background(run_system_monitor, keep_session=True)
-
     cards_generation = CorsikaCardsGenerationStep.create_and_run()
     steps = standard_pipeline_steps(cards_generation_step=cards_generation)
+    # workaround; TODO: pack steps sequence in a pipeline class
+    config.validate(set(step.__class__ for step in steps))
+    system.run_in_background(run_system_monitor, keep_session=True)
     n_processes = config.used_processes()
     with ProcessPoolExecutor(
         max_workers=n_processes, initializer=lambda: system.set_process_title("tasdmc worker")

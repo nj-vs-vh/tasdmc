@@ -37,7 +37,6 @@ def _run_standard_pipeline_in_background(continuing: bool):
 @_run_config_option('config_filename')
 def run(config_filename):
     config.load(config_filename)
-    config.validate()
     _run_standard_pipeline_in_background(continuing=False)
 
 
