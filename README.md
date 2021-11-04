@@ -36,6 +36,7 @@ pip install -r requirements.txt
    and built from source following README instructions. Make sure that it is also
    activated (`sdanalysis_env.sh` is sourced) in the same environment `tasdmc`
    is installed in - README contains specific instructions on how to do it.
+   > :warning: `tasdmc` requires linked version of `sdanalysis`, older installations may not work!
 3. `sdgeant.dst`: data file containing pre-computed energy losses inside TA
    surface detector. It is used as a lookup table for detector response calculation
    to avoid running expensive Geant4 simulations for each MC run.
