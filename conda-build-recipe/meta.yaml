@@ -1,0 +1,11 @@
+package:
+  name: tasdmc
+  version: "0.1.0"
+
+source:
+  path: ../
+
+build:
+  script_env:
+    - MYVAR
+    - ANOTHER_VAR
