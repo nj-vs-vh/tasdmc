@@ -24,7 +24,7 @@ cd tasdmc
 pip install -r requirements.txt
 ```
 
-### Prerequisites and external resources
+### External dependencies
 
 1. `CORSIKA`: must be compiled as usual with `coconut`. Recommended
    build options: high energy handronic interaction model - QGSJETII-04;
@@ -37,11 +37,17 @@ pip install -r requirements.txt
    activated (`sdanalysis_env.sh` is sourced) in the same environment `tasdmc`
    is installed in - README contains specific instructions on how to do it.
    > :warning: the linked version of `sdanalysis` is required, older installations may not work!
-3. `sdgeant.dst`: data file containing pre-computed energy losses inside TA
-   surface detector. It is used as a lookup table for detector response calculation
-   to avoid running expensive Geant4 simulations for each MC run.
-   If it's not present on your system, it can be automatically downloaded
-   at installation, see later.
+
+### Data files
+
+1. `sdgeant.dst` (~145 Mb): contains pre-computed energy losses inside TA surface detector.
+   It is used as a lookup table for detector response calculation to avoid running
+   expensive Geant4 simulations for each MC run. If it's not present on your system
+   (at `$TASDMC_DATA_DIR/sdgeant.dst`), it will be automatically downloaded at installation.
+2. `atmos.bin` (~240 Mb): contains atmospheric muon data. If not present, will be downloaded at installation.
+3. Calibration files: raw calibration data (`tasdcalib_pass2_YYMMDD.dst`, total of ~104 Gb) should
+   be compressed to calibration by epoch (`sdcalib_???.bin`, total of ~33 Gb) ready to be used in
+   pipeline. This may be done with [`tasdmc extract-calibration` command](##### `extract-calibration` - create compressed calibration (`sdcalib.bin`)).
 
 
 ### Pre-installation configuration
@@ -58,9 +64,8 @@ be placed in `.bashrc` or any other activation script.
   The choice depends on the system resources, for example on 64 core, 128 Gb RAM
   machine we would run 64 processes and to utilize all memory we would set this
   variable to 2.
-* `TASDMC_DATA_DIR` points to directory with all data files required for simulation.
-  These include: `sdgeant.dst`, .... If files are missing, they will be downloaded
-  at installation and placed there.
+* `TASDMC_DATA_DIR` points to directory with all data files required for simulation,
+  see [details](### Data files).
 
 An example of all these variables combined in a single script can be found in
 [`tasdmc_env.sh`](config_examples/tasdmc_env.sh). It assumes that it will be copied
