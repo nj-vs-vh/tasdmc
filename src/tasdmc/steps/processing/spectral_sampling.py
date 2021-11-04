@@ -9,9 +9,12 @@ from typing import List
 from tasdmc import config, fileio
 from tasdmc.steps.base import Files, FileInFileOutPipelineStep
 from tasdmc.steps.processing.event_generation import EventFiles, EventsGenerationStep
+
 from tasdmc.c_routines_wrapper import run_spectral_sampling, TargetSpectrum
 from tasdmc.steps.corsika_cards_generation import log10E_bounds_from_config
 from tasdmc.steps.processing.tothrow_generation import dnde_exponent_from_config
+
+from tasdmc.steps.utils import check_file_is_empty, check_last_line_contains
 
 
 @dataclass
@@ -35,7 +38,8 @@ class SpectralSampledEvents(Files):
         )
 
     def _check_contents(self):
-        pass  #                                                                  TODO !!!
+        check_file_is_empty(self.stderr, ignore_strings=[" $$$ dst_get_block_ : End of input file reached"])
+        check_last_line_contains(self.stdout, must_contain="OK")
 
 
 class SpectralSamplingStep(FileInFileOutPipelineStep):
@@ -44,7 +48,7 @@ class SpectralSamplingStep(FileInFileOutPipelineStep):
 
     @property
     def description(self) -> str:
-        return f"Spectral sampling {self.input_.merged_events_file}"
+        return f"Spectral sampling {self.input_.merged_events_file.name}"
 
     @classmethod
     def from_events_generation(cls, events_generation_step: EventsGenerationStep) -> SpectralSamplingStep:
