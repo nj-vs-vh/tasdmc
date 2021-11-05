@@ -20,7 +20,7 @@ Currently no remote channel is configured, use local `tasdmc-?.?.?-py39_0.tar.bz
 2. Install the package
 
    ```bash
-   conda install -c nj-vs-vh tasdmc
+   conda install -c conda-forge -c nj-vs-vh tasdmc
    ```
 
 3. Run `tasdmc-init` to configure and finalize the installation. This will prompt you to choose storage directory
