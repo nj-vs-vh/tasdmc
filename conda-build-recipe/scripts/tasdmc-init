@@ -20,7 +20,7 @@ else
     echo "TASDMC_STORAGE_DIR environment variable found"
 fi
 
-TASDMC_STORAGE_DIR=$(realpath $TASDMC_STORAGE_DIR)
+TASDMC_STORAGE_DIR=$(readlink -f $TASDMC_STORAGE_DIR)
 
 if [ ! -d $TASDMC_STORAGE_DIR ]; then
     echo "Specified TASDMC_STORAGE_DIR=$TASDMC_STORAGE_DIR do not exist, aborting"
