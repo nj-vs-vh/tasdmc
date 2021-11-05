@@ -1,6 +1,6 @@
 if [ "x${BASH_ARGV[0]}" = "x" ]; then
-    if [ ! -f ./tasdmc_env.sh ]; then
-        echo 'ERROR: must "cd /tasdmc/dir/path" before calling "source tasdmc_env.sh" for this version of bash!'
+    if [ ! -f ./tasdmc_dev_env.sh ]; then
+        echo 'ERROR: must "cd /tasdmc/dir/path" before calling "source tasdmc_dev_env.sh" for this version of bash!'
         return
     fi
     TASDMC_DIR=$(pwd)

@@ -1,10 +1,20 @@
-# Manual `tasdmc` installation
+# Developing `tasdmc`
+
+## Optaining the source code
+
+Besides standard `git clone` you should also initialize `sdanalysis` submodule and set it up to
+track the remote `main` branch. This can be done with a script `helper-scripts/git_setup_submodule.sh`.
+
+When updating the repo, submodule also needs special attention. To pull all the remote changes including
+submodule, use `helper-scripts/git_pull_all.sh`.
+
+## Manual installation into any environment
 
 Installation is most commonly and conveniently done with `conda` package manager and a pre-build
 linux-64 conda package. But to install on other systems and/or develop the tool, manual installation
 is required.
 
-1. Create a virtual environment. All Python packages will be installed there, all binaries will be
+1. (Optional) Create a virtual environment. All Python packages will be installed there, all binaries will be
    compiled and stored locally. No system- or user-wide changes will be made. For example, using the
    lightweight `venv` tool:
 
@@ -32,14 +42,14 @@ is required.
      variable to 2.
 
    An example of all these variables combined in a single script can be found in
-   [`tasdmc_env.sh`](config_examples/tasdmc_env.sh). It assumes that it will be copied
+   [`tasdmc_dev_env.sh`](config_examples/tasdmc_dev_env.sh). It assumes that it will be copied
    to `tasdmc` package dir and contains logic to specify relative paths from there.
    For example, use it like this:
 
    ```bash
-   cp config-examples/tasdmc_env.sh .
-   # edit tasdmc_env.sh if needed, for example point TASDMC_RUNS_DIR to external storage
-   echo "source $(pwd)/tasdmc_env.sh" >> $(python -c "import sys; print(sys.prefix)")/bin/activate
+   cp config-examples/tasdmc_dev_env.sh .
+   # edit tasdmc_dev_env.sh if needed, for example point TASDMC_RUNS_DIR to external storage
+   echo "source $(pwd)/tasdmc_dev_env.sh" >> $(python -c "import sys; print(sys.prefix)")/bin/activate
    ```
 
 4. Build `tasdmc` C routines with

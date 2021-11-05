@@ -6,32 +6,46 @@ simulation in a reliable, transparent, configurable and reproducible way.
 
 ## Installation
 
-Before installing the package, you must define a `TASDMC_STORAGE_DIR` environment variable
-pointing to a directory that will be used to store all the runs data and auxiliary files.
-Note that this directory will occupy significant amount of disk space (up to hundreds of Gb),
-at least for standard simulations.
-
-For example:
-```bash
-export TASDMC_STORAGE_DIR=~/tasdmc-storage 
-```
-
 Installation is done with `conda` package manager (see e.g. [`miniconda`](https://docs.conda.io/en/latest/miniconda.html)).
 
-```bash
-TBD...
-```
+Currently no remote channel is configured, use local `tasdmc-?.?.?-py39_0.tar.bz2` archive.
+
+1. Create and activate `conda` environment
+   
+   ```bash
+   conda create -n ta
+   conda activate ta
+   ```
+
+2. Install the package
+
+   ```bash
+   conda install -c nj-vs-vh tasdmc
+   ```
+
+3. Run `tasdmc-init` to configure and finalize the installation. This will prompt you to choose storage directory
+   for the package and save it in the activation script. You will have to re-activate your environment after this:
+
+   ```bash
+   tasdmc-init
+   conda deactivate
+   conda activate ta
+   ```
+
+4. Verify your installation by running
+   
+   ```bash
+   tasdmc --help
+   ```
 
 For non-linux64 systems or development purposes, see [manual installation instructions](docs/MANUAL-INSTALL.md).
 
 ### External dependencies
 
-1. `CORSIKA`: must be compiled as usual with `coconut`. Recommended
-   build options: high energy handronic interaction model - QGSJETII-04;
-   low energy - FLUKA; horizontal flat detector array geometry;
-   THINning version (option 2a in v77402); compile and remove temporary files.
-   No automatic building is provided for now, so please keep your builds
-   and `.yaml` config files (see later) in sync manually.
+`CORSIKA` must be compiled as usual with `coconut`. Recommended build options: high energy handronic
+interaction model - QGSJETII-04; low energy - FLUKA; horizontal flat detector array geometry; THINning
+version (option 2a in v77402); compile and remove temporary files. No automatic building is provided
+for now, so please keep your builds and `.yaml` config files (see later) in sync manually.
 
 ### Data files
 
