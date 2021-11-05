@@ -8,8 +8,6 @@ simulation in a reliable, transparent, configurable and reproducible way.
 
 Installation is done with `conda` package manager (see e.g. [`miniconda`](https://docs.conda.io/en/latest/miniconda.html)).
 
-Currently no remote channel is configured, use local `tasdmc-?.?.?-py39_0.tar.bz2` archive.
-
 1. Create and activate `conda` environment
    
    ```bash
@@ -38,7 +36,7 @@ Currently no remote channel is configured, use local `tasdmc-?.?.?-py39_0.tar.bz
    tasdmc --help
    ```
 
-For non-linux64 systems or development purposes, see [manual installation instructions](docs/MANUAL-INSTALL.md).
+For non-linux64 systems or development purposes, see [manual installation instructions](docs/DEVELOPMENT.md).
 
 ### External dependencies
 
