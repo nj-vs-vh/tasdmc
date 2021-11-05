@@ -1,16 +1,24 @@
 """Command line interface used by click package to create `tasdmc` executable"""
 
-import click
-from pathlib import Path
-import gdown
-from gdown.cached_download import assert_md5sum
+try:
+    import click
+    from pathlib import Path
+    import gdown
+    from gdown.cached_download import assert_md5sum
 
-from tasdmc import config, fileio, system, pipeline, cleanup, extract_calibration
-from tasdmc.logs import display as display_logs
-from tasdmc.config.actions import update_config, view_config
+    from tasdmc import __version__
+    from tasdmc import config, fileio, system, pipeline, cleanup, extract_calibration
+    from tasdmc.logs import display as display_logs
+    from tasdmc.config.actions import update_config, view_config
+except ModuleNotFoundError:
+    print("Use 'tasdmc-init' to configure 'tasdmc' before using it!")
+    import sys
+    sys.exit(1)
+
 
 
 @click.group()
+@click.version_option(__version__)
 def cli():
     pass
 

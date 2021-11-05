@@ -7,6 +7,7 @@ This module serves as a global singleton object:
 
 from pathlib import Path
 import os
+import sys
 
 from typing import Any, Optional, List, Type
 
@@ -21,11 +22,29 @@ __all__ = [dump, load]
 class Global:
     """Namespace class to hold global/pre-installation configuration options"""
 
-    runs_dir = Path(os.environ['TASDMC_RUNS_DIR'])
-    data_dir = Path(os.environ['TASDMC_DATA_DIR'])
-    bin_dir = Path(os.environ['TASDMC_BIN_DIR'])
-    memory_per_process_Gb = float(os.environ['TASDMC_MEMORY_PER_PROCESS_GB'])
+    runs_dir: Path
+    data_dir: Path
+    bin_dir: Path
+    memory_per_process_Gb: float
 
+    @classmethod
+    def load(cls):
+        try:
+            cls.runs_dir = Path(os.environ['TASDMC_RUNS_DIR'])
+            cls.data_dir = Path(os.environ.get('TASDMC_DATA_DIR'))
+            cls.bin_dir = Path(os.environ['TASDMC_BIN_DIR'])
+            cls.memory_per_process_Gb = float(os.environ['TASDMC_MEMORY_PER_PROCESS_GB'])
+        except KeyError as e:
+            missing_env_var = str(e).strip('\'')
+            print(f"Can't load global tasdmc config, env variable is missing: {missing_env_var}")
+            if missing_env_var in ['TASDMC_RUNS_DIR', 'TASDMC_DATA_DIR']:
+                print("Run 'tasdmc-init' to configure storage directory")
+            else:
+                print("tasdmc installation seems broken :(")
+            sys.exit()
+
+
+Global.load()
 
 
 def validate(steps: Optional[List[Type['FileInFileOutStep']]] = None):  # type: ignore
@@ -94,7 +113,7 @@ def used_processes() -> int:
     max_processes_explicit = get_key('resources.max_processes', default=-1)
     max_memory_explicit = get_key('resources.max_memory', default=-1)
     if max_memory_explicit == max_processes_explicit == -1:
-        return 1  # if nothing specified, no parallelization
+        return 1  # if nothing specified, no parallelization is done
     if 0 < max_memory_explicit < Global.memory_per_process_Gb:
         raise BadConfigValue(
             f"Memory constraint is too tight! {max_memory_explicit} Gb is less "

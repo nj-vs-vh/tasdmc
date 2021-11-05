@@ -23,7 +23,17 @@ cd ../..
 echo
 echo "3. Installing Python tasdmc package"
 echo
-pip --version
-while read requirement; do conda install --yes $requirement; done < requirements.txt
-pip install -r requirements-git.txt
 $PYTHON setup.py install
+
+echo
+echo "4. Setting up activation scripts and tasdmc-init"
+echo
+ACTIVATION_SCRIPTS_DIR=$PREFIX/etc/conda/activate.d
+mkdir -p $ACTIVATION_SCRIPTS_DIR
+cp conda-build-recipe/scripts/tasdmc-autocomplete.sh $ACTIVATION_SCRIPTS_DIR
+cp conda-build-recipe/scripts/tasdmc-activate-common.sh $ACTIVATION_SCRIPTS_DIR
+
+TASDMC_INIT_SCRIPT=conda-build-recipe/scripts/tasdmc-init
+while read requirement; do echo pip install $requirement --quiet >> $TASDMC_INIT_SCRIPT; done < requirements.txt
+chmod -x $TASDMC_INIT_SCRIPT
+cp $TASDMC_INIT_SCRIPT $PREFIX/bin

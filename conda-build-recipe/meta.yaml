@@ -1,6 +1,8 @@
+{% set data = load_setup_py_data() %}
+
 package:
   name: tasdmc
-  version: "0.1.0"
+  version: {{ data.get('version') }}
 
 source:
   path: ../
@@ -11,7 +13,10 @@ requirements:
     - pip
     - root
     - bz2file
+    - bzip2
     - setuptools
+    - libgcc-ng
+    - libstdcxx-ng
   run:
     - python 3.9
 
