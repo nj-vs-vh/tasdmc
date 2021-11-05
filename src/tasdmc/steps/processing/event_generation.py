@@ -217,7 +217,7 @@ class EventsGenerationStep(FileInFileOutPipelineStep):
         assert (
             fileio.DataFiles.atmos.exists()
         ), f"{fileio.DataFiles.atmos} file not found, use 'tasdmc download-data-files'"
-        assert_md5sum(fileio.DataFiles.atmos, '254c7999be0a48bd65e4bc8cbea4867f')
+        assert_md5sum(fileio.DataFiles.atmos, '254c7999be0a48bd65e4bc8cbea4867f', quiet=True)
         _get_calibration_files_by_epoch()
 
 

@@ -133,4 +133,4 @@ class Corsika2GeantStep(FileInFileOutPipelineStep):
         assert (
             fileio.DataFiles.sdgeant.exists()
         ), f"{fileio.DataFiles.sdgeant} file not found, use 'tasdmc download-data-files'"
-        assert_md5sum(fileio.DataFiles.sdgeant, '0cebc42f86e227e2fb2397dd46d7d981')
+        assert_md5sum(fileio.DataFiles.sdgeant, '0cebc42f86e227e2fb2397dd46d7d981', quiet=True)
