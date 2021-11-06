@@ -6,6 +6,12 @@ Aborting"
     return 1
 fi
 
+function reactivate_conda_env() {
+    ENV_NAME=$CONDA_DEFAULT_ENV
+    conda deactivate
+    conda activate $ENV_NAME
+}
+
 
 echo "
 This is tasdmc - Telescope Array Surface Detector Monte Carlo simulation pipeline package
@@ -13,8 +19,7 @@ This is tasdmc - Telescope Array Surface Detector Monte Carlo simulation pipelin
 It includes C routines for various low-level data processing tasks and a Python package
 providing high-level interface, pipeline management, parallelization, etc.
 
-See https://github.com/nj-vs-vh/tasdmc for documentation and instructions
-"
+See https://github.com/nj-vs-vh/tasdmc for documentation and instructions"
 
 echo "
 1. Preparing conda environment - installing CERN ROOT
@@ -25,9 +30,8 @@ if [ $? -ne 0 ]; then
     echo "Command failed, aborting"
     return 1
 fi
-ENV_NAME=$CONDA_DEFAULT_ENV
-conda deactivate
-conda activate $ENV_NAME
+
+reactivate_conda_env
 
 
 echo "
@@ -118,9 +122,7 @@ touch $ACTIVATION_SCRIPT
 echo "export TASDMC_DATA_DIR=$TASDMC_STORAGE_DIR/data" >> $ACTIVATION_SCRIPT
 echo "export TASDMC_RUNS_DIR=$TASDMC_STORAGE_DIR/runs" >> $ACTIVATION_SCRIPT
 
-cp script/activation/* $ACTIVATION_SCRIPTS_DIR
+cp scripts/activation/* $ACTIVATION_SCRIPTS_DIR
 
 
-echo "Reactivate your environment to complete installation:"
-echo "> conda deactivate"
-echo "> conda activate ${CONDA_DEFAULT_ENV}"
+reactivate_conda_env
