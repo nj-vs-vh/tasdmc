@@ -1,27 +1,22 @@
-set -e
-
 if [ -z "${CONDA_PREFIX}" ]; then
     echo "tasdmc assumes installation into conda environment! Install conda and run
 > conda create -n my-env-name
 
 Aborting"
-    exit 1;
+    return 1
 fi
 
 
 echo "
-
 This is tasdmc - Telescope Array Surface Detector Monte Carlo simulation pipeline package
 
 It includes C routines for various low-level data processing tasks and a Python package
 providing high-level interface, pipeline management, parallelization, etc.
 
 See https://github.com/nj-vs-vh/tasdmc for documentation and instructions
-
 "
 
 echo "
-
 1. Preparing conda environment - installing CERN ROOT
 "
 # root is required for building sdanalysis routines but also automatically installs Python, pip etc
@@ -29,7 +24,6 @@ conda install -c conda-forge root -y
 
 
 echo "
-
 2. Building and installing sdanalysis routines
 "
 source scripts/git_setup_submodule.sh
@@ -43,7 +37,6 @@ cd ../..
 
 
 echo "
-
 3. Building and installing tasdmc C routines
 "
 cd src/c_routines
@@ -54,21 +47,18 @@ cd ../..
 
 
 echo "
-
 4. Installing Python requirements
 "
 pip install -r requirements.txt
 
 
 echo "
-
 5. Installing tasdmc Python package
 "
 python setup.py install
 
 
 echo "
-
 6. Configuring tasdmc
 "
 if [ -z "${TASDMC_STORAGE_DIR}" ]; then
