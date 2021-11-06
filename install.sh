@@ -21,6 +21,9 @@ echo "
 "
 # root is required for building sdanalysis routines but also automatically installs Python, pip etc
 conda install -c conda-forge root -y
+ENV_NAME=$CONDA_DEFAULT_ENV
+conda deactivate
+conda activate $ENV_NAME
 
 
 echo "
@@ -41,7 +44,7 @@ echo "
 "
 cd src/c_routines
 export SDANALYSIS_DIR=$(readlink -f ../sdanalysis)
-source script/activation/tasdmc-activate-common.sh
+source scripts/activation/tasdmc-activate-common.sh
 make install
 cd ../..
 
