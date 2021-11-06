@@ -21,6 +21,10 @@ echo "
 "
 # root is required for building sdanalysis routines but also automatically installs Python, pip etc
 conda install -c conda-forge root -y
+if [ $? -ne 0 ]; then
+    echo "Command failed, aborting"
+    return 1
+else
 ENV_NAME=$CONDA_DEFAULT_ENV
 conda deactivate
 conda activate $ENV_NAME
@@ -35,6 +39,10 @@ mkdir -p bin
 mkdir dst2k-ta/lib -p
 export C_INCLUDE_PATH=$CONDA_PREFIX/include:$C_INCLUDE_PATH
 make
+if [ $? -ne 0 ]; then
+    echo "Command failed, aborting"
+    return 1
+else
 cp bin/* $CONDA_PREFIX/bin
 cd ../..
 
@@ -46,6 +54,10 @@ cd src/c_routines
 export SDANALYSIS_DIR=$(readlink -f ../sdanalysis)
 source scripts/activation/tasdmc-activate-common.sh
 make install
+if [ $? -ne 0 ]; then
+    echo "Command failed, aborting"
+    return 1
+else
 cd ../..
 
 
@@ -53,12 +65,20 @@ echo "
 4. Installing Python requirements
 "
 pip install -r requirements.txt
+if [ $? -ne 0 ]; then
+    echo "Command failed, aborting"
+    return 1
+else
 
 
 echo "
 5. Installing tasdmc Python package
 "
 python setup.py install
+if [ $? -ne 0 ]; then
+    echo "Command failed, aborting"
+    return 1
+else
 
 
 echo "
@@ -77,7 +97,7 @@ fi
 TASDMC_STORAGE_DIR=$(readlink -f $TASDMC_STORAGE_DIR)
 if [ ! -d $TASDMC_STORAGE_DIR ]; then
     echo "Specified TASDMC_STORAGE_DIR=$TASDMC_STORAGE_DIR do not exist, aborting"
-    exit 1;
+    return 1
 fi
 
 TASDMC_DATA_DIR=$TASDMC_STORAGE_DIR/data
