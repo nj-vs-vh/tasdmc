@@ -20,11 +20,11 @@ echo "
 1. Preparing conda environment - installing CERN ROOT
 "
 # root is required for building sdanalysis routines but also automatically installs Python, pip etc
-conda install -c conda-forge root -y
+conda install -c conda-forge root bz2file -y
 if [ $? -ne 0 ]; then
     echo "Command failed, aborting"
     return 1
-else
+fi
 ENV_NAME=$CONDA_DEFAULT_ENV
 conda deactivate
 conda activate $ENV_NAME
@@ -38,11 +38,12 @@ cd src/sdanalysis
 mkdir -p bin
 mkdir dst2k-ta/lib -p
 export C_INCLUDE_PATH=$CONDA_PREFIX/include:$C_INCLUDE_PATH
+export LD_LIBRARY_PATH=$CONDA_PREFIX/lib
 make
 if [ $? -ne 0 ]; then
     echo "Command failed, aborting"
     return 1
-else
+fi
 cp bin/* $CONDA_PREFIX/bin
 cd ../..
 
@@ -57,7 +58,7 @@ make install
 if [ $? -ne 0 ]; then
     echo "Command failed, aborting"
     return 1
-else
+fi
 cd ../..
 
 
@@ -68,7 +69,7 @@ pip install -r requirements.txt
 if [ $? -ne 0 ]; then
     echo "Command failed, aborting"
     return 1
-else
+fi
 
 
 echo "
@@ -78,7 +79,7 @@ python setup.py install
 if [ $? -ne 0 ]; then
     echo "Command failed, aborting"
     return 1
-else
+fi
 
 
 echo "
