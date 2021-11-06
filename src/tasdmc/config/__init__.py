@@ -37,10 +37,6 @@ class Global:
         except KeyError as e:
             missing_env_var = str(e).strip('\'')
             print(f"Can't load global tasdmc config, env variable is missing: {missing_env_var}")
-            if missing_env_var in ['TASDMC_RUNS_DIR', 'TASDMC_DATA_DIR']:
-                print("Run 'tasdmc-init' to configure storage directory")
-            else:
-                print("tasdmc installation seems broken :(")
             sys.exit()
 
 

@@ -11,7 +11,7 @@ try:
     from tasdmc.logs import display as display_logs
     from tasdmc.config.actions import update_config, view_config
 except ModuleNotFoundError:
-    print("Use 'tasdmc-init' to configure 'tasdmc' before using it!")
+    print("'tasdmc' was not installed properly: some dependencies are missing")
     import sys
     sys.exit(1)
 
