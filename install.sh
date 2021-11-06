@@ -7,6 +7,7 @@ Aborting"
 fi
 
 function reactivate_conda_env() {
+    echo "Reactivating conda environment"
     ENV_NAME=$CONDA_DEFAULT_ENV
     conda deactivate
     conda activate $ENV_NAME
