@@ -51,9 +51,9 @@ cd ../..
 echo "
 3. Building and installing tasdmc C routines
 "
-cd src/c_routines
-export SDANALYSIS_DIR=$(readlink -f ../sdanalysis)
+export SDANALYSIS_DIR=$(readlink -f ./src/sdanalysis)
 source scripts/activation/tasdmc-activate-common.sh
+cd src/c_routines
 make install
 if [ $? -ne 0 ]; then
     echo "Command failed, aborting"
