@@ -38,7 +38,7 @@ cd src/sdanalysis
 mkdir -p bin
 mkdir dst2k-ta/lib -p
 export C_INCLUDE_PATH=$CONDA_PREFIX/include:$C_INCLUDE_PATH
-export LD_LIBRARY_PATH=$CONDA_PREFIX/lib
+export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
 make
 if [ $? -ne 0 ]; then
     echo "Command failed, aborting"
