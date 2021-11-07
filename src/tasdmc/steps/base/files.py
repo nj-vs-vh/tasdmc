@@ -208,10 +208,8 @@ class NotAllRetainedFiles(Files):
         try_checking_contents = True
         for f in self.must_exist:
             if not f.exists():
-                if f in self.not_retained:  # maybe it was deleted? check if .deleted file exists
+                if f in self.not_retained and _with_deleted_suffix(f).exists():  # maybe it was deleted? check if .deleted file exists
                     try_checking_contents = False  # but there's no point in checking contents anymore
-                    if not Path(str(f) + '.deleted').exists():
-                        return False
                 else:
                     return False
 

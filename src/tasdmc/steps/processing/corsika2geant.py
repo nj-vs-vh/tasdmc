@@ -82,14 +82,7 @@ class C2GOutputFiles(Files):
         )
 
     def _check_contents(self):
-        check_file_is_empty(
-            self.stderr,
-            ignore_strings=[
-                ' $$$ ',
-                # because now we use corsika2geant as a library, elosses are loaded only on first invocation
-                'eloss_sdgeant: load_elosses: WARNING: energy loss histograms are already loaded',
-            ],
-        )
+        check_file_is_empty(self.stderr, ignore_strings=[' $$$ dst_get_block_ : End of input file reached'])
         check_stdout = Path(str(self.tile) + '.check.stdout')
         check_stderr = Path(str(self.tile) + '.check.stderr')
         try:
