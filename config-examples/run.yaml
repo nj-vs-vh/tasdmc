@@ -47,3 +47,6 @@ resources:
   # since TASDMC_MEMORY_PER_PROCESS_GB is configured in build-time, only one of these may
   # be specified; if both are specified, the most conservative will be used
   monitor_interval: 60  # sec, -1 to disable system resource monitor; defaults to 60
+
+debug:  # all are False by default
+  input_hashes: True

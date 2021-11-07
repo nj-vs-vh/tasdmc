@@ -1,10 +1,12 @@
 from abc import ABC
 from pathlib import Path
 from dataclasses import fields, is_dataclass
+from functools import lru_cache
 
 from typing import Optional, List, Any, Literal, get_args, get_origin
 
-from tasdmc import fileio
+from tasdmc import fileio, config
+from tasdmc.logs import input_hashes_debug
 from ..exceptions import FilesCheckFailed
 from ..utils import file_contents_hash, concatenate_and_hash
 
@@ -152,9 +154,20 @@ class Files(ABC):
     def same_hash_as_stored(self) -> bool:
         stored_hash_path = self._stored_hash_path
         if not stored_hash_path.exists():
+            if _input_hashes_log_enabled():
+                input_hashes_debug(f"{stored_hash_path.name} has no stored hash, considering comparison FAILED")
             return False
-        with open(self._stored_hash_path, 'r') as f:
+        with open(stored_hash_path, 'r') as f:
             stored_hash = f.read()
+        if _input_hashes_log_enabled():
+            input_hashes_debug(
+                f"{stored_hash_path.name} hash comparison "
+                + (
+                    "OK"
+                    if self.contents_hash == stored_hash
+                    else f"FAILED (actual hash: {self.contents_hash}; stored hash: {stored_hash})"
+                )
+            )
         return self.contents_hash == stored_hash
 
 
@@ -208,8 +221,8 @@ class NotAllRetainedFiles(Files):
         try_checking_contents = True
         for f in self.must_exist:
             if not f.exists():
-                if f in self.not_retained and _with_deleted_suffix(f).exists():  # maybe it was deleted? check if .deleted file exists
-                    try_checking_contents = False  # but there's no point in checking contents anymore
+                if f in self.not_retained and _with_deleted_suffix(f).exists():
+                    try_checking_contents = False  # there's no point in checking contents anymore
                 else:
                     return False
 
@@ -224,3 +237,8 @@ class NotAllRetainedFiles(Files):
 
 def _with_deleted_suffix(p: Path) -> Path:
     return Path(str(p) + '.deleted')
+
+
+@lru_cache(1)
+def _input_hashes_log_enabled() -> bool:
+    return bool(config.get_key("debug.input_hashes", default=False))

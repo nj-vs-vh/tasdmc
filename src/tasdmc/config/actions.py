@@ -15,7 +15,7 @@ from .internal import get_config
 
 
 # safe to change means that no work would be lost
-SAFE_TO_CHANGE = ['resources', 'corsika.default_executable_name', 'input_files.event_number_multiplier']
+SAFE_TO_CHANGE = ['resources', 'corsika.default_executable_name', 'input_files.event_number_multiplier', 'debug']
 
 
 @dataclass
@@ -99,11 +99,11 @@ def update_config(new_config_path: str):
     )
     for cc in config_changes:
         click.echo(f"\t{cc}")
-    
+
     if 'name' in [cc.key for cc in config_changes]:
         click.echo("Attempt to update run's name, aborting")
         return
-    
+
     config.load(new_config_path)
     try:
         config.validate()

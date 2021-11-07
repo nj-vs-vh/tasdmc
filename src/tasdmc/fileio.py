@@ -65,7 +65,7 @@ def events_dir() -> Path:
 
 @internal_dir
 def spectral_sampled_events_dir() -> Path:
-    return run_dir() / 'event_spectral_sampled'
+    return run_dir() / 'events_spectral_sampled'
 
 
 @internal_dir
