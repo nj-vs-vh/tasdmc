@@ -4,25 +4,48 @@ import re
 import hashlib
 from functools import wraps
 
-from typing import List, Any, Callable, TypeVar
+from typing import List, Any, Callable, TypeVar, BinaryIO, Generator, Iterable, TypeVar, Tuple
 
 from tasdmc.c_routines_wrapper import list_events_in_dst_file
 from .exceptions import FilesCheckFailed
 
 
+def _read_file_backwards(f: BinaryIO, block_size: int = 1024) -> Generator[bytes, None, None]:
+    f.seek(0, os.SEEK_END)
+    file_length = f.tell()
+    end_offset = 0
+    while end_offset < file_length:
+        end_offset += block_size
+        if end_offset > file_length:
+            block_size -= end_offset - file_length
+            if block_size == 0:
+                break
+            end_offset = file_length
+        f.seek(-end_offset, os.SEEK_END)
+        yield f.read(block_size)[::-1]
+
+
+def _in_pairs(iterable: Iterable[bytes]) -> Generator[Tuple[bytes, bytes], None, None]:
+    iterator = iter(iterable)
+    prev = next(iterator)
+    for item in iterator:
+        yield prev, item
+        prev = item
+
+
 def check_particle_file_contents(particle_file: Path):
     with open(particle_file, 'rb') as f:
-        pos = f.seek(-2, os.SEEK_END)
-        char = None
-        while pos > 0 and char != b'E':
-            char = f.read(1)
-            pos = f.seek(-2, os.SEEK_CUR)
-        if char == b'E':
-            f.seek(-2, os.SEEK_CUR)  # went -2 in the last while, again -2 to capture 4 bytes of RUNE
-            word = f.read(4)
-            if word == b'RUNE':
-                return
-    raise FilesCheckFailed(f"{particle_file.name} doesn't contain RUNE at the end")
+        for last, second_to_last in _in_pairs(_read_file_backwards(f, block_size=1024)):
+            if b"E" not in last:
+                continue
+            else:
+                if b"RUNE" in (last + second_to_last)[::-1]:
+                    return
+
+    if b"RUNE" in second_to_last[::-1]:
+        return
+
+    raise FilesCheckFailed(f"{particle_file.name} doesn't contain RUNE bytes at the end")
 
 
 def check_file_is_empty(file: Path, ignore_patterns: List[str] = [], ignore_strings: List[str] = []):

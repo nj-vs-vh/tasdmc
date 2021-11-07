@@ -1,19 +1,6 @@
 import pytest
-from pathlib import Path
-from random import randint
 
 from tasdmc.steps.utils import check_file_is_empty, check_last_line_contains, FilesCheckFailed
-
-
-CUR_DIR = Path(__file__).parent
-
-
-@pytest.fixture
-def temp_file() -> Path:
-    fname = CUR_DIR / f"testing.{randint(0, 10 ** 6)}"
-    fname.touch()
-    yield fname
-    fname.unlink()
 
 
 def test_empty_file_check_ok(temp_file):
@@ -39,3 +26,28 @@ def test_empty_file_check_fails(temp_file):
         check_file_is_empty(temp_file)
         check_file_is_empty(temp_file, ignore_strings=["one two"])
         check_file_is_empty(temp_file, ignore_patterns=[r".*two"])
+
+
+def test_last_line_contains_check(temp_file):
+    with open(temp_file, 'w') as f:
+        f.write("1\n")
+        f.write("2\n")
+        f.write("last line!")
+
+    for i in range(2):
+        check_last_line_contains(temp_file, must_contain='last line!')
+        check_last_line_contains(temp_file, must_contain='line')
+        check_last_line_contains(temp_file, must_contain='!')
+
+        with open(temp_file, 'a') as f:  # checks must pass no matter how much empty lines follow the last
+            f.write('\n' + ' ' * i)
+
+
+def test_last_line_contains_check_fails(temp_file):
+    with open(temp_file, 'w') as f:
+        f.write("1\n")
+        f.write("last line!\n")
+        f.write("this is error!\n\n")
+
+    with pytest.raises(FilesCheckFailed):
+        check_last_line_contains(temp_file, must_contain='last line')
