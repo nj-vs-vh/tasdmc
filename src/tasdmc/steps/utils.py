@@ -28,7 +28,7 @@ def check_particle_file_contents(particle_file: Path):
 def check_file_is_empty(file: Path, ignore_patterns: List[str] = [], ignore_strings: List[str] = []):
     if ignore_patterns or ignore_strings:
         ignore_re = re.compile(
-            '|'.join([f'({patt})' for patt in ignore_patterns] + [f'({re.escape(s)})' for s in ignore_strings])
+            '|'.join([f'({patt})' for patt in ignore_patterns] + [f'(^{re.escape(s)}$)' for s in ignore_strings])
         )
         check_for_ignore = True
     else:
@@ -36,9 +36,12 @@ def check_file_is_empty(file: Path, ignore_patterns: List[str] = [], ignore_stri
 
     with open(file, 'r') as f:
         for line in f:
+            line = line.strip()
+            if not line:
+                continue
             if check_for_ignore and ignore_re.match(line):
                 continue
-            raise FilesCheckFailed(f"{file.name} contains unignored strings:\n\t{line.strip()}\n\tand maybe more...")
+            raise FilesCheckFailed(f"{file.name} contains unignored strings:\n\t'{line}'\n\tand maybe more...")
 
 
 def check_last_line_contains(file: Path, must_contain: str):
