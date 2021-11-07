@@ -6,7 +6,7 @@ from functools import lru_cache
 from typing import Optional, List, Any, Literal, get_args, get_origin
 
 from tasdmc import fileio, config
-from tasdmc.logs import input_hashes_debug
+from tasdmc.logs import input_hashes_debug, file_checks_debug
 from ..exceptions import FilesCheckFailed
 from ..utils import file_contents_hash, concatenate_and_hash
 
@@ -89,8 +89,12 @@ class Files(ABC):
         """Returns bool value indicating if Files' were already produced."""
         try:
             self.assert_files_are_ready()
+            if _file_checks_log_enabled():
+                file_checks_debug(f"{self._stored_hash_path.name} check OK")
             return True
-        except FilesCheckFailed:
+        except FilesCheckFailed as e:
+            if _file_checks_log_enabled():
+                file_checks_debug(f"{self._stored_hash_path.name} check failed:\n{e}")
             return False
 
     def _check_contents(self):
@@ -224,14 +228,31 @@ class NotAllRetainedFiles(Files):
                 if f in self.not_retained and _with_deleted_suffix(f).exists():
                     try_checking_contents = False  # there's no point in checking contents anymore
                 else:
+                    if _file_checks_log_enabled():
+                        if f not in self.not_retained:
+                            file_checks_debug(
+                                f"{self._stored_hash_path.name} check failed:\n"
+                                + f"{f.name} is not marked as not retained, but is missing"
+                            )
+                        elif not _with_deleted_suffix(f).exists():
+                            file_checks_debug(
+                                f"{self._stored_hash_path.name} check failed:\n"
+                                + f"{f.name} is marked as not retained, but {_with_deleted_suffix(f).name} do not exist"
+                            )
                     return False
 
         if try_checking_contents:
             try:
                 self._check_contents()
             except FilesCheckFailed:
+                if _file_checks_log_enabled():
+                    file_checks_debug(
+                        f"{self._stored_hash_path.name} check failed: bad contents"
+                    )
                 return False
 
+        if _file_checks_log_enabled():
+            file_checks_debug(f"{self._stored_hash_path.name} check OK")
         return True
 
 
@@ -242,3 +263,8 @@ def _with_deleted_suffix(p: Path) -> Path:
 @lru_cache(1)
 def _input_hashes_log_enabled() -> bool:
     return bool(config.get_key("debug.input_hashes", default=False))
+
+
+@lru_cache(1)
+def _file_checks_log_enabled() -> bool:
+    return bool(config.get_key("debug.file_checks", default=False))

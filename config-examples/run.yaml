@@ -50,3 +50,4 @@ resources:
 
 debug:  # all are False by default
   input_hashes: True
+  file_checks: True

@@ -102,10 +102,6 @@ def multiprocessing_log():
     return logs_dir() / 'multiprocessing.log'
 
 
-def input_hashes_debug_log():
-    return logs_dir() / 'input_hashes_debug.log'
-
-
 def cards_gen_info_log():
     return logs_dir() / 'cards_generation_info.log'
 
@@ -116,6 +112,14 @@ def pipelines_log():
 
 def pipeline_failed_file(pipeline_id: str):
     return pipelines_failed_dir() / f'{pipeline_id}.failed'
+
+
+def input_hashes_debug_log():
+    return logs_dir() / 'input_hashes_debug.log'
+
+
+def file_checks_debug_log():
+    return logs_dir() / 'file_checks_debug.log'
 
 
 # top-level functions

@@ -82,7 +82,7 @@ class C2GOutputFiles(Files):
         )
 
     def _check_contents(self):
-        check_file_is_empty(self.stderr, ignore_strings=[' $$$ dst_get_block_ : End of input file reached'])
+        check_file_is_empty(self.stderr, ignore_strings=['$$$ dst_get_block_ : End of input file reached'])
         check_stdout = Path(str(self.tile) + '.check.stdout')
         check_stderr = Path(str(self.tile) + '.check.stderr')
         try:

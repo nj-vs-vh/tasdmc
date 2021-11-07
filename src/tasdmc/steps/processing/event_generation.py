@@ -88,7 +88,7 @@ class EventFiles(Files):
         )
 
     def _check_contents(self):
-        check_file_is_empty(self.stderr, ignore_strings=[" $$$ dst_get_block_ : End of input file reached"])
+        check_file_is_empty(self.stderr, ignore_strings=["$$$ dst_get_block_ : End of input file reached"])
         check_last_line_contains(self.stdout, "OK")
         check_dst_file_not_empty(self.merged_events_file)
 
