@@ -19,9 +19,9 @@ def cards_generation_info(message: str):
     _log_text_message(message, fileio.cards_gen_info_log())
 
 
-def multiprocessing_debug(message: str):
+def multiprocessing_info(message: str):
     message = f"[{datetime2str(datetime.now())}] (pid {os.getpid()}) {message}"
-    _log_text_message(message, fileio.multiprocessing_debug_log())
+    _log_text_message(message, fileio.multiprocessing_log())
 
 
 def _log_text_message(msg: str, log_filename: Path):

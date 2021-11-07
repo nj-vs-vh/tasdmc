@@ -13,9 +13,9 @@ from tasdmc.logs.step_progress import EventType, PipelineStepProgress
 from tasdmc.logs.utils import str2datetime, datetime2str, timedelta2str
 
 
-def print_multiprocessing_debug(n_messages: int):
+def print_multiprocessing_log(n_messages: int):
     multiproc_debug_message_re = re.compile(r'.*\(pid (?P<pid>\d+)\)')
-    lines_for_last_run = fileio.multiprocessing_debug_log().read_text().splitlines()
+    lines_for_last_run = fileio.multiprocessing_log().read_text().splitlines()
     lines_for_last_run.reverse()
 
     messages_by_pid = defaultdict(list)

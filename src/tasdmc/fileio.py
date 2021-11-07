@@ -98,8 +98,12 @@ def system_resources_log():
     return logs_dir() / 'system_resources.log'
 
 
-def multiprocessing_debug_log():
-    return logs_dir() / 'multiprocessing_debug.log'
+def multiprocessing_log():
+    return logs_dir() / 'multiprocessing.log'
+
+
+def input_hashes_debug_log():
+    return logs_dir() / 'input_hashes_debug.log'
 
 
 def cards_gen_info_log():

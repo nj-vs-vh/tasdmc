@@ -146,7 +146,7 @@ def run_process_status(name: str, n_last_messages: int):
         return
     system.print_process_status(fileio.get_saved_main_pid())
     if n_last_messages:
-        display_logs.print_multiprocessing_debug(n_last_messages)
+        display_logs.print_multiprocessing_log(n_last_messages)
 
 
 @cli.command("resources", help="Display system resources utilization for run NAME")

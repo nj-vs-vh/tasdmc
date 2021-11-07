@@ -73,16 +73,16 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
             sleep(3 * random())  # in hopes of avoiding race condition for simultaneously running steps
             while not self.input_.files_were_produced() and not pipeline_progress.is_failed(self.pipeline_id):
                 sleep_time = 60  # sec
-                logs.multiprocessing_debug(
+                logs.multiprocessing_info(
                     f"Input files for '{self.description}' were not yet produced, sleeping for {sleep_time} sec"
                 )
                 sleep(sleep_time)
 
         if pipeline_progress.is_failed(self.pipeline_id):
-            logs.multiprocessing_debug(f"Not running '{self.description}', pipeline marked as failed")
+            logs.multiprocessing_info(f"Not running '{self.description}', pipeline marked as failed")
             return
         else:
-            logs.multiprocessing_debug(f"Running '{self.description}'")
+            logs.multiprocessing_info(f"Running '{self.description}'")
 
         try:
             if self.input_.same_hash_as_stored() and self.output.files_were_produced():
