@@ -197,16 +197,18 @@ class NotAllRetainedFiles(Files):
             deleted_file = _with_deleted_suffix(file)
             if deleted_file.exists():
                 with open(deleted_file, 'r') as df:
+                    last_line = ''
                     for line in df:
-                        pass
-                    if len(line) == 32:
-                        return line
+                        if line.strip():
+                            last_line = line
+                    if len(last_line) == 32:
+                        return last_line
                     else:
-                        raise ValueError(f"Can't recover {self.__class__.__name__}'s contents hash from .deleted file")
+                        raise ValueError(f"Can't recover {self.__class__.__name__}'s contents hash from {deleted_file}")
             else:
                 raise ValueError(
                     f"Can't compute {self.__class__.__name__}'s contents hash, "
-                    + "some files to be hashed do not exist"
+                    + "some files to be hashed and their .deleted traces do not exist"
                 )
         return file_contents_hash(file, hasher_name='md5')
 
