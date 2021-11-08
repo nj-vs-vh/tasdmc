@@ -89,8 +89,6 @@ class Files(ABC):
         """Returns bool value indicating if Files' were already produced."""
         try:
             self.assert_files_are_ready()
-            if _file_checks_log_enabled():
-                file_checks_debug(f"{self._stored_hash_path.name} check OK")
             return True
         except FilesCheckFailed as e:
             if _file_checks_log_enabled():
@@ -159,18 +157,14 @@ class Files(ABC):
         stored_hash_path = self._stored_hash_path
         if not stored_hash_path.exists():
             if _input_hashes_log_enabled():
-                input_hashes_debug(f"{stored_hash_path.name} has no stored hash, considering comparison FAILED")
+                input_hashes_debug(f"{stored_hash_path.name} has no stored hash, comparison FAILED")
             return False
         with open(stored_hash_path, 'r') as f:
             stored_hash = f.read()
-        if _input_hashes_log_enabled():
+        if _input_hashes_log_enabled() and self.contents_hash != stored_hash:
             input_hashes_debug(
                 f"{stored_hash_path.name} hash comparison "
-                + (
-                    "OK"
-                    if self.contents_hash == stored_hash
-                    else f"FAILED (actual hash: {self.contents_hash}; stored hash: {stored_hash})"
-                )
+                + f"FAILED (actual hash: {self.contents_hash}; stored hash: {stored_hash})"
             )
         return self.contents_hash == stored_hash
 
@@ -251,8 +245,6 @@ class NotAllRetainedFiles(Files):
                     )
                 return False
 
-        if _file_checks_log_enabled():
-            file_checks_debug(f"{self._stored_hash_path.name} check OK")
         return True
 
 
