@@ -182,7 +182,7 @@ failures_cmd_actions = ['total-cleanup', 'inspect']
     "failures",
     help="Failure management for run NAME. ACTIONs: " + ', '.join(failures_cmd_actions),
 )
-@click.option("-p", "--page", "pagesize", default=10, help="Pagination for 'inspect', or 0 for no pagination")
+@click.option("-p", "--page", "pagesize", default=3, help="Pagination for 'inspect', or 0 for no pagination")
 @click.argument(
     'action', type=click.STRING, shell_complete=lambda *p: [a for a in failures_cmd_actions if a.startswith(p[2])]
 )

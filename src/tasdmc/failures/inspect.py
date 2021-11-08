@@ -44,6 +44,11 @@ def inspect_failed_pipelines(pipeline_failed_files: List[Path], prompt_continue_
         prompt = True
     for page in batches(pipeline_failed_files, size=prompt_continue_each):
         for pf in page:
+            pipeline_id = pipeline_id_from_failed_file(pf)
+            click.secho(f"\n{pipeline_id}", bold=True)
+            click.echo('Failure reason:')
+            click.secho(pf.read_text(), dim=True)
+            click.echo('Steps inspection:')
             print_pipeline_steps(pipeline_id=pipeline_id_from_failed_file(pf))
         if prompt:
             _print_legend()
@@ -54,7 +59,6 @@ def inspect_failed_pipelines(pipeline_failed_files: List[Path], prompt_continue_
 
 
 def print_pipeline_steps(pipeline_id: str):
-    click.secho(f"\n{pipeline_id}:", bold=True)
     pipeline_card_file = fileio.corsika_input_files_dir() / f"{pipeline_id}.in"
     if not pipeline_card_file.exists():
         click.echo("Can't find CORSIKA input card for pipeline!", fg='red', bold=True)
@@ -87,10 +91,11 @@ def print_pipeline_steps(pipeline_id: str):
             if not input_produced:
                 click.echo(
                     "\t\t* input files were never produced:\n"
-                    + "\n".join([f"\t\t{f.relative_to(fileio.run_dir())}" for f in step.input_.must_exist])
+                    + "\n".join([f"\t\t\t{f.relative_to(fileio.run_dir())}" for f in step.input_.must_exist])
                 )
             if input_produced and not input_hash_ok:
                 if hash_computation_fail_msg is None:
-                    click.echo("\t\t* input files were produced, but their hashes are different from previously saved")
+                    click.echo("\t\t* input file hashes do not match previously saved")
                 else:
-                    click.echo(f"\t\t* input files hash computation failed with error:\n{hash_computation_fail_msg}")
+                    click.echo(f"\t\t* input file hashes computation failed with error:\n{hash_computation_fail_msg}")
+
