@@ -21,8 +21,8 @@ from tasdmc.steps.base import Files, FileInFileOutPipelineStep
 
 class StepStatus(Enum):
     OK = (click.style('✓', fg='green', bold=True), "Step was completed and can be skipped")
-    PENDING = (click.style("⋯", fg='yellow', bold=True), "Step was not completed, pending")
-    RERUN_REQUIRED = (click.style('↑', fg='yellow', bold=True), "Step was not completed but is ready to run")
+    PENDING = (click.style("⋯", fg='yellow', bold=True), "Step pending, inputs were not produced")
+    RERUN_REQUIRED = (click.style('↑', fg='yellow', bold=True), "Step requires rerun")
     PREV_STEP_RERUN_REQUIRED = (click.style("↑", fg='red', bold=True), "Step requires previous step's rerun")
 
     @property
@@ -57,7 +57,7 @@ class StepInspectionResult:
     def inspect(cls, step: FileInFileOutPipelineStep) -> StepInspectionResult:
         if step.input_.files_were_produced():
             input_produced = True
-            input_deleted = passed(step.input_.assert_files_are_ready)()
+            input_deleted = not passed(step.input_.assert_files_are_ready)()
         else:
             input_produced, input_deleted = False, False
 
