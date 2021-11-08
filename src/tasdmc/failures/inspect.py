@@ -115,8 +115,8 @@ def inspect_pipeline_steps(pipeline_id: str, fix: bool = False):
         inspection_result = StepInspectionResult.inspect(step)
         step_status = inspection_result.status
         click.echo(f'\t{step_status.char} {step.description}')
-        if step_status is StepStatus.INPUTS_CHANGED:
-            pass
+        # if step_status is StepStatus.INPUTS_CHANGED:
+            # pass
             # if not input_produced:
             #     click.echo(
             #         "\t\t* input files were never produced:\n"
