@@ -20,7 +20,7 @@ class Files(ABC):
     def __new__(cls, *args, **kwargs):
         if not is_dataclass(cls):
             raise TypeError("All Files subclasses must be dataclasses!")
-        return super(Files, cls).__new__(cls, *args, **kwargs)
+        return super(Files, cls).__new__(cls)
 
     def __str__(self):
         return self._stored_hash_path.name
