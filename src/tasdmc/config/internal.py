@@ -20,3 +20,7 @@ def dump(filename: Path):
 
 def get_config():
     return _config
+
+
+def remove_config_key(key: str):
+    _config.pop(key, '')

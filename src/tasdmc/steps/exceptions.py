@@ -6,3 +6,7 @@ class FilesCheckFailed(Exception):
 
 class BadDataFiles(Exception):
     pass
+
+
+class HashComputationFailed(Exception):
+    pass

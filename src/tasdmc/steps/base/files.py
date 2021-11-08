@@ -7,7 +7,7 @@ from typing import Optional, List, Any, Literal, get_args, get_origin
 
 from tasdmc import fileio, config
 from tasdmc.logs import input_hashes_debug, file_checks_debug
-from ..exceptions import FilesCheckFailed
+from ..exceptions import FilesCheckFailed, HashComputationFailed
 from ..utils import file_contents_hash, concatenate_and_hash
 
 
@@ -73,14 +73,14 @@ class Files(ABC):
 
         Should not be overriden, but modified indirectly by overriding must_exist property and _check_contents method.
         """
-        nonexistent_files = []
+        nonexistent_files: List[Path] = []
         for f in self.must_exist:
             if not f.exists():
                 nonexistent_files.append(f)
         if nonexistent_files:
             raise FilesCheckFailed(
                 "Following required files do not exist: \n"
-                + "\n".join([f"\t{missing_file}" for missing_file in nonexistent_files])
+                + "\n".join([f"\t{missing_file.relative_to(fileio.run_dir())}" for missing_file in nonexistent_files])
             )
         else:
             self._check_contents()
@@ -127,7 +127,7 @@ class Files(ABC):
 
     def _get_file_contents_hash(self, file: Path) -> str:
         if not file.exists():
-            raise ValueError(
+            raise HashComputationFailed(
                 f"Can't compute {self.__class__.__name__}'s contents hash, some files to be hashed do not exist"
             )
         return file_contents_hash(file, hasher_name='md5')
@@ -204,9 +204,11 @@ class NotAllRetainedFiles(Files):
                     if len(last_line) == 32:
                         return last_line
                     else:
-                        raise ValueError(f"Can't recover {self.__class__.__name__}'s contents hash from {deleted_file}")
+                        raise HashComputationFailed(
+                            f"Can't recover {self.__class__.__name__}'s contents hash from {deleted_file}"
+                        )
             else:
-                raise ValueError(
+                raise HashComputationFailed(
                     f"Can't compute {self.__class__.__name__}'s contents hash, "
                     + "some files to be hashed and their .deleted traces do not exist"
                 )
@@ -242,9 +244,7 @@ class NotAllRetainedFiles(Files):
                 self._check_contents()
             except FilesCheckFailed:
                 if _file_checks_log_enabled():
-                    file_checks_debug(
-                        f"{self._stored_hash_path.name} check failed: bad contents"
-                    )
+                    file_checks_debug(f"{self._stored_hash_path.name} check failed: bad contents")
                 return False
 
         return True
