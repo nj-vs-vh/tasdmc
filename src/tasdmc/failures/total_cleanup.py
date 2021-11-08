@@ -2,10 +2,11 @@ from pathlib import Path
 import click
 
 from tasdmc import fileio
+from .utils import pipeline_id_from_failed_file
 
 
-def delete_all_files_from_failed_pipeline(pipeline_failed_path: Path):
-    pipeline_id = pipeline_failed_path.name.replace('.failed', '')
+def delete_all_files_from_failed_pipeline(pipeline_failed_file: Path):
+    pipeline_id = pipeline_id_from_failed_file(pipeline_failed_file)
     click.echo(f"Cleaning up files for {pipeline_id}")
     for dir in [
         fileio.corsika_input_files_dir(),
@@ -16,4 +17,4 @@ def delete_all_files_from_failed_pipeline(pipeline_failed_path: Path):
         for file in dir.glob(pipeline_id + '*'):
             click.secho(f"\t{file}", dim=True)
             file.unlink()
-    pipeline_failed_path.unlink()
+    pipeline_failed_file.unlink()

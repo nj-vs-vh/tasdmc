@@ -175,7 +175,7 @@ def system_resources(name: str, include_previous_runs: bool, absolute_datetime: 
     )
 
 
-failures_cmd_actions = ['total-cleanup']
+failures_cmd_actions = ['total-cleanup', 'inspect']
 
 
 @cli.command(
@@ -195,21 +195,23 @@ def failures_cmd(name: str, action: str):
     if not _load_config_by_run_name(name):
         return
 
-    failed_pipeline_files = fileio.get_failed_pipeline_files()
-    if not failed_pipeline_files:
+    pipeline_failed_files = fileio.get_failed_pipeline_files()
+    if not pipeline_failed_files:
         click.echo("No failed pipelines found")
         return
 
     if action == 'total-cleanup':
         click.echo(
             f"Failed pipelines to be {click.style('completely', bold=True)} removed:\n"
-            + "\n".join([f'\t{p.name}' for p in failed_pipeline_files])
+            + "\n".join([f'\t{p.name}' for p in pipeline_failed_files])
         )
         click.echo("\nType 'yes' to confirm")
         confirmation = input('> ')
         if confirmation == 'yes':
-            for fp in failed_pipeline_files:
-                failures.delete_all_files_from_failed_pipeline(fp)
+            for pf in pipeline_failed_files:
+                failures.delete_all_files_from_failed_pipeline(pf)
+    elif action == 'inspect':
+        failures.inspect_failed_pipelines(pipeline_failed_files)
 
 
 # other commands
