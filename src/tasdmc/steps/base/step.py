@@ -48,13 +48,13 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
         """Any string uniquely identifying a pipeline (e.g. DATnnnnnn for standard pipeline).
 
         Must be overriden for the first step in the pipeline."""
-        if self.previous_steps is None:
+        if not self.previous_steps:
             raise ValueError(
-                f"No previous step found for {self.__class__.__name__}, can't get pipeline ID; "
+                f"No previous steps found for {self.__class__.__name__}, can't get pipeline ID; "
                 + "Override pipeline_id property or specify previous steps"
             )
         else:
-            return self.previous_step.pipeline_id
+            return self.previous_steps[0].pipeline_id
 
     @property
     @abstractmethod

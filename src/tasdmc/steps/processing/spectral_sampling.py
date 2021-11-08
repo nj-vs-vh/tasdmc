@@ -55,7 +55,7 @@ class SpectralSamplingStep(FileInFileOutPipelineStep):
         return SpectralSamplingStep(
             events_generation_step.output,
             SpectralSampledEvents.from_events_file(events_generation_step.output),
-            previous_step=events_generation_step,
+            previous_steps=[events_generation_step],
         )
 
     def _run(self):
