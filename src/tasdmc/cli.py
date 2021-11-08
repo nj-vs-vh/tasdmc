@@ -180,7 +180,7 @@ failures_cmd_actions = ['total-cleanup']
 
 @cli.command(
     "failures",
-    help="Failure management for run NAME: " + ', '.join(failures_cmd_actions),
+    help="Failure management for run NAME. ACTIONs: " + ', '.join(failures_cmd_actions),
 )
 @click.argument(
     'action', type=click.STRING, shell_complete=lambda *p: [a for a in failures_cmd_actions if a.startswith(p[2])]
