@@ -48,6 +48,7 @@ resources:
   # be specified; if both are specified, the most conservative will be used
   monitor_interval: 60  # sec, -1 to disable system resource monitor; defaults to 60
 
-debug:  # all are False by default
+debug:  # all are False/empty by default
   input_hashes: True
   file_checks: True
+  pipelines_mask: []

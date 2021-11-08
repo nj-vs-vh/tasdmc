@@ -56,11 +56,20 @@ def standard_pipeline_steps(
     return steps
 
 
+def with_pipelines_mask(steps: List[FileInFileOutPipelineStep]) -> List[FileInFileOutPipelineStep]:
+    pipelines_mask: List[str] = config.get_key('debug.pipelines_mask', default=False)
+    if pipelines_mask is False:
+        return steps
+    else:
+        return [s for s in steps if s.pipeline_id in pipelines_mask]
+
+
 def run_standard_pipeline(continuing: bool):
     system.set_process_title("tasdmc main")
     fileio.prepare_run_dir(continuing)
     cards_generation = CorsikaCardsGenerationStep.create_and_run()
     steps = standard_pipeline_steps(cards_generation_step=cards_generation)
+    steps = with_pipelines_mask(steps)
     # workaround; TODO: pack steps sequence in a pipeline class
     config.validate(set(step.__class__ for step in steps))
     system.run_in_background(run_system_monitor, keep_session=True)
