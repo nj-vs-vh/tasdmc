@@ -22,8 +22,8 @@ from tasdmc.steps.base import Files, FileInFileOutPipelineStep
 class StepStatus(Enum):
     OK = (click.style('✓', fg='green', bold=True), "Step was completed and can be skipped")
     PENDING = (click.style("⋯", fg='yellow', bold=True), "Step was not completed, pending")
+    RERUN_REQUIRED = (click.style('↑', fg='yellow', bold=True), "Step was not completed but is ready to run")
     PREV_STEP_RERUN_REQUIRED = (click.style("↑", fg='red', bold=True), "Step requires previous step's rerun")
-    READY_TO_RUN = (click.style('↑', fg='yellow', bold=True), "Step was not completed but is ready to run")
 
     @property
     def char(self):
@@ -50,13 +50,14 @@ class StepInspectionResult:
             return StepStatus.OK
         if self.inputs_were_deleted:
             return StepStatus.PREV_STEP_RERUN_REQUIRED
-        return StepStatus.READY_TO_RUN
+        else:
+            return StepStatus.RERUN_REQUIRED
 
     @classmethod
     def inspect(cls, step: FileInFileOutPipelineStep) -> StepInspectionResult:
         if step.input_.files_were_produced():
             input_produced = True
-            input_deleted = passed(step.input_.assert_files_are_ready)
+            input_deleted = passed(step.input_.assert_files_are_ready)()
         else:
             input_produced, input_deleted = False, False
 
@@ -115,28 +116,12 @@ def inspect_pipeline_steps(pipeline_id: str, fix: bool = False):
         inspection_result = StepInspectionResult.inspect(step)
         step_status = inspection_result.status
         click.echo(f'\t{step_status.char} {step.description}')
-        # if step_status is StepStatus.INPUTS_CHANGED:
-            # pass
-            # if not input_produced:
-            #     click.echo(
-            #         "\t\t* input files were never produced:\n"
-            #         + "\n".join([f"\t\t\t{f.relative_to(fileio.run_dir())}" for f in step.input_.must_exist])
-            #     )
-            # if input_produced and not input_hash_ok:
-            #     if hash_computation_fail_msg is None:
-            #         click.echo("\t\t* input file hashes have changed")
-            #     else:
-            #         click.echo(f"\t\t* input file hashes computation failed with error:\n{hash_computation_fail_msg}")
-
-            #     try:
-            #         step.input_.assert_files_are_ready()
-            #         click.echo("\t\t* no fixing required, failure may be resolved on the next 'continue'")
-            #     except FilesCheckFailed:  # input was produced, but is not ready = it was deleted because it is not retained
-            #         outputs_to_clean = [s.output for s in step.previous_steps]
-            #         if not fix:
-            #             click.echo("\t\t* fixes required, pass --fix to clean these outputs:")
-            #             click.echo("\n".join([f"\t\t\t{o}" for o in outputs_to_clean]))
-            #         else:
-            #             for o in outputs_to_clean:
-            #                 click.echo(f"\t\t* cleaning {o}")
-            #                 o.clean()
+        if step_status is StepStatus.PREV_STEP_RERUN_REQUIRED:
+            outputs_to_clean = [s.output for s in step.previous_steps]
+            if not fix:
+                click.echo("\t\t* pass --fix to clean following outputs:")
+                click.echo("\n".join([f"\t\t\t{o}" for o in outputs_to_clean]))
+            else:
+                for o in outputs_to_clean:
+                    click.echo(f"\t\t* cleaning {o}")
+                    o.clean()
