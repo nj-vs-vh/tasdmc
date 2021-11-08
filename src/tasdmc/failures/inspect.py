@@ -35,7 +35,7 @@ def _print_legend():
         click.echo(f"  {char}  {descr}")
 
 
-def inspect_failed_pipelines(pipeline_failed_files: List[Path], prompt_continue_each: int):
+def inspect_failed_pipelines(pipeline_failed_files: List[Path], prompt_continue_each: int, fix: bool):
     remove_config_key('debug')  # resetting debug to default to avoid appending to logs
     if prompt_continue_each == 0:
         prompt_continue_each = len(pipeline_failed_files)
@@ -49,7 +49,7 @@ def inspect_failed_pipelines(pipeline_failed_files: List[Path], prompt_continue_
             click.echo('\nFailure reason:')
             click.secho(pf.read_text().strip(), dim=True)
             click.echo('\nSteps inspection:')
-            inspect_pipeline_steps(pipeline_id)
+            inspect_pipeline_steps(pipeline_id, fix=fix)
         if prompt:
             _print_legend()
             click.echo("\nContinue? [Yes, no]")
