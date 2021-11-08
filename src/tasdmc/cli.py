@@ -203,7 +203,7 @@ def failures_cmd(name: str, action: str):
     if action == 'total-cleanup':
         click.echo(
             f"Failed pipelines to be {click.style('completely', bold=True)} removed:\n"
-            + "\n".join([f'\t{p}' for p in failed_pipeline_files])
+            + "\n".join([f'\t{p.name}' for p in failed_pipeline_files])
         )
         click.echo("\nType 'yes' to confirm")
         confirmation = input('> ')
