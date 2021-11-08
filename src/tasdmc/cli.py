@@ -7,14 +7,14 @@ try:
     from gdown.cached_download import assert_md5sum
 
     from tasdmc import __version__
-    from tasdmc import config, fileio, system, pipeline, cleanup, extract_calibration
+    from tasdmc import config, fileio, system, pipeline, failures, extract_calibration
     from tasdmc.logs import display as display_logs
     from tasdmc.config.actions import update_config, view_config
 except ModuleNotFoundError:
     print("'tasdmc' was not installed properly: some dependencies are missing")
     import sys
-    sys.exit(1)
 
+    sys.exit(1)
 
 
 @click.group()
@@ -175,24 +175,41 @@ def system_resources(name: str, include_previous_runs: bool, absolute_datetime: 
     )
 
 
+failures_cmd_actions = ['total-cleanup']
+
+
 @cli.command(
-    "_cleanup_failed_pipelines",
-    help="Delete all files related to run NAME's pipelines currently marked as .failed; INTERNAL/EXPERIMENTAL COMMAND",
+    "failures",
+    help="Failure management for run NAME: " + ', '.join(failures_cmd_actions),
+)
+@click.argument(
+    'action', type=click.STRING, shell_complete=lambda *p: [a for a in failures_cmd_actions if a.startswith(p[2])]
 )
 @_run_name_argument('name')
-def cleanup_failed_pipelines(name: str):
+def failures_cmd(name: str, action: str):
+    if action not in failures_cmd_actions:
+        click.echo(
+            f"Unknown action '{action}'. Available actions are:\n" + '\n'.join([f'\t{a}' for a in failures_cmd_actions])
+        )
+        return
     if not _load_config_by_run_name(name):
         return
-    failed_pipeline_files = cleanup.get_failed_pipeline_files()
+
+    failed_pipeline_files = fileio.get_failed_pipeline_files()
     if not failed_pipeline_files:
         click.echo("No failed pipelines found")
         return
-    click.echo("Failed pipelines to be removed:\n" + "\n".join([f'\t{p}' for p in failed_pipeline_files]))
-    click.echo("\nType 'yes' to confirm")
-    confirmation = input('> ')
-    if confirmation == 'yes':
-        for fp in failed_pipeline_files:
-            cleanup.delete_all_files_from_failed_pipeline(fp)
+
+    if action == 'total-cleanup':
+        click.echo(
+            f"Failed pipelines to be {click.style('completely', bold=True)} removed:\n"
+            + "\n".join([f'\t{p}' for p in failed_pipeline_files])
+        )
+        click.echo("\nType 'yes' to confirm")
+        confirmation = input('> ')
+        if confirmation == 'yes':
+            for fp in failed_pipeline_files:
+                failures.delete_all_files_from_failed_pipeline(fp)
 
 
 # other commands

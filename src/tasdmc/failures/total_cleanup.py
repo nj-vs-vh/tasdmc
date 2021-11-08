@@ -1,13 +1,7 @@
-"""Module for cleaning up any mess left from runs"""
-
 from pathlib import Path
 import click
 
 from tasdmc import fileio
-
-
-def get_failed_pipeline_files():
-    return list(fileio.pipelines_failed_dir().glob('*.failed'))
 
 
 def delete_all_files_from_failed_pipeline(pipeline_failed_path: Path):

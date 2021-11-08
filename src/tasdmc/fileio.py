@@ -6,7 +6,7 @@ from pathlib import Path
 from functools import lru_cache
 from datetime import datetime
 
-from typing import Optional, List
+from typing import Optional, List, Callable
 
 from tasdmc import config
 
@@ -24,7 +24,7 @@ def run_dir(run_name: Optional[str] = None) -> Path:
     return config.Global.runs_dir / run_name
 
 
-_internal_dir_getters = []
+_internal_dir_getters: List[Callable[[], Path]] = []
 
 
 def internal_dir(fn):
@@ -173,3 +173,11 @@ def get_run_config_path(run_name: str) -> Path:
 
 def get_all_run_names() -> List[str]:
     return [rd.name for rd in config.Global.runs_dir.iterdir()]
+
+
+def get_all_internal_dirs() -> List[Path]:
+    return [idir_getter() for idir_getter in _internal_dir_getters]
+
+
+def get_failed_pipeline_files() -> List[Path]:
+    return list(pipelines_failed_dir().glob('*.failed'))

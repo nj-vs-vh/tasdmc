@@ -133,6 +133,13 @@ tasdmc resources my-run-name -p  # -p merges all previous instances of the run i
 tasdmc inputs my-run-name
 ```
 
+##### `failures` - failures cleanup, inspection and recovery
+
+```bash
+# the most destructive command, just deletes all failed pipelines' stuff
+tasdmc failures total-cleanup my-run-name
+```
+
 #### Other commands
 
 ##### `extract-calibration` - create compressed calibration files
