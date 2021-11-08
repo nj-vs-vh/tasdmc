@@ -6,6 +6,7 @@ from enum import Enum
 from typing import List
 
 from tasdmc import fileio
+from tasdmc.utils import batches
 from tasdmc.pipeline import standard_pipeline_steps
 from tasdmc.config.internal import remove_config_key
 from tasdmc.steps.exceptions import HashComputationFailed, FilesCheckFailed
@@ -28,13 +29,28 @@ status_chars = {
 }
 
 
-def inspect_failed_pipelines(pipeline_failed_files: List[Path]):
-    remove_config_key('debug')  # resetting debug to default to avoid appending to logs
-    for pf in pipeline_failed_files:
-        print_pipeline_steps(pipeline_id=pipeline_id_from_failed_file(pf))
-    click.echo('\n Legend:')
+def _print_legend():
+    click.echo('\nLegend:')
     for char, descr in status_chars.values():
-        click.echo(f"{char} {descr}")
+        click.echo(f"  {char}  {descr}")
+
+
+def inspect_failed_pipelines(pipeline_failed_files: List[Path], prompt_continue_each: int):
+    remove_config_key('debug')  # resetting debug to default to avoid appending to logs
+    if prompt_continue_each == 0:
+        prompt_continue_each = len(pipeline_failed_files)
+        prompt = False
+    else:
+        prompt = True
+    for page in batches(pipeline_failed_files, size=prompt_continue_each):
+        for pf in page:
+            print_pipeline_steps(pipeline_id=pipeline_id_from_failed_file(pf))
+        if prompt:
+            _print_legend()
+            click.echo("\nContinue? [Yes, no]")
+            confirmation = input("> ")
+            if confirmation == 'no':
+                break
 
 
 def print_pipeline_steps(pipeline_id: str):
@@ -70,11 +86,11 @@ def print_pipeline_steps(pipeline_id: str):
         if status is StepStatus.CANT_SKIP:
             if not input_produced:
                 click.echo(
-                    "\t* input files were never produced:\n"
+                    "\t\t* input files were never produced:\n"
                     + "\n".join([f"\t\t{f.relative_to(fileio.run_dir())}" for f in step.input_.must_exist])
                 )
             if input_produced and not input_hash_ok:
                 if hash_computation_fail_msg is None:
-                    click.echo("\t* input files were produced, but their hashes are different from previously saved")
+                    click.echo("\t\t* input files were produced, but their hashes are different from previously saved")
                 else:
-                    click.echo(f"\t* input files hash computation failed with error:\n{hash_computation_fail_msg}")
+                    click.echo(f"\t\t* input files hash computation failed with error:\n{hash_computation_fail_msg}")
