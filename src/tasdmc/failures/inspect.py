@@ -46,10 +46,10 @@ def inspect_failed_pipelines(pipeline_failed_files: List[Path], prompt_continue_
         for pf in page:
             pipeline_id = pipeline_id_from_failed_file(pf)
             click.secho(f"\n{pipeline_id}", bold=True)
-            click.echo('Failure reason:')
-            click.secho(pf.read_text(), dim=True)
-            click.echo('Steps inspection:')
-            print_pipeline_steps(pipeline_id=pipeline_id_from_failed_file(pf))
+            click.echo('\nFailure reason:')
+            click.secho(pf.read_text().strip(), dim=True)
+            click.echo('\nSteps inspection:')
+            inspect_pipeline_steps(pipeline_id)
         if prompt:
             _print_legend()
             click.echo("\nContinue? [Yes, no]")
@@ -58,7 +58,7 @@ def inspect_failed_pipelines(pipeline_failed_files: List[Path], prompt_continue_
                 break
 
 
-def print_pipeline_steps(pipeline_id: str):
+def inspect_pipeline_steps(pipeline_id: str, fix: bool = False):
     pipeline_card_file = fileio.corsika_input_files_dir() / f"{pipeline_id}.in"
     if not pipeline_card_file.exists():
         click.echo("Can't find CORSIKA input card for pipeline!", fg='red', bold=True)
@@ -95,7 +95,19 @@ def print_pipeline_steps(pipeline_id: str):
                 )
             if input_produced and not input_hash_ok:
                 if hash_computation_fail_msg is None:
-                    click.echo("\t\t* input file hashes do not match previously saved")
+                    click.echo("\t\t* input file hashes have changed")
                 else:
                     click.echo(f"\t\t* input file hashes computation failed with error:\n{hash_computation_fail_msg}")
 
+                try:
+                    step.input_.assert_files_are_ready()
+                    click.echo("\t\t* no fixing required, failure may be resolved on the next 'continue'")
+                except FilesCheckFailed:  # input was produced, but is not ready = it was deleted because it is not retained
+                    outputs_to_clean = [s.output for s in step.previous_steps]
+                    if not fix:
+                        click.echo("\t\t* fixes required, pass --fix to clean these outputs:")
+                        click.echo("\n".join([f"\t\t\t{o}" for o in outputs_to_clean]))
+                    else:
+                        for o in outputs_to_clean:
+                            click.echo(f"\t\t* cleaning {o}")
+                            o.clean()

@@ -41,15 +41,18 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
 
     input_: Files
     output: Files
-    previous_step: Optional[FileInFileOutPipelineStep] = None
+    previous_steps: Optional[List[FileInFileOutPipelineStep]] = None
 
     @property
     def pipeline_id(self) -> str:
         """Any string uniquely identifying a pipeline (e.g. DATnnnnnn for standard pipeline).
 
         Must be overriden for the first step in the pipeline."""
-        if self.previous_step is None:
-            raise ValueError(f"No previous step found for {self.__class__.__name__}, can't get pipeline ID")
+        if self.previous_steps is None:
+            raise ValueError(
+                f"No previous step found for {self.__class__.__name__}, can't get pipeline ID; "
+                + "Override pipeline_id property or specify previous steps"
+            )
         else:
             return self.previous_step.pipeline_id
 

@@ -17,19 +17,21 @@ class Files(ABC):
     Subclassed by each step to incapsulate specific behavior and checks.
     """
 
+    def __new__(cls, *args, **kwargs):
+        if not is_dataclass(cls):
+            raise TypeError("All Files subclasses must be dataclasses!")
+        return super(Files, cls).__new__(cls, *args, **kwargs)
+
+    def __str__(self):
+        return self._stored_hash_path.name
+
     @property
     def all_files(self) -> List[Path]:
-        """Simply all files in Files'. Since most subclasses are dataclasses, this can be inferred
+        """All file paths in Files'. Since all subclasses are dataclasses, this can be inferred
         from Path-typed fields automatically.
 
         May be overriden by subclasses.
         """
-        if not is_dataclass(self):
-            raise TypeError(
-                "Cannot automatically infer file paths for non-dataclass Files subclass "
-                + f"{self.__class__.__name__}. Maybe override this property?"
-            )
-
         def is_list_of_paths(t: Any):
             args = get_args(t)
             return get_origin(t) is List and len(args) == 1 and args[0] == Path
@@ -42,6 +44,10 @@ class Files(ABC):
             elif is_list_of_paths(f.type) or f.type == 'List[Path]':
                 all_file_paths.extend(value)
         return all_file_paths
+
+    def clean(self):
+        for f in self.all_files:
+            f.unlink(missing_ok=True)
 
     def total_size(self, units: Literal['b', 'Kb', 'Mb', 'Gb']) -> int:
         """Total Files' size in specified units"""
@@ -92,7 +98,7 @@ class Files(ABC):
             return True
         except FilesCheckFailed as e:
             if _file_checks_log_enabled():
-                file_checks_debug(f"{self._stored_hash_path.name} check failed:\n{e}")
+                file_checks_debug(f"{self} check failed:\n{e}")
             return False
 
     def _check_contents(self):
@@ -157,13 +163,13 @@ class Files(ABC):
         stored_hash_path = self._stored_hash_path
         if not stored_hash_path.exists():
             if _input_hashes_log_enabled():
-                input_hashes_debug(f"{stored_hash_path.name} has no stored hash, comparison FAILED")
+                input_hashes_debug(f"{self} has no stored hash, comparison FAILED")
             return False
         with open(stored_hash_path, 'r') as f:
             stored_hash = f.read()
         if _input_hashes_log_enabled() and self.contents_hash != stored_hash:
             input_hashes_debug(
-                f"{stored_hash_path.name} hash comparison "
+                f"{self} hash comparison "
                 + f"FAILED (actual hash: {self.contents_hash}; stored hash: {stored_hash})"
             )
         return self.contents_hash == stored_hash
@@ -171,6 +177,11 @@ class Files(ABC):
 
 class NotAllRetainedFiles(Files):
     """Subclass of Files for cases when some of the files are not retained (for example, they are too big)"""
+
+    def clean(self):
+        for f in self.all_files:
+            f.unlink(missing_ok=True)
+            _with_deleted_suffix(f).unlink(missing_ok=True)
 
     @property
     def not_retained(self) -> List[Path]:
@@ -229,12 +240,12 @@ class NotAllRetainedFiles(Files):
                     if _file_checks_log_enabled():
                         if f not in self.not_retained:
                             file_checks_debug(
-                                f"{self._stored_hash_path.name} check failed:\n"
+                                f"{self} check failed:\n"
                                 + f"{f.name} is not marked as not retained, but is missing"
                             )
                         elif not _with_deleted_suffix(f).exists():
                             file_checks_debug(
-                                f"{self._stored_hash_path.name} check failed:\n"
+                                f"{self} check failed:\n"
                                 + f"{f.name} is marked as not retained, but {_with_deleted_suffix(f).name} do not exist"
                             )
                     return False
@@ -244,7 +255,7 @@ class NotAllRetainedFiles(Files):
                 self._check_contents()
             except FilesCheckFailed:
                 if _file_checks_log_enabled():
-                    file_checks_debug(f"{self._stored_hash_path.name} check failed: bad contents")
+                    file_checks_debug(f"{self} check failed: bad contents")
                 return False
 
         return True

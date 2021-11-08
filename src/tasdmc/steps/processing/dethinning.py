@@ -75,7 +75,7 @@ class DethinningStep(FileInFileOutPipelineStep):
         particle_files = ParticleFile.from_split_particle_files(particle_file_splitting.output)
         return [
             DethinningStep(
-                input_=pf, output=DethinningOutputFiles.from_particle_file(pf), previous_step=particle_file_splitting
+                input_=pf, output=DethinningOutputFiles.from_particle_file(pf), previous_steps=[particle_file_splitting]
             )
             for pf in particle_files
         ]

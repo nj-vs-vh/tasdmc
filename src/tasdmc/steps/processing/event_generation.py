@@ -106,7 +106,9 @@ class EventsGenerationStep(FileInFileOutPipelineStep):
         cls, c2g_step: Corsika2GeantStep, tothrow_step: TothrowGenerationStep
     ) -> EventsGenerationStep:
         input_ = C2GOutputWithTothrowFiles(c2g_step.output, tothrow_step.output)
-        return EventsGenerationStep(input_=input_, output=EventFiles.from_input(input_), previous_step=tothrow_step)
+        return EventsGenerationStep(
+            input_=input_, output=EventFiles.from_input(input_), previous_steps=[tothrow_step, c2g_step]
+        )
 
     def _run(self):
         set_limits_for_sdmc_spctr()

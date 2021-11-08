@@ -101,7 +101,7 @@ class Corsika2GeantStep(FileInFileOutPipelineStep):
     def from_dethinning_steps(cls, dethinning_steps: List[DethinningStep]) -> Corsika2GeantStep:
         input_ = C2GInputFiles.from_dethinning_outputs([step.output for step in dethinning_steps])
         output = C2GOutputFiles.from_c2g_input_files(input_)
-        return Corsika2GeantStep(input_, output, previous_step=dethinning_steps[0])
+        return Corsika2GeantStep(input_, output, previous_steps=dethinning_steps)
 
     @property
     def description(self) -> str:

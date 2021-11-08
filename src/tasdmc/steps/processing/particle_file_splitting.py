@@ -50,7 +50,7 @@ class ParticleFileSplittingStep(FileInFileOutPipelineStep):
         return ParticleFileSplittingStep(
             input_=corsika_step.output,
             output=SplitParticleFiles.from_corsika_output_files(corsika_step.output),
-            previous_step=corsika_step,
+            previous_steps=[corsika_step],
         )
 
     @property

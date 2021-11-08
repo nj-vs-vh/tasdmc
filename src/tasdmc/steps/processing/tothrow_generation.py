@@ -53,7 +53,7 @@ class TothrowGenerationStep(FileInFileOutPipelineStep):
         return TothrowGenerationStep(
             c2g_step.output,
             TothrowFile.from_corsika2geant_output(c2g_output=c2g_step.output),
-            previous_step=c2g_step,
+            previous_steps=[c2g_step],
         )
 
     def _run(self):
