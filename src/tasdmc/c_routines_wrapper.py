@@ -48,8 +48,9 @@ class Pipes:
         self.stderr.close()
 
 
-def split_thinned_corsika_output(particle_file: Path, n_split: int):
-    _execute_cmd('corsika_split_th.run', [particle_file, n_split])
+def split_thinned_corsika_output(particle_file: Path, n_split: int, stdout_file: Path, stderr_file: Path):
+    with Pipes(stdout_file, stderr_file) as (stdout, stderr):
+        _execute_cmd('corsika_split_th.run', [particle_file, n_split], stdout, stderr)
 
 
 def run_dethinning(particle_file: Path, output_file: Path, stdout_file: Path, stderr_file: Path):
