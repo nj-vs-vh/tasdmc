@@ -22,20 +22,20 @@ class C2GInputFiles(NotAllRetainedFiles):
     corsika_event_name: str  # DATnnnnnn common to all files in list
 
     @property
-    def dethinning_particle_files(self) -> List[Path]:
+    def _dethinned_particle_files(self) -> List[Path]:
         return [do.dethinned_particle for do in self.dethinning_outputs]
 
     @property
     def must_exist(self) -> List[Path]:
-        return self.dethinning_particle_files
+        return self._dethinned_particle_files
 
     @property
     def not_retained(self) -> List[Path]:
-        return self.dethinning_particle_files
+        return self._dethinned_particle_files
 
     def create_listing_file(self):
         with open(self.dethinned_files_listing, 'w') as f:
-            f.writelines([str(pf) + '\n' for pf in self.dethinning_particle_files])
+            f.writelines([f'{pf}\n' for pf in self._dethinned_particle_files])
 
     @classmethod
     def from_dethinning_outputs(cls, dethinning_outputs: List[DethinningOutputFiles]) -> C2GInputFiles:
@@ -53,10 +53,6 @@ class C2GInputFiles(NotAllRetainedFiles):
             dethinning_outputs=dethinning_outputs,
             corsika_event_name=corsika_event_name,
         )
-
-    def _check_contents(self):
-        for do in self.dethinning_outputs:
-            do._check_contents()
 
     @property
     def contents_hash(self) -> str:
@@ -110,7 +106,7 @@ class Corsika2GeantStep(FileInFileOutPipelineStep):
 
     @property
     def description(self) -> str:
-        return f"Tile file generation for {self.input_.corsika_event_name} event"
+        return f"Tile file generation for shower {self.input_.corsika_event_name}"
 
     def _run(self):
         self.input_.create_listing_file()

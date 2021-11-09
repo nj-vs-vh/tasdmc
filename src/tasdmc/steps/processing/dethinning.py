@@ -16,11 +16,10 @@ from .particle_file_splitting import SplitParticleFiles, ParticleFileSplittingSt
 @dataclass
 class SplitParticleFile(NotAllRetainedFiles):
     particle: Path
-    all_split_files: SplitParticleFiles
 
     @property
     def must_exist(self) -> List[Path]:
-        return [self.particle, self.all_split_files]
+        return [self.particle]
 
     @property
     def not_retained(self) -> List[Path]:
@@ -29,9 +28,6 @@ class SplitParticleFile(NotAllRetainedFiles):
     @classmethod
     def from_split_particle_files(cls, spf: SplitParticleFiles) -> List[SplitParticleFile]:
         return [SplitParticleFile(particle=pf, all_split_files=spf) for pf in spf.files]
-
-    def _check_contents(self):
-        self.all_split_files._check_contents()
 
 
 @dataclass

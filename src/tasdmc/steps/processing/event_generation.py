@@ -41,8 +41,6 @@ class C2GOutputWithTothrowFiles(Files):
         return self.c2g_output.must_exist + self.tothrow.must_exist
 
     def _check_contents(self):
-        self.c2g_output._check_contents()
-        self.tothrow._check_contents()
         showlib_file, _ = self.tothrow.get_showlib_and_nparticles()
         if showlib_file != self.c2g_output.tile:
             raise FilesCheckFailed(
