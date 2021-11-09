@@ -9,12 +9,14 @@ from tasdmc.c_routines_wrapper import split_thinned_corsika_output
 
 from tasdmc.steps.base import NotAllRetainedFiles, FileInFileOutPipelineStep
 from .corsika import CorsikaStep, CorsikaOutputFiles
-from tasdmc.steps.utils import check_particle_file_contents
+from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty, check_last_line_contains
 
 
 @dataclass
 class SplitParticleFiles(NotAllRetainedFiles):
     files: List[Path]
+    stderr: Path
+    stdout: Path
 
     @property
     def must_exist(self) -> List[Path]:
@@ -32,6 +34,8 @@ class SplitParticleFiles(NotAllRetainedFiles):
         )
 
     def _check_contents(self):
+        check_file_is_empty(self.stderr)
+        check_last_line_contains(self.stdout, "OK")
         for f in self.files:
             check_particle_file_contents(f)
 

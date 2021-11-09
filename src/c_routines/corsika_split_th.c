@@ -171,8 +171,7 @@ int main(int argc, char *argv[])
 					fclose(fout);
 					if ((fout = fopen(outputFiles[filenum], "wb")) == NULL)
 					{
-						fprintf(stderr, "Cannot open %s file \n",
-								outputFiles[filenum]);
+						fprintf(stderr, "Cannot open %s file \n", outputFiles[filenum]);
 						exit(EXIT_FAILURE);
 					}
 					fwrite(&blockLen, sizeof(int), 1, fout);
@@ -204,5 +203,6 @@ int main(int argc, char *argv[])
 	fclose(fout);
 	fclose(fin);
 
+	fprintf(stdout, "OK");
 	exit(EXIT_SUCCESS);
 }
