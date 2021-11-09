@@ -169,8 +169,8 @@ def inspect_pipeline_steps(pipeline_id: str, fix: bool = False, verbose: bool = 
             def collect_deleted_outputs_to_clean(step: FileInFileOutPipelineStep, recursive: bool = True) -> List[Files]:
                 step_inspection = StepInspectionResult.inspect(step)
                 if not step_inspection.inputs_were_deleted:
-                    return
-                to_clean = []
+                    return []
+                to_clean: List[Files] = []
                 for prev_step in step.previous_steps:
                     to_clean.append(prev_step.output)
                     if recursive:
