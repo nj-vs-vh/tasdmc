@@ -34,7 +34,8 @@ class Files(ABC):
         """
         def is_list_of_paths(t: Any):
             args = get_args(t)
-            return get_origin(t) is List and len(args) == 1 and args[0] == Path
+            origin = get_origin(t)
+            return origin in {List, list} and len(args) == 1 and args[0] == Path
 
         all_file_paths: List[Path] = []
         for f in fields(self):
