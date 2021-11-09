@@ -69,24 +69,34 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
             executor (ProcessPoolExecutor): ProcessPoolExecutor to submit step to
             futures_list (list of Future): list of futures to add this run future result into
         """
-        futures_list.append(executor.submit(self.run, in_executor=True))
+        futures_list.append(executor.submit(self.run))
 
-    def run(self, in_executor: bool = False):
-        if in_executor:
-            sleep(3 * random())  # in hopes of avoiding race condition for simultaneously running steps
-            while not self.input_.files_were_produced() and not pipeline_progress.is_failed(self.pipeline_id):
-                sleep_time = 60  # sec
+    def run(self):
+        sleep(3 * random())  # in hopes of avoiding race condition for simultaneously running steps
+        sleep_time = 60  # sec
+        while True:
+            if pipeline_progress.is_failed(self.pipeline_id):
+                logs.multiprocessing_info(f"Exiting '{self.description}', pipeline marked as failed")
+                return
+            elif not all(previous_step.output.files_were_produced() for previous_step in self.previous_steps):
                 logs.multiprocessing_info(
-                    f"Input files for '{self.description}' were not yet produced, sleeping for {sleep_time} sec"
+                    f"Steps previous to '{self.description}' aren't completed, sleeping for {sleep_time} sec"
                 )
                 sleep(sleep_time)
+            elif not self.input_.files_were_produced():
+                pipeline_progress.mark_failed(
+                    self.pipeline_id,
+                    errmsg=(
+                        f"Pipeline configuration error in {self.__class__.__name__} ({self.input_.contents_hash}):\n\n"
+                        + f"Previous steps' outputs produced:\n"
+                        + "\n".join([f"\t{s.output}" for s in self.previous_steps])
+                        + f"\nBut this step's input is not:\n\t{self.input_}"
+                    ),
+                )
+                return
+            break
 
-        if pipeline_progress.is_failed(self.pipeline_id):
-            logs.multiprocessing_info(f"Not running '{self.description}', pipeline marked as failed")
-            return
-        else:
-            logs.multiprocessing_info(f"Running '{self.description}'")
-
+        logs.multiprocessing_info(f"Entering '{self.description}'")
         try:
             if self.output.files_were_produced() and self.input_.same_hash_as_stored():
                 step_progress.skipped(self)
