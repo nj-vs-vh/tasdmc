@@ -167,5 +167,6 @@ int main(int argc, char *argv[])
         tcount++;
     }
     fclose(fout);
+    fprintf(stdout, "OK");
     exit(EXIT_SUCCESS);
 }
