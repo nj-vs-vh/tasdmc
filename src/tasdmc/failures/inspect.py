@@ -139,6 +139,19 @@ def inspect_pipeline_steps(pipeline_id: str, fix: bool = False, verbose: bool = 
         _echo_indented(f'{step_status.char} {step.description}', indent=1)
         if not verbose:
             continue
+        if step_status in {StepStatus.RERUN_REQUIRED, StepStatus.PREV_STEP_RERUN_REQUIRED}:
+            if not step_inspection.input_hash_ok:
+                if step_inspection.input_hash_errmsg is not None:
+                    _echo_indented("* input hash check failed:", indent=2)
+                    _echo_indented(step_inspection.input_hash_errmsg, indent=3, multiline=True)
+                else:
+                    _echo_indented("* input hash doesn't match saved value", indent=2)
+            if not step_inspection.outputs_were_produced:
+                _echo_indented("* outputs were not produced or didn't pass checks:", indent=2)
+                if step_inspection.output_check_failed_errmsg is not None:
+                    _echo_indented(step_inspection.output_check_failed_errmsg, indent=3, multiline=True)
+                else:
+                    _echo_indented("* no error message available", indent=3)
         if step_status is StepStatus.PREV_STEP_RERUN_REQUIRED:
             outputs_to_clean = [s.output for s in step.previous_steps]
             if not fix:
@@ -149,19 +162,6 @@ def inspect_pipeline_steps(pipeline_id: str, fix: bool = False, verbose: bool = 
                 for o in outputs_to_clean:
                     _echo_indented(f"* cleaning {o}", indent=3)
                     o.clean()
-        if step_status is StepStatus.RERUN_REQUIRED:
-            if not step_inspection.input_hash_ok:
-                if step_inspection.input_hash_errmsg is not None:
-                    _echo_indented("* input hash check failed:", indent=2)
-                    _echo_indented(step_inspection.input_hash_errmsg, indent=3, multiline=True)
-                else:
-                    _echo_indented("* input hash doesn't match with the saved value", indent=2)
-            if not step_inspection.outputs_were_produced:
-                _echo_indented("* outputs were not produced or didn't pass checks:", indent=2)
-                if step_inspection.output_check_failed_errmsg is not None:
-                    _echo_indented(step_inspection.output_check_failed_errmsg, indent=3, multiline=True)
-                else:
-                    _echo_indented("* no error message available", indent=3)
 
 
 def _echo_indented(msg: str, indent: int, multiline: bool = False, **click_secho_kwargs):
