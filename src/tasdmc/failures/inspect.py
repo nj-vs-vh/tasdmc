@@ -165,29 +165,17 @@ def inspect_pipeline_steps(pipeline_id: str, fix: bool = False, verbose: bool = 
                 else:
                     _echo_indented("* no error message available", indent=3)
         if step_status is StepStatus.PREV_STEP_RERUN_REQUIRED:
-
-            def collect_deleted_outputs_to_clean(step: FileInFileOutPipelineStep, recursive: bool = True) -> List[Files]:
-                step_inspection = StepInspectionResult.inspect(step)
-                if step_inspection.status is not StepStatus.PREV_STEP_RERUN_REQUIRED:
-                    return
-                to_clean = []
-                for prev_step in step.previous_steps:
-                    to_clean.append(prev_step.output)
-                    if recursive:
-                        to_clean.extend(collect_deleted_outputs_to_clean(prev_step, recursive=recursive))
-
-            outputs_to_clean = collect_deleted_outputs_to_clean(step)
-
+            files_to_clean = [s.output for s in step.previous_steps]
             if not fix:
                 _echo_indented("* pass --fix to clean following outputs:", indent=2)
-                _echo_indented("\n".join([f"{o}" for o in outputs_to_clean]), indent=3, multiline=True)
+                _echo_indented("\n".join([f"{f}" for f in files_to_clean]), indent=3, multiline=True)
             else:
                 _echo_indented(
                     "* recursively cleaning outputs until they can be reproduced on the next simulation run", indent=2
                 )
-                for o in outputs_to_clean:
-                    _echo_indented(f"* cleaning {o}", indent=3)
-                    o.clean()
+                for f in files_to_clean:
+                    _echo_indented(f"* cleaning {f}", indent=3)
+                    f.clean()
 
 
 def _echo_indented(msg: str, indent: int, multiline: bool = False, **click_secho_kwargs):
