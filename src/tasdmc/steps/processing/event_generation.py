@@ -41,6 +41,8 @@ class C2GOutputWithTothrowFiles(Files):
         return self.c2g_output.must_exist + self.tothrow.must_exist
 
     def _check_contents(self):
+        self.c2g_output._check_contents()
+        self.tothrow._check_contents()
         showlib_file, _ = self.tothrow.get_showlib_and_nparticles()
         if showlib_file != self.c2g_output.tile:
             raise FilesCheckFailed(
@@ -54,36 +56,60 @@ class EventFiles(Files):
     merged_events_file: Path
     stdout: Path
     stderr: Path
-    dst_file_by_epoch: Dict[int, Path]
+    concat_stdout: Path
+    events_file_by_epoch: Dict[int, Path]
+    events_log_by_epoch: Dict[int, Path]
+
     calibration_file_by_epoch: Dict[int, Path]
 
     @property
+    def to_be_hashed(self) -> List[Path]:
+        return [self.merged_events_file, self.stdout, self.stderr]
+
+    @property
     def must_exist(self) -> List[Path]:
-        return [self.stdout, self.stderr, self.merged_events_file]
+        return self.to_be_hashed
+
+    @property
+    def all_files(self) -> List[Path]:
+        return self.to_be_hashed + [
+            *self.events_file_by_epoch.values(),
+            *self.events_log_by_epoch.values(),
+            self.concat_stdout,
+        ]
 
     @classmethod
     def from_input(cls, input_files: C2GOutputWithTothrowFiles) -> EventFiles:
         corsika_event_name = input_files.c2g_output.corsika_event_name
         calibration_by_epoch = _get_calibration_files_by_epoch()
         max_epoch_len = len(str(max(calibration_by_epoch.keys())))
-        dst_file_by_epoch = {}
+        events_file_by_epoch: Dict[int, Path] = {}
+        events_log_by_epoch = {}
         for epoch in calibration_by_epoch.keys():
             epoch_str = format(epoch, f"0{max_epoch_len}d")
-            dst_file_by_epoch[epoch] = fileio.events_dir() / f'{corsika_event_name}_epoch{epoch_str}.dst.gz'
+            events_file_by_epoch[epoch] = fileio.events_dir() / f'{corsika_event_name}_epoch{epoch_str}.dst.gz'
+        events_log_by_epoch = {k: Path(str(v)) + '.log' for k, v in events_file_by_epoch.items()}
         return EventFiles(
             merged_events_file=fileio.events_dir() / f'{corsika_event_name}.dst.gz',
             stdout=fileio.events_dir() / f'{corsika_event_name}.events.stdout',
             stderr=fileio.events_dir() / f'{corsika_event_name}.events.stderr',
-            dst_file_by_epoch=dst_file_by_epoch,
+            events_file_by_epoch=events_file_by_epoch,
+            events_log_by_epoch=events_log_by_epoch,
             calibration_file_by_epoch=calibration_by_epoch,
         )
 
     def prepare_for_step_run(self):
         self.stderr.unlink(missing_ok=True)  # it may not be created in _run but left from previous runs
 
-    def iterate_epochs_files(self) -> Iterable[Tuple[int, Path, Path]]:
+    def per_epoch_files(self) -> Iterable[Tuple[int, Path, Path, Path]]:
+        """epoch number, events file, log file, calibration file"""
         return (
-            (epoch, self.dst_file_by_epoch[epoch], self.calibration_file_by_epoch[epoch])
+            (
+                epoch,
+                self.events_file_by_epoch[epoch],
+                self.events_log_by_epoch[epoch],
+                self.calibration_file_by_epoch[epoch],
+            )
             for epoch in sorted(self.calibration_file_by_epoch.keys())
         )
 
@@ -122,8 +148,7 @@ class EventsGenerationStep(FileInFileOutPipelineStep):
 
         # generating event file for each epoch
         events_thrown_by_file = dict()
-        for epoch, epoch_events_file, sdcalib_file in self.output.iterate_epochs_files():
-            epoch_log_file = Path(str(epoch_events_file) + '.log')
+        for epoch, epoch_events_file, epoch_log_file, sdcalib_file in self.output.per_epoch_files():
             if epoch_log_file.exists() and epoch_events_file.exists() and check_dst_file_not_empty(epoch_events_file):
                 stdout.write(f'Events for epoch {epoch} ({sdcalib_file.name}) were already generated\n')
             else:
@@ -173,30 +198,30 @@ class EventsGenerationStep(FileInFileOutPipelineStep):
                 epoch_events_file_stem = epoch_events_file.name.split('.')[0]
                 epoch_events_file_unsorted = epoch_events_file.parent / (epoch_events_file_stem + '_unsorted.dst.gz')
                 epoch_events_file.rename(epoch_events_file_unsorted)
-                if run_sdmc_tsort(epoch_events_file_unsorted, epoch_events_file, epoch_log_file, epoch_log_file):
-                    epoch_events_file_unsorted.unlink()
-                else:
+                sorting_success = run_sdmc_tsort(
+                    epoch_events_file_unsorted, epoch_events_file, epoch_log_file, epoch_log_file
+                )
+                epoch_events_file_unsorted.unlink(missing_ok=True)
+                if not sorting_success:
                     stderr.write(
                         f'Time-sorting of events in {epoch_events_file.name} failed, see details in {epoch_log_file}\n'
                     )
-                    epoch_events_file_unsorted.unlink(missing_ok=True)
                     epoch_events_file.unlink(missing_ok=True)
-                    continue
 
         # if events for all epochs were generated, merge them into one final file
-        if not all(epoch_events_file.exists() for _, epoch_events_file, _ in self.output.iterate_epochs_files()):
+        if not all(epoch_events_file.exists() for _, epoch_events_file, *_ in self.output.per_epoch_files()):
             stderr.write('Some epoch events were not generated\n')
         else:
             epoch_event_files_to_merge = [
                 epoch_events_file
-                for _, epoch_events_file, _ in self.output.iterate_epochs_files()
+                for _, epoch_events_file, *_ in self.output.per_epoch_files()
                 if events_thrown_by_file[epoch_events_file] > 0
             ]
             concatenate_log = Path(str(self.output.merged_events_file) + '.log')
             concatenate_dst_files(
                 epoch_event_files_to_merge, self.output.merged_events_file, concatenate_log, concatenate_log
             )
-            for _, epoch_events_file, _ in self.output.iterate_epochs_files():
+            for _, epoch_events_file, *_ in self.output.per_epoch_files():
                 epoch_events_file.unlink()
             stdout.write("\nOK\n")
 
