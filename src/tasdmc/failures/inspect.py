@@ -175,6 +175,7 @@ def inspect_pipeline_steps(pipeline_id: str, fix: bool = False, verbose: bool = 
                     to_clean.append(prev_step.output)
                     if recursive:
                         to_clean.extend(collect_deleted_outputs_to_clean(prev_step, recursive=recursive))
+                return to_clean
 
             files_to_clean = collect_deleted_outputs_to_clean(step)
             if not fix:
