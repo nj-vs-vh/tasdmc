@@ -182,16 +182,19 @@ failures_cmd_actions = ['total-cleanup', 'inspect']
     "failures",
     help="Failure management for run NAME. ACTIONs: " + ', '.join(failures_cmd_actions),
 )
-@click.option("-p", "--page", "pagesize", default=3, help="Pagination for 'inspect', or 0 for no pagination")
-@click.option("--fix", "fix", is_flag=True, default=False, help="Specify to attempt broken step fixing")
+@click.option(
+    "-v", "--verbose", "verbose", is_flag=True, default=False, help="Print verbose information about failed steps"
+)
+@click.option("-p", "--page", "pagesize", default=0, help="Pagination for 'inspect' or 0 for no pagination (default)")
+@click.option("--fix", "fix", is_flag=True, default=False, help="Attempt to fix broken steps")
 @click.argument(
     'action', type=click.STRING, shell_complete=lambda *p: [a for a in failures_cmd_actions if a.startswith(p[2])]
 )
 @_run_name_argument('name')
-def failures_cmd(name: str, action: str, pagesize: int, fix: bool):
+def failures_cmd(name: str, action: str, pagesize: int, fix: bool, verbose: bool):
     if action not in failures_cmd_actions:
         click.echo(
-            f"Unknown action '{action}'. Available actions are:\n" + '\n'.join([f'\t{a}' for a in failures_cmd_actions])
+            f"Unknown action '{action}'. Available actions:\n" + '\n'.join([f'\t{a}' for a in failures_cmd_actions])
         )
         return
     if not _load_config_by_run_name(name):
@@ -213,7 +216,7 @@ def failures_cmd(name: str, action: str, pagesize: int, fix: bool):
             for pf in pipeline_failed_files:
                 failures.delete_all_files_from_failed_pipeline(pf)
     elif action == 'inspect':
-        failures.inspect_failed_pipelines(pipeline_failed_files, prompt_continue_each=pagesize, fix=fix)
+        failures.inspect_failed_pipelines(pipeline_failed_files, page_size=pagesize, fix=fix, verbose=verbose)
 
 
 # other commands
