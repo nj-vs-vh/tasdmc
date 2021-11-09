@@ -118,7 +118,7 @@ def inspect_failed_pipelines(pipeline_failed_files: List[Path], page_size: int, 
             click.echo('\nFailure reason:')
             click.secho(pf.read_text().strip(), dim=True)
             click.echo('\nSteps inspection:')
-            inspect_pipeline_steps(pipeline_id, fix=fix)
+            inspect_pipeline_steps(pipeline_id, fix=fix, verbose=verbose)
         if prompt:
             _print_legend()
             click.echo("\nContinue? [Yes, no]")
