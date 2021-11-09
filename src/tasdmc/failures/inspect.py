@@ -6,7 +6,7 @@ import traceback
 from enum import Enum
 from dataclasses import dataclass
 
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, ClassVar, Dict
 
 from tasdmc import fileio
 from tasdmc.utils import batches
@@ -45,6 +45,12 @@ class StepInspectionResult:
     input_hash_ok: bool
     input_hash_errmsg: Optional[str]
 
+    cached: ClassVar[Dict[str, StepInspectionResult]] = dict()
+
+    @classmethod
+    def drop_cache(cls):
+        cls.cached.clear()
+
     @property
     def status(self) -> StepStatus:
         if not self.inputs_were_produced:
@@ -72,9 +78,11 @@ class StepInspectionResult:
 
     @classmethod
     def inspect(cls, step: FileInFileOutPipelineStep) -> StepInspectionResult:
+        if str(step) in cls.cached:
+            return cls.cached[str(step)]
+
         inputs_produced, inputs_deleted, inputs_check_failed_errmsg = cls.files_produced_deleted_errmsg(step.input_)
         outputs_produced, outputs_deleted, outputs_check_failed_errmsg = cls.files_produced_deleted_errmsg(step.output)
-
         try:
             input_hash_ok = step.input_.same_hash_as_stored()
             hash_computation_fail_msg = None
@@ -82,7 +90,7 @@ class StepInspectionResult:
             input_hash_ok = False
             hash_computation_fail_msg = traceback.format_exc()
 
-        return StepInspectionResult(
+        result = StepInspectionResult(
             inputs_were_produced=inputs_produced,
             inputs_were_deleted=inputs_deleted,
             input_check_failed_errmsg=inputs_check_failed_errmsg,
@@ -92,6 +100,8 @@ class StepInspectionResult:
             input_hash_ok=input_hash_ok,
             input_hash_errmsg=hash_computation_fail_msg,
         )
+        cls.cached[str(step)] = result
+        return result
 
 
 def _print_legend():
@@ -128,6 +138,8 @@ def inspect_failed_pipelines(pipeline_failed_files: List[Path], page_size: int, 
 
 
 def inspect_pipeline_steps(pipeline_id: str, fix: bool = False, verbose: bool = False):
+    StepInspectionResult.drop_cache()
+
     pipeline_card_file = fileio.corsika_input_files_dir() / f"{pipeline_id}.in"
     if not pipeline_card_file.exists():
         click.echo("Can't find CORSIKA input card for pipeline!", fg='red', bold=True)
@@ -153,12 +165,26 @@ def inspect_pipeline_steps(pipeline_id: str, fix: bool = False, verbose: bool = 
                 else:
                     _echo_indented("* no error message available", indent=3)
         if step_status is StepStatus.PREV_STEP_RERUN_REQUIRED:
-            outputs_to_clean = [s.output for s in step.previous_steps]
+
+            def collect_deleted_outputs_to_clean(step: FileInFileOutPipelineStep, recursive: bool = True) -> List[Files]:
+                step_inspection = StepInspectionResult.inspect(step)
+                if step_inspection.status is not StepStatus.PREV_STEP_RERUN_REQUIRED:
+                    return
+                to_clean = []
+                for prev_step in step.previous_steps:
+                    to_clean.append(prev_step.output)
+                    if recursive:
+                        to_clean.extend(collect_deleted_outputs_to_clean(prev_step, recursive=recursive))
+
+            outputs_to_clean = collect_deleted_outputs_to_clean(step)
+
             if not fix:
                 _echo_indented("* pass --fix to clean following outputs:", indent=2)
                 _echo_indented("\n".join([f"{o}" for o in outputs_to_clean]), indent=3, multiline=True)
             else:
-                _echo_indented("* cleaning outputs", indent=2)
+                _echo_indented(
+                    "* recursively cleaning outputs until they can be reproduced on the next simulation run", indent=2
+                )
                 for o in outputs_to_clean:
                     _echo_indented(f"* cleaning {o}", indent=3)
                     o.clean()
