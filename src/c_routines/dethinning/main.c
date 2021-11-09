@@ -350,6 +350,7 @@ int main(int argc, char *argv[])
 					fprintf(stdout, "read %d blocks\n", nBlock);
 					fprintf(stdout, "RUNH: %d, EVTH: %d, PARTSUB: %d, LONG: %d, EVTE: %d, RUNE: %d\n",
 							nRUNH, nEVTH, nPARTSUB, nLONG, nEVTE, nRUNE);
+					fprintf(stdout, "OK");
 				}
 				exit(EXIT_SUCCESS);
 			}

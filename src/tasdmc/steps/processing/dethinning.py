@@ -14,23 +14,24 @@ from .particle_file_splitting import SplitParticleFiles, ParticleFileSplittingSt
 
 
 @dataclass
-class ParticleFile(NotAllRetainedFiles):
+class SplitParticleFile(NotAllRetainedFiles):
     particle: Path
+    all_split_files: SplitParticleFiles
 
     @property
     def must_exist(self) -> List[Path]:
-        return [self.particle]
+        return [self.particle, self.all_split_files]
 
     @property
     def not_retained(self) -> List[Path]:
         return [self.particle]
 
     @classmethod
-    def from_split_particle_files(cls, spf: SplitParticleFiles) -> List[ParticleFile]:
-        return [cls(file) for file in spf.files]
+    def from_split_particle_files(cls, spf: SplitParticleFiles) -> List[SplitParticleFile]:
+        return [SplitParticleFile(particle=pf, all_split_files=spf) for pf in spf.files]
 
     def _check_contents(self):
-        check_particle_file_contents(self.particle)
+        self.all_split_files._check_contents()
 
 
 @dataclass
@@ -48,7 +49,7 @@ class DethinningOutputFiles(NotAllRetainedFiles):
         return [self.dethinned_particle]
 
     @classmethod
-    def from_particle_file(cls, pf: ParticleFile) -> DethinningOutputFiles:
+    def from_particle_file(cls, pf: SplitParticleFile) -> DethinningOutputFiles:
         dethinning_dir = fileio.dethinning_output_files_dir()
         particle_file_name = pf.particle.name
         return cls(
@@ -59,20 +60,20 @@ class DethinningOutputFiles(NotAllRetainedFiles):
 
     def _check_contents(self):
         check_file_is_empty(self.stderr)
-        check_last_line_contains(self.stdout, 'RUNH: 1')
+        check_last_line_contains(self.stdout, 'OK')
         check_particle_file_contents(self.dethinned_particle)
 
 
 @dataclass
 class DethinningStep(FileInFileOutPipelineStep):
-    input_: ParticleFile
+    input_: SplitParticleFile
     output: DethinningOutputFiles
 
     @classmethod
     def from_particle_file_splitting_step(
         cls, particle_file_splitting: ParticleFileSplittingStep
     ) -> List[DethinningStep]:
-        particle_files = ParticleFile.from_split_particle_files(particle_file_splitting.output)
+        particle_files = SplitParticleFile.from_split_particle_files(particle_file_splitting.output)
         return [
             DethinningStep(
                 input_=pf, output=DethinningOutputFiles.from_particle_file(pf), previous_steps=[particle_file_splitting]
