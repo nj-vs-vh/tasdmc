@@ -58,17 +58,16 @@ class StepInspectionResult:
 
     @staticmethod
     def files_produced_deleted_errmsg(files: Files) -> Tuple[bool, bool, Optional[str]]:
+        check_failed_errmsg = None
+        produced = False
+        deleted = False
         if files.files_were_produced():
             produced = True
             try:
                 files.assert_files_are_ready()
-                deleted = False
-                check_failed_errmsg = None
             except FilesCheckFailed:
                 deleted = True
                 check_failed_errmsg = traceback.format_exc()
-        else:
-            produced, deleted = False, False
         return produced, deleted, check_failed_errmsg
 
     @classmethod
