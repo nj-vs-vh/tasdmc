@@ -165,7 +165,18 @@ def inspect_pipeline_steps(pipeline_id: str, fix: bool = False, verbose: bool = 
                 else:
                     _echo_indented("* no error message available", indent=3)
         if step_status is StepStatus.PREV_STEP_RERUN_REQUIRED:
-            files_to_clean = [s.output for s in step.previous_steps]
+
+            def collect_deleted_outputs_to_clean(step: FileInFileOutPipelineStep, recursive: bool = True) -> List[Files]:
+                step_inspection = StepInspectionResult.inspect(step)
+                if not step_inspection.inputs_were_deleted:
+                    return
+                to_clean = []
+                for prev_step in step.previous_steps:
+                    to_clean.append(prev_step.output)
+                    if recursive:
+                        to_clean.extend(collect_deleted_outputs_to_clean(prev_step, recursive=recursive))
+
+            files_to_clean = collect_deleted_outputs_to_clean(step)
             if not fix:
                 _echo_indented("* pass --fix to clean following outputs:", indent=2)
                 _echo_indented("\n".join([f"{f}" for f in files_to_clean]), indent=3, multiline=True)
