@@ -91,14 +91,15 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
             if self.output.files_were_produced() and self.input_.same_hash_as_stored():
                 step_progress.skipped(self)
             else:
+                step_progress.started(self)
                 self.input_.assert_files_are_ready()
                 self.output.prepare_for_step_run()
-                step_progress.started(self)
-                self._run()
-                self.output.assert_files_are_ready()
                 self.input_.store_contents_hash()
-                step_progress.completed(self, output_size_mb=self.output.total_size('Mb'))
+                self._run()
+                assert self.input_.same_hash_as_stored(), "Input hash changed while step was running"
+                self.output.assert_files_are_ready()
                 self._post_run()
+                step_progress.completed(self, output_size_mb=self.output.total_size('Mb'))
         except Exception as e:
             step_progress.failed(self, errmsg=str(e))
             pipeline_progress.mark_failed(
