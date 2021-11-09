@@ -27,7 +27,7 @@ class SplitParticleFile(NotAllRetainedFiles):
 
     @classmethod
     def from_split_particle_files(cls, spf: SplitParticleFiles) -> List[SplitParticleFile]:
-        return [SplitParticleFile(particle=pf, all_split_files=spf) for pf in spf.files]
+        return [SplitParticleFile(pf) for pf in spf.files]
 
 
 @dataclass

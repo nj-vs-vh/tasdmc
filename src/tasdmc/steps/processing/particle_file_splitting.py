@@ -29,8 +29,10 @@ class SplitParticleFiles(NotAllRetainedFiles):
     @classmethod
     def from_corsika_output_files(cls, cof: CorsikaOutputFiles) -> SplitParticleFiles:
         n_split = _n_split_from_config()
-        return cls(  # in sync with how these names are generated in C routine
-            [cof.particle.with_suffix(f'.p{i+1:02d}') for i in range(n_split)]
+        return SplitParticleFiles(  # in sync with how these names are generated in C routine
+            files=[cof.particle.with_suffix(f'.p{i+1:02d}') for i in range(n_split)],
+            stdout=cof.particle.with_suffix(".split.stdout"),
+            stderr=cof.particle.with_suffix(".split.stderr"),
         )
 
     def _check_contents(self):
@@ -62,7 +64,7 @@ class ParticleFileSplittingStep(FileInFileOutPipelineStep):
         return f"Splitting CORSIKA particle file {self.input_.particle.name} into {self.split_to} parts"
 
     def _run(self):
-        split_thinned_corsika_output(self.input_.particle, self.split_to)
+        split_thinned_corsika_output(self.input_.particle, self.split_to, self.output.stdout, self.output.stderr)
 
     @classmethod
     def validate_config(self):

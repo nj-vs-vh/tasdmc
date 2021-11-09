@@ -54,7 +54,7 @@ class EventFiles(Files):
     merged_events_file: Path
     stdout: Path
     stderr: Path
-    concat_stdout: Path
+    concat_log: Path
     events_file_by_epoch: Dict[int, Path]
     events_log_by_epoch: Dict[int, Path]
 
@@ -73,7 +73,7 @@ class EventFiles(Files):
         return self.to_be_hashed + [
             *self.events_file_by_epoch.values(),
             *self.events_log_by_epoch.values(),
-            self.concat_stdout,
+            self.concat_log,
         ]
 
     @classmethod
@@ -86,11 +86,12 @@ class EventFiles(Files):
         for epoch in calibration_by_epoch.keys():
             epoch_str = format(epoch, f"0{max_epoch_len}d")
             events_file_by_epoch[epoch] = fileio.events_dir() / f'{corsika_event_name}_epoch{epoch_str}.dst.gz'
-        events_log_by_epoch = {k: Path(str(v)) + '.log' for k, v in events_file_by_epoch.items()}
+        events_log_by_epoch = {k: Path(str(v) + '.log') for k, v in events_file_by_epoch.items()}
         return EventFiles(
             merged_events_file=fileio.events_dir() / f'{corsika_event_name}.dst.gz',
-            stdout=fileio.events_dir() / f'{corsika_event_name}.events.stdout',
-            stderr=fileio.events_dir() / f'{corsika_event_name}.events.stderr',
+            stdout=fileio.events_dir() / f'{corsika_event_name}.evgen.stdout',
+            stderr=fileio.events_dir() / f'{corsika_event_name}.evgen.stderr',
+            concat_log=fileio.events_dir() / f'{corsika_event_name}.dstconcat.stderr',
             events_file_by_epoch=events_file_by_epoch,
             events_log_by_epoch=events_log_by_epoch,
             calibration_file_by_epoch=calibration_by_epoch,
@@ -123,7 +124,7 @@ class EventsGenerationStep(FileInFileOutPipelineStep):
 
     @property
     def description(self) -> str:
-        return f"Throwing CORSIKA events on SD grid for {self.input_.c2g_output.corsika_event_name}"
+        return f"Throwing CORSIKA shower {self.input_.c2g_output.corsika_event_name} on SD grid to produce MC events"
 
     @classmethod
     def from_corsika2geant_with_tothrow(
@@ -215,9 +216,11 @@ class EventsGenerationStep(FileInFileOutPipelineStep):
                 for _, epoch_events_file, *_ in self.output.per_epoch_files()
                 if events_thrown_by_file[epoch_events_file] > 0
             ]
-            concatenate_log = Path(str(self.output.merged_events_file) + '.log')
             concatenate_dst_files(
-                epoch_event_files_to_merge, self.output.merged_events_file, concatenate_log, concatenate_log
+                epoch_event_files_to_merge,
+                self.output.merged_events_file,
+                self.output.concat_log,
+                self.output.concat_log,
             )
             for _, epoch_events_file, *_ in self.output.per_epoch_files():
                 epoch_events_file.unlink()

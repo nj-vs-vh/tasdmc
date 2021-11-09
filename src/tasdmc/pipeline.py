@@ -58,7 +58,7 @@ def standard_pipeline_steps(
 
 def with_pipelines_mask(steps: List[FileInFileOutPipelineStep]) -> List[FileInFileOutPipelineStep]:
     pipelines_mask: List[str] = config.get_key('debug.pipelines_mask', default=False)
-    if pipelines_mask is False:
+    if not pipelines_mask:
         return steps
     else:
         return [s for s in steps if s.pipeline_id in pipelines_mask]

@@ -52,7 +52,7 @@ class CorsikaOutputFiles(Files):
 
     def _check_contents(self):
         check_file_is_empty(
-            self.stderr, ignore_strings=['Note: The following floating-point exceptions are signalling']
+            self.stderr, ignore_patterns=[r'Note: The following floating-point exceptions are signalling.*']
         )
         MIN_CORSIKA_LONG_FILE_LINE_COUNT = 1500
         with open(self.longtitude, 'r') as longfile:

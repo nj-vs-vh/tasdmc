@@ -48,7 +48,7 @@ class SpectralSamplingStep(FileInFileOutPipelineStep):
 
     @property
     def description(self) -> str:
-        return f"Spectral sampling {self.input_.merged_events_file.name}"
+        return f"Spectral sampling events from {self.input_.merged_events_file.name}"
 
     @classmethod
     def from_events_generation(cls, events_generation_step: EventsGenerationStep) -> SpectralSamplingStep:

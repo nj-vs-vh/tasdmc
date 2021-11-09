@@ -78,6 +78,8 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
             if pipeline_progress.is_failed(self.pipeline_id):
                 logs.multiprocessing_info(f"Exiting '{self.description}', pipeline marked as failed")
                 return
+            elif self.previous_steps is None:  # first step in a pipeline
+                break
             elif not all(previous_step.output.files_were_produced() for previous_step in self.previous_steps):
                 logs.multiprocessing_info(
                     f"Steps previous to '{self.description}' aren't completed, sleeping for {sleep_time} sec"
@@ -94,7 +96,8 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
                     ),
                 )
                 return
-            break
+            else:
+                break
 
         logs.multiprocessing_info(f"Entering '{self.description}'")
         try:

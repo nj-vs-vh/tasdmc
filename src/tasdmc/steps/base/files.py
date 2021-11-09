@@ -58,7 +58,7 @@ class Files(ABC):
             'Mb': 1024 ** 2,
             'Gb': 1024 ** 3,
         }
-        return sum([f.stat().st_size / size_by_unit[units] for f in self.all_files])
+        return sum([f.stat().st_size / size_by_unit[units] for f in self.all_files if f.exists()])
 
     def prepare_for_step_run(self):
         """Ensure that Files are ready to be created from scratch in a step.run(). For example, delete existing
@@ -242,21 +242,21 @@ class NotAllRetainedFiles(Files):
                         if f not in self.not_retained:
                             file_checks_debug(
                                 f"{self} check failed:\n"
-                                + f"{f.name} is not marked as not retained, but is missing"
+                                + f"{f.name} is missing not marked as not retained"
                             )
                         elif not _with_deleted_suffix(f).exists():
                             file_checks_debug(
                                 f"{self} check failed:\n"
-                                + f"{f.name} is marked as not retained, but {_with_deleted_suffix(f).name} do not exist"
+                                + f"{f.name} and {_with_deleted_suffix(f).name} are missing"
                             )
                     return False
 
         if try_checking_contents:
             try:
                 self._check_contents()
-            except FilesCheckFailed:
+            except FilesCheckFailed as e:
                 if _file_checks_log_enabled():
-                    file_checks_debug(f"{self} check failed: bad contents")
+                    file_checks_debug(f"{self} check failed: bad contents:\n{e}")
                 return False
 
         return True

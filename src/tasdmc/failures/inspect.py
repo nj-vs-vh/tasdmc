@@ -129,8 +129,8 @@ def inspect_failed_pipelines(pipeline_failed_files: List[Path], page_size: int, 
             click.secho(pf.read_text().strip(), dim=True)
             click.echo('\nSteps inspection:')
             inspect_pipeline_steps(pipeline_id, fix=fix, verbose=verbose)
+        _print_legend()
         if prompt:
-            _print_legend()
             click.echo("\nContinue? [Yes, no]")
             confirmation = input("> ")
             if confirmation == 'no':
@@ -168,7 +168,7 @@ def inspect_pipeline_steps(pipeline_id: str, fix: bool = False, verbose: bool = 
 
             def collect_deleted_outputs_to_clean(step: FileInFileOutPipelineStep, recursive: bool = True) -> List[Files]:
                 step_inspection = StepInspectionResult.inspect(step)
-                if not step_inspection.inputs_were_deleted:
+                if not step_inspection.inputs_were_deleted or step.previous_steps is None:
                     return []
                 to_clean: List[Files] = []
                 for prev_step in step.previous_steps:
