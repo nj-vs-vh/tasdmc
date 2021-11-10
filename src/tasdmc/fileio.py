@@ -179,5 +179,21 @@ def get_all_internal_dirs() -> List[Path]:
     return [idir_getter() for idir_getter in _internal_dir_getters]
 
 
-def get_failed_pipeline_files() -> List[Path]:
+# NOTE: THESE METHOD RELY ON HEURISTICS AND NAMING CONVENTIONS AND MAY
+# BREAK IF STEPS ARE RECONFIGURED IN A NON-STANDARD WAY
+
+
+def _all_failed_pipeline_files() -> List[Path]:
     return list(pipelines_failed_dir().glob('*.failed'))
+
+
+def _pipeline_id_from_file(file: Path) -> str:
+    return file.name.split('.')[0].split('_')[0]
+
+
+def get_failed_pipeline_ids() -> List[str]:
+    return [_pipeline_id_from_file(f) for f in _all_failed_pipeline_files()]
+
+
+def get_all_pipeline_ids() -> List[str]:
+    return [_pipeline_id_from_file(f) for f in corsika_input_files_dir().glob("*.in")]

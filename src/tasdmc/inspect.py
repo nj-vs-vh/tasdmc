@@ -13,8 +13,6 @@ from tasdmc.utils import batches
 from tasdmc.pipeline import standard_pipeline_steps
 from tasdmc.config.internal import remove_config_key
 from tasdmc.steps.exceptions import HashComputationFailed, FilesCheckFailed
-from tasdmc.steps.utils import passed
-from .utils import pipeline_id_from_failed_file
 
 from tasdmc.steps.base import Files, FileInFileOutPipelineStep
 
@@ -110,34 +108,37 @@ def _print_legend():
         click.echo(f"  {s.char}  {s.description}")
 
 
-def inspect_failed_pipelines(pipeline_failed_files: List[Path], page_size: int, fix: bool, verbose: bool):
+def inspect_and_fix_failed(failed_pipeline_ids: List[str]):
+    inspect_pipelines(failed_pipeline_ids, page_size=0, verbose=True, fix=True)
+
+
+def inspect_pipelines(pipeline_ids: List[str], page_size: int, verbose: bool, fix: bool = False):
     remove_config_key('debug')  # resetting debug to default to avoid appending to logs
-    if page_size == 0:
-        page_size = len(pipeline_failed_files)
+    if page_size <= 0:
+        page_size = len(pipeline_ids)
         prompt = False
     else:
-        prompt = page_size < len(pipeline_failed_files)
-    for page_num, page in enumerate(batches(pipeline_failed_files, size=page_size)):
-        click.echo(
-            f"Failed pipelines {((1 + page_num) - 1) * page_size} - {(1 + page_num) * page_size - 1} "
-            + f"(of {len(pipeline_failed_files)})"
-        )
-        for pf in page:
-            pipeline_id = pipeline_id_from_failed_file(pf)
+        prompt = page_size < len(pipeline_ids)
+    for page_num, page in enumerate(batches(pipeline_ids, size=page_size)):
+        i_start = ((1 + page_num) - 1) * page_size + 1
+        i_end = (1 + page_num) * page_size
+        click.echo(f"Inspecting pipelines {i_start} - {i_end} (of {len(pipeline_ids)})")
+        for pipeline_id in page:
             click.secho(f"\n{pipeline_id}", bold=True)
-            click.echo('\nFailure reason:')
-            click.secho(pf.read_text().strip(), dim=True)
-            click.echo('\nSteps inspection:')
-            inspect_pipeline_steps(pipeline_id, fix=fix, verbose=verbose)
+            if fileio.pipeline_failed_file(pipeline_ids).exists():    
+                click.echo('Failure reason:')
+                click.secho(fileio.pipeline_failed_file(pipeline_ids).read_text().strip(), dim=True)
+            click.echo('Steps inspection:')
+            _inspect_pipeline_steps(pipeline_id, fix=fix, verbose=verbose)
         _print_legend()
-        if prompt:
+        if prompt and i_end < len(pipeline_ids):
             click.echo("\nContinue? [Yes, no]")
             confirmation = input("> ")
             if confirmation == 'no':
                 break
 
 
-def inspect_pipeline_steps(pipeline_id: str, fix: bool = False, verbose: bool = False):
+def _inspect_pipeline_steps(pipeline_id: str, fix: bool = False, verbose: bool = False):
     StepInspectionResult.drop_cache()
 
     pipeline_card_file = fileio.corsika_input_files_dir() / f"{pipeline_id}.in"

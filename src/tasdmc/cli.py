@@ -7,7 +7,7 @@ try:
     from gdown.cached_download import assert_md5sum
 
     from tasdmc import __version__
-    from tasdmc import config, fileio, system, pipeline, failures, extract_calibration
+    from tasdmc import config, fileio, system, pipeline, inspect, extract_calibration, hard_cleanup
     from tasdmc.logs import display as display_logs
     from tasdmc.config.actions import update_config, view_config
 except ModuleNotFoundError:
@@ -175,48 +175,32 @@ def system_resources(name: str, include_previous_runs: bool, absolute_datetime: 
     )
 
 
-failures_cmd_actions = ['total-cleanup', 'inspect']
-
-
-@cli.command(
-    "failures",
-    help="Failure management for run NAME. ACTIONs: " + ', '.join(failures_cmd_actions),
-)
-@click.option(
-    "-v", "--verbose", "verbose", is_flag=True, default=False, help="Print verbose information about failed steps"
-)
-@click.option("-p", "--page", "pagesize", default=0, help="Pagination for 'inspect' or 0 for no pagination (default)")
-@click.option("--fix", "fix", is_flag=True, default=False, help="Attempt to fix broken steps")
-@click.argument(
-    'action', type=click.STRING, shell_complete=lambda *p: [a for a in failures_cmd_actions if a.startswith(p[2])]
-)
+@cli.command("fix-failed", help="Fix failed pipelines")
+@click.option("--hard", is_flag=True, default=False, help="If specified, removes all failed pipeline files entirely")
 @_run_name_argument('name')
-def failures_cmd(name: str, action: str, pagesize: int, fix: bool, verbose: bool):
-    if action not in failures_cmd_actions:
-        click.echo(
-            f"Unknown action '{action}'. Available actions:\n" + '\n'.join([f'\t{a}' for a in failures_cmd_actions])
-        )
-        return
+def fix_failed_pipelines(name: str, hard: bool):
     if not _load_config_by_run_name(name):
         return
-
-    pipeline_failed_files = fileio.get_failed_pipeline_files()
-    if not pipeline_failed_files:
-        click.echo("No failed pipelines found")
+    failed_pipeline_ids = fileio.get_failed_pipeline_ids()
+    if not failed_pipeline_ids:
+        click.echo("No failed pipelines to fix")
         return
+    if hard:
+        hard_cleanup.delete_all_pipelines(failed_pipeline_ids)
+    else:
+        inspect.inspect_and_fix_failed(failed_pipeline_ids)
 
-    if action == 'total-cleanup':
-        click.echo(
-            f"Failed pipelines to be {click.style('completely', bold=True)} removed:\n"
-            + "\n".join([f'\t{p.name}' for p in pipeline_failed_files])
-        )
-        click.echo("\nType 'yes' to confirm")
-        confirmation = input('> ')
-        if confirmation == 'yes':
-            for pf in pipeline_failed_files:
-                failures.delete_all_files_from_failed_pipeline(pf)
-    elif action == 'inspect':
-        failures.inspect_failed_pipelines(pipeline_failed_files, page_size=pagesize, fix=fix, verbose=verbose)
+
+@cli.command("inspect", help="Inspect pipelines step-by-step")
+@click.option("-v", "--verbose", is_flag=True, default=False, help="Print verbose information about steps")
+@click.option("-p", "--page", "pagesize", default=0, help="Page size or 0 for no pagination (default)")
+@click.option("-f", "--failures", is_flag=True, default=False, help="Inspect only failed pipelines")
+@_run_name_argument('name')
+def failures_cmd(name: str, pagesize: int, verbose: bool, failures: bool):
+    if not _load_config_by_run_name(name):
+        return
+    pipeline_ids = fileio.get_failed_pipeline_ids() if failures else fileio.get_all_pipeline_ids()
+    inspect.inspect_pipelines(pipeline_ids, page_size=pagesize, verbose=verbose, fix=False)
 
 
 # other commands
