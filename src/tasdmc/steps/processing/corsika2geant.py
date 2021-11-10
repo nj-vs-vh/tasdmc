@@ -88,12 +88,13 @@ class C2GOutputFiles(Files):
         check_stderr = Path(str(self.tile) + '.check.stderr')
         try:
             run_tile_file_check(self.tile, check_stdout, check_stderr)
+            check_file_is_empty(check_stderr)
+            check_last_line_contains(check_stdout, 'OK')
         except CalledProcessError as e:
             raise FilesCheckFailed(str(e))
-        check_file_is_empty(check_stderr)
-        check_last_line_contains(check_stdout, 'OK')
-        check_stdout.unlink()
-        check_stderr.unlink()
+        finally:
+            check_stdout.unlink(missing_ok=True)
+            check_stderr.unlink(missing_ok=True)
 
 
 class Corsika2GeantStep(FileInFileOutPipelineStep):

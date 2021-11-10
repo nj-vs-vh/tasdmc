@@ -120,9 +120,9 @@ def inspect_pipelines(pipeline_ids: List[str], page_size: int, verbose: bool, fi
         prompt = False
     else:
         prompt = page_size < len(pipeline_ids)
-    for page_num, page in enumerate(batches(pipeline_ids, size=page_size)):
-        i_start = ((1 + page_num) - 1) * page_size + 1
-        i_end = (1 + page_num) * page_size
+    for page_idx, page in enumerate(batches(pipeline_ids, size=page_size)):
+        i_start = page_idx * page_size + 1
+        i_end = (page_idx + 1) * page_size
         click.echo(f"Inspecting pipelines {i_start} - {i_end} (of {len(pipeline_ids)})")
         for pipeline_id in page:
             click.secho(f"\n{pipeline_id}", bold=True)
