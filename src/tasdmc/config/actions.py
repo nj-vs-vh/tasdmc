@@ -11,6 +11,7 @@ import sys
 from typing import Any, Optional, List, Dict, Tuple
 
 from tasdmc import config, fileio
+from tasdmc.utils import user_confirmation
 from .internal import get_config
 
 
@@ -110,10 +111,7 @@ def update_config(new_config_path: str):
     except config.BadConfigValue as e:
         click.echo(str(e))
         return
-    click.echo("\nNew config seems valid, apply?")
-    click.echo("Type 'yes' to confirm")
-    confirmation = input("> ")
-    if confirmation == 'yes':
+    if user_confirmation("New config seems valid, apply?", yes="yes", default=False):
         config.dump(fileio.saved_run_config_file())
         click.echo(f"You will need to abort-continue run {config.run_name()} for changes to take effect")
 

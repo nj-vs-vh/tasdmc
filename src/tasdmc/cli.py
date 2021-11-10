@@ -10,6 +10,7 @@ try:
     from tasdmc import config, fileio, system, pipeline, inspect, extract_calibration, hard_cleanup
     from tasdmc.logs import display as display_logs
     from tasdmc.config.actions import update_config, view_config
+    from tasdmc.utils import user_confirmation, user_confirmation_destructive
 except ModuleNotFoundError:
     print("'tasdmc' was not installed properly: some dependencies are missing")
     import sys
@@ -71,9 +72,7 @@ def _load_config_by_run_name(name: str) -> bool:
         matching_run_names = [rn for rn in all_run_names if rn.startswith(name)]
         if len(matching_run_names) == 1:
             single_matching_run_name = matching_run_names[0]
-            click.echo(f"Did you mean '{single_matching_run_name}?' [Yes, no]")
-            confirmation = input('> ')
-            if confirmation != 'no':
+            if user_confirmation(f"Did you mean '{single_matching_run_name}?'", yes='yes', no='no', default=True):
                 click.echo()
                 run_config_path = fileio.get_run_config_path(single_matching_run_name)
     if run_config_path is None:
@@ -88,9 +87,8 @@ def _load_config_by_run_name(name: str) -> bool:
 def abort_run(name: str):
     if not _load_config_by_run_name(name):
         return
-    click.secho(f"You are about to kill run '{config.run_name()}'!\nIf you are sure, type its name again below:")
-    run_name_confirmation = input('> ')
-    if run_name_confirmation == config.run_name():
+    click.secho(f"You are about to kill run '{config.run_name()}'!")
+    if user_confirmation_destructive(config.run_name()):
         system.abort_run(main_pid=fileio.get_saved_main_pid())
 
 

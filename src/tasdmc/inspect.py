@@ -13,6 +13,7 @@ from tasdmc.utils import batches
 from tasdmc.pipeline import standard_pipeline_steps
 from tasdmc.config.internal import remove_config_key
 from tasdmc.steps.exceptions import HashComputationFailed, FilesCheckFailed
+from tasdmc.utils import user_confirmation
 
 from tasdmc.steps.base import Files, FileInFileOutPipelineStep
 
@@ -132,9 +133,7 @@ def inspect_pipelines(pipeline_ids: List[str], page_size: int, verbose: bool, fi
             _inspect_pipeline_steps(pipeline_id, fix=fix, verbose=verbose)
         _print_legend()
         if prompt and i_end < len(pipeline_ids):
-            click.echo("\nContinue? [Yes, no]")
-            confirmation = input("> ")
-            if confirmation == 'no':
+            if not user_confirmation("Continue?", yes="yes", no="no", default=True):
                 break
 
 
@@ -143,7 +142,7 @@ def _inspect_pipeline_steps(pipeline_id: str, fix: bool = False, verbose: bool =
 
     pipeline_card_file = fileio.corsika_input_files_dir() / f"{pipeline_id}.in"
     if not pipeline_card_file.exists():
-        click.echo("Can't find CORSIKA input card for pipeline!", fg='red', bold=True)
+        click.secho("Can't find CORSIKA input card for pipeline!", fg='red', bold=True)
     pipeline_steps = standard_pipeline_steps(cards_generation_step=None, card_paths_override=[pipeline_card_file])
 
     for step in pipeline_steps:

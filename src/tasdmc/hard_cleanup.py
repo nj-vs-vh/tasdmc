@@ -4,6 +4,7 @@ import click
 from typing import List
 
 from tasdmc import fileio, config
+from tasdmc.utils import user_confirmation_destructive
 
 
 def delete_all_pipelines(pipeline_ids: List[Path]):
@@ -12,9 +13,7 @@ def delete_all_pipelines(pipeline_ids: List[Path]):
         + "\n".join([f'\t{pid}' for pid in pipeline_ids])
     )
     click.echo(f"You may want to first inspect these pipelines with 'tasdmc inspect {config.run_name()} --failed'")
-    click.echo("\nType name run to proceed with hard cleanup")
-    confirmation = input('> ')
-    if confirmation == config.run_name():
+    if user_confirmation_destructive(config.run_name()):
         for pipeline_id in pipeline_ids:
             click.echo(f"Cleaning up files for {pipeline_id}")
             for dir in [
