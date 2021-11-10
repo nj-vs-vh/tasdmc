@@ -180,7 +180,7 @@ def _inspect_pipeline_steps(pipeline_id: str, fix: bool = False, verbose: bool =
 
             files_to_clean = collect_deleted_outputs_to_clean(step)
             if not fix:
-                _echo_indented("* pass --fix to clean following outputs:", indent=2)
+                _echo_indented("* fix-failures would clean following outputs:", indent=2)
                 _echo_indented("\n".join([f"{f}" for f in files_to_clean]), indent=3, multiline=True)
             else:
                 _echo_indented(

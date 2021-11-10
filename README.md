@@ -133,12 +133,26 @@ tasdmc resources my-run-name -p  # -p merges all previous instances of the run i
 tasdmc inputs my-run-name
 ```
 
-##### `failures` - failures cleanup, inspection and recovery
+#### Advanced
+
+##### `inspect` - inspect simulation steps for each pipeline with detailed status
 
 ```bash
-# the most destructive command, just deletes all failed pipelines' stuff
-tasdmc failures total-cleanup my-run-name
+tasdmc inspect my-run-name --verbose --page 10  # prints detailed reports on all pipelines
+tasdmc inspect my-run-name --failures  # only inspects failed pipelines
 ```
+
+##### `fix-failed`
+
+Most of the time even if pipeline has failed it will just restart failed steps on the next `tasdmc continue ...`.
+But in some cases this is not possible, for example when previous step's outputs were already deleted for some
+reason. This command should be used for such cases. It has two modes: "soft" and "hard"
+
+```bash
+tasdmc fix-failed my-run-name  # will perform soft cleanup, deleting only necessary steps
+tasdmc fix-failed my-run-name --hard  # will completely wipe out all failed pipelines
+```
+
 
 #### Other commands
 
