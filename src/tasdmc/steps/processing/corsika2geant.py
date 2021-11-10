@@ -7,7 +7,7 @@ from gdown.cached_download import assert_md5sum
 from typing import List
 
 from tasdmc import fileio
-from tasdmc.c_routines_wrapper import run_corsika2geant, check_tile_file
+from tasdmc.c_routines_wrapper import run_corsika2geant, run_tile_file_check
 from tasdmc.steps.base import Files, NotAllRetainedFiles, FileInFileOutPipelineStep
 from tasdmc.steps.utils import check_file_is_empty, concatenate_and_hash, check_last_line_contains
 from tasdmc.steps.exceptions import FilesCheckFailed
@@ -87,11 +87,13 @@ class C2GOutputFiles(Files):
         check_stdout = Path(str(self.tile) + '.check.stdout')
         check_stderr = Path(str(self.tile) + '.check.stderr')
         try:
-            check_tile_file(self.tile, check_stdout, check_stderr)
-            check_file_is_empty(check_stderr)
-            check_last_line_contains(check_stdout, 'OK')
+            run_tile_file_check(self.tile, check_stdout, check_stderr)
         except CalledProcessError as e:
             raise FilesCheckFailed(str(e))
+        check_file_is_empty(check_stderr)
+        check_last_line_contains(check_stdout, 'OK')
+        check_stdout.unlink()
+        check_stderr.unlink()
 
 
 class Corsika2GeantStep(FileInFileOutPipelineStep):

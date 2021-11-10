@@ -68,7 +68,7 @@ def run_corsika2geant(particle_files_listing: Path, output_file: Path, stdout_fi
         )
 
 
-def check_tile_file(tile_file: Path, stdout_file: Path, stderr_file: Path):
+def run_tile_file_check(tile_file: Path, stdout_file: Path, stderr_file: Path):
     with Pipes(stdout_file, stderr_file) as (stdout, stderr):
         _execute_cmd(
             'check_gea_dat_file.run',
