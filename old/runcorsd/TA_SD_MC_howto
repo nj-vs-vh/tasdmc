@@ -115,7 +115,7 @@ source sdanalysis_env.sh
 
 ./sdmc_run_sdmc_spctr /disk/ta/work/user/zhezher/sdmc_fluka_he_qii-4/gmd_he_qii4_fluka/tothrow/DAT015713.corsika77100.qgsjetII.4.tar.gz.tothrow.txt /disk/ta/work/user/zhezher/sdmc_fluka_he_qii-4/gmd_he_qii4_fluka/tothrow/pro /disk/ta/work/user/zhezher/sdmc_fluka_he_qii-4/gmd_he_qii4_fluka/tothrow/dst
 
-6. Создание *spctr-файлов.
++ 6. Создание *spctr-файлов.
 
 За данную операцию отвечает скрипт sdmc_run_sdmc_conv_e2_to_spctr.
 

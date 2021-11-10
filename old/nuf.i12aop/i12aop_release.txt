@@ -1,0 +1,15 @@
+*** nuf.i12aop release notes ***
+
+
+=== i12aop modifications compared to i12 ===
+
+    a. Added linear fit of Area/Peak
+    b. 2 output columns added to SDDB:
+       	 AOP at 1200m
+	 AOP slope (linear coefficient)
+
+TODO: 
+      AOP is non-linear, there are often a feature
+      near 1200 m. 
+      ST idea to add interpolation of AOP to 1200m
+      using neighbouring points

@@ -1,0 +1,46 @@
+=== nuf.i10 output format ===
+
+1. SDDB
+// columns 2-11 correspond to wiki format
+http://tadserv.physics.utah.edu/TA-ICRC-09/index.php/Data_Comparisons
+2. date
+3. time.musec
+4. xcore, km
+5. ycore, km
+6. F800 VEM/m^2
+7. theta, deg
+8. phi, deg (wiki definition, to source E to N)
+9. 0
+10. 0
+11. E, EeV (CIC+CORSIKA by defauts, -cosm option for CIC+COSMOS)
+12. Tower (0 - BRM, 1 - LR, 2 - SK, ...)
+13. number of detectors
+14. number of detectors at boundary
+15. number of saturated detectors
+16. number of detectors with two time-separated signal
+17. number of zero detectors included in the reconstruction process
+18. chi2/N
+19. eta - LDF slope parameter
+20. 0 if eta is kept fixed eta(theta), 1 if eta is a parameter of the
+    fit (-fiteta option to nuf)
+21. a - Linsley curvature parameter
+22. largest signal, VEM
+23. sum of all detector signals, VEM
+24. distance to the array border, km (positive - inside, negative -
+    outside)
+25. final fit simplex size in parameter space ( < 2e-4, fit converged)
+26. number of detectors excluded from geometry fit
+27. peak count
+28. total signal used for asymmetry
+29. upper/lower asymmetry
+// columns 30-39 are for MC only
+30. mc_event_num
+31. mc_parttype (CORSIKA, 1 - gamma, 14 - proton, 5626 - Fe)
+32. mc_corecounter, closest to core detector number
+33. mc_E
+34. mc_theta
+35. mc_phi
+36. mc_height_1st_inter, km
+37. mc_xcore
+38. mc_ycore
+39. mc_border_distance, km 

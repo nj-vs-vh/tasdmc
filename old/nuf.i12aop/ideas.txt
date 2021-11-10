@@ -1,0 +1,26 @@
+=== Update ideas: ===
+  Return counters:
+	don't include any counters with igsd<2 first (see nuf.i10_mod)
+	after the first fit look at the counters with signal in
+	      space-time cluster (isgood=3). Sometimes there are two
+	      hits, first is random, the next is large. Be sure timing
+	      uses proper signal (sometimes it's the reason for
+	      exclusion). Test timing whether it may be included.
+	      If yes, include and set proper saturation flag.
+	example events:
+20080520 95457.012353
+20080522 141.378646
+20080602 204812.688156
+20090624 211425.326582
+20090920 52505.135695
+20090921 164230.715167		
+
+080810-073751 3 detectors excluded, ZA 23 instead of 40.
+
+=== Additional plots: ===
+
+/***** Upper-lower waveforms (plot 4 update) ****/
+// unset logscale xy; set title "20080810 124504.079061 (18.32, 21.26) ndet=21 angles: 37.7, 163.7 S800=267 a=0.204 eta=3.5fix chi2/N=1.031"; plot [][] "080810.124504.dtfx" u ($2==1?$3-$6:1/0):($4+$5) w l lw 1.5 lt 1 title "upper", "080810.124504.dtfx" u ($2==0?$3-$6:1/0):($4+$5) w l lw 1 lt 2 title "lower", "080810.124504.dtfx" u ($2<=1?$3-$6:1/0):(0.5*($5+$4*($2-0.5)*2)) title "upper-lower" smooth freq w p ps 0.5
+
+/***** Plot 2 may be updated to include waveforms ****/
+// plot "090827.051815.dtf" u 1:($5>0.1?($9-$4):1/0) title "fit" w p pt 7 ps 2 lt 5, "090827.051815.dtf" u 1:($5>0.1&&$16==0?($8-$4):1/0):10 w e lt 6 ps 3 title "data","090827.051815.dtf" u 1:($5>0.1&&$16>0?($8-$4):1/0):10 w e lt 3 title "excluded", "090827.051815.dtfx" u ($2==1?($7-$4/50.0):1/0):($3-$6) w l lw 1.5 lt 1 title "upper", "090827.051815.dtfx" u ($2==0?($7-$4/50.0):1/0):($3-$6) w l lt 2 title "lower"

@@ -1,0 +1,40 @@
+*** nuf.i10 release notes ***
+
+=== compatibility notes ===
+    a. if you compile with GSL<=1.10 (e.g. on icrr server)
+       please replace gsl_multimin_fminimizer_nmsimplex2 with
+       gsl_multimin_fminimizer_nmsimplex in src/fit.cpp (one
+       occurrence)
+    b. wiki result is obtained by running the program
+       on pass2 files by Rutgers sdanalysis v2.4
+
+=== i10 modifications compared to i8 ===
+
+1. Fit
+ 1.1. Removed saturate_mc()
+ 1.2. Saturated counters now excluded from LDF fit
+ 1.3. bugfix: even close to the core rusdgeom_.igsd[sd]==0 detectors
+     should be excluded from both timing and LDF fit
+ 1.4. theta>90 fix, if(mytheta>90) mytheta = 180 - mytheta;
+      affects only inclined events (usually not a case for theta<60)
+ 1.5. Linsley error may not be smaller than at r=150 meters
+ 1.6. -geom option refits geometry after joint fit (require ndet>=5)
+ 1.7. DAQ error used to exclude bad detectors, ex. -d=090913 -t=203852
+      (this should be eventually fixed in Rutgers reconstruction)
+ 1.8  Fixed fiteta bug, now variable fit is consistent
+ 1.9  If detector has a waveform in tasdcalibev never treat as zero
+	 (some detectors are lost is Rutgers reconstruction
+	  found by Okuda-san, example: 090201-162702 SD#0517)
+
+2. Interface
+ 2.1. Added timing waveform plot (like plot from Taketa-san's event display)
+ 2.2. Added peak/asymmetry output
+ 2.3. -geom option
+ 2.3. -sign option and DBSIG output (signal information)
+      features: peak count within signal not implemented
+	        integral covers two bins below threshold at the end
+		some waveforms start with 1,2,3 bin GAP
+ 2.4. CIC+CORSIKA energy formula is now used for output
+ 2.5. CIC+COSMOS energy formula available with -cosm option
+      For energy formulas please see: 
+	     http://tadserv.physics.utah.edu/TA-ICRC-09/images/2/27/Tkachev_sd_cic.pdf
