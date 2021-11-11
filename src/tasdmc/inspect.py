@@ -126,9 +126,9 @@ def inspect_pipelines(pipeline_ids: List[str], page_size: int, verbose: bool, fi
         click.echo(f"Inspecting pipelines {i_start} - {i_end} (of {len(pipeline_ids)})")
         for pipeline_id in page:
             click.secho(f"\n{pipeline_id}", bold=True)
-            if fileio.pipeline_failed_file(pipeline_ids).exists():    
+            if fileio.pipeline_failed_file(pipeline_id).exists():    
                 click.echo('Failure reason:')
-                click.secho(fileio.pipeline_failed_file(pipeline_ids).read_text().strip(), dim=True)
+                click.secho(fileio.pipeline_failed_file(pipeline_id).read_text().strip(), dim=True)
             click.echo('Steps inspection:')
             _inspect_pipeline_steps(pipeline_id, fix=fix, verbose=verbose)
         _print_legend()
