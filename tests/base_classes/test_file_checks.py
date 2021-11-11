@@ -49,12 +49,12 @@ def example_files():
             dethinned_files_listing=JUST_EXISTING,  # not checked
             corsika_event_name='doop',  # not checked
         ),
-        C2GOutputFiles(
-            tile=MOCKS_DIR / 'MOCK_gea.dat',
-            stderr=EMPTY,
-            stdout=ENDING_WITH_OK,
-            corsika_event_name='doop',
-        ),
+        # C2GOutputFiles(
+        #     tile=MOCKS_DIR / 'MOCK_gea.dat',
+        #     stderr=EMPTY,
+        #     stdout=ENDING_WITH_OK,
+        #     corsika_event_name='doop',
+        # ),
         TothrowFile(JUST_EXISTING),
         EventFiles(
             merged_events_file=MOCKS_DIR / 'MOCK_EVENTS.dst.gz',
