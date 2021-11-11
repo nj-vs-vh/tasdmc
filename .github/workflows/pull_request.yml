@@ -18,4 +18,6 @@ jobs:
           architecture: 'x64'
       - run: pip install -r requirements.txt
       - run: python setup.py install
-      - run: source tests/test_env.sh && pytest tests -vv
+      - run:
+          . tests/test_env.sh && 
+          pytest tests -vv
