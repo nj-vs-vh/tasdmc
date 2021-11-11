@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from subprocess import CalledProcessError
 from gdown.cached_download import assert_md5sum
+from uuid import uuid4
 
 from typing import List
 
@@ -84,8 +85,9 @@ class C2GOutputFiles(Files):
     def _check_contents(self):
         check_file_is_empty(self.stderr, ignore_strings=['$$$ dst_get_block_ : End of input file reached'])
         check_last_line_contains(self.stdout, 'OK')
-        check_stdout = Path(str(self.tile) + '.check.stdout')
-        check_stderr = Path(str(self.tile) + '.check.stderr')
+        uuid = uuid4().hex
+        check_stdout = Path(str(self.tile) + f'.check.stdout.{uuid}')
+        check_stderr = Path(str(self.tile) + f'.check.stderr.{uuid}')
         try:
             run_tile_file_check(self.tile, check_stdout, check_stderr)
             check_file_is_empty(check_stderr)
