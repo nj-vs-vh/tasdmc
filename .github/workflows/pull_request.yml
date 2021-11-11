@@ -14,13 +14,13 @@ jobs:
           python-version: 3.9
           architecture: x64
 
-      - name: compiling check_gea_dat_file.run
-        run:
-          . tests/test_env.sh &&
-          cd src/c_routines &&
-          make bin/check_gea_dat_file.run &&
-          cp bin/check_gea_dat_file.run / &&
-          cd ../..
+      # - name: compiling check_gea_dat_file.run
+      #   run:
+      #     . tests/test_env.sh &&
+      #     cd src/c_routines &&
+      #     make bin/check_gea_dat_file.run &&
+      #     cp bin/check_gea_dat_file.run / &&
+      #     cd ../..
       
       - name: installing python requirements
         run: pip install -r requirements.txt
