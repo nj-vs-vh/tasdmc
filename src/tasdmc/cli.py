@@ -192,7 +192,7 @@ def fix_failed_pipelines(name: str, hard: bool):
 @cli.command("inspect", help="Inspect pipelines step-by-step")
 @click.option("-v", "--verbose", is_flag=True, default=False, help="Print verbose information about steps")
 @click.option("-p", "--page", "pagesize", default=0, help="Page size or 0 for no pagination (default)")
-@click.option("-f", "--failures", is_flag=True, default=False, help="Inspect only failed pipelines")
+@click.option("-f", "--failed", is_flag=True, default=False, help="Inspect only failed pipelines")
 @_run_name_argument('name')
 def failures_cmd(name: str, pagesize: int, verbose: bool, failures: bool):
     if not _load_config_by_run_name(name):
