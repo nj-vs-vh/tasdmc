@@ -56,20 +56,20 @@ def example_files():
         #     corsika_event_name='doop',
         # ),
         TothrowFile(JUST_EXISTING),
-        EventFiles(
-            merged_events_file=MOCKS_DIR / 'MOCK_EVENTS.dst.gz',
-            stdout=ENDING_WITH_OK,
-            stderr=EMPTY,
-            concat_log=JUST_EXISTING,
-            events_file_by_epoch={1: JUST_EXISTING},
-            events_log_by_epoch={1: JUST_EXISTING},
-            calibration_file_by_epoch={1: JUST_EXISTING},
-        ),
-        SpectralSampledEvents(
-            events=MOCKS_DIR / 'MOCK_EVENTS.dst.gz',
-            stdout=ENDING_WITH_OK,
-            stderr=EMPTY,
-        )
+        # EventFiles(
+        #     merged_events_file=MOCKS_DIR / 'MOCK_EVENTS.dst.gz',
+        #     stdout=ENDING_WITH_OK,
+        #     stderr=EMPTY,
+        #     concat_log=JUST_EXISTING,
+        #     events_file_by_epoch={1: JUST_EXISTING},
+        #     events_log_by_epoch={1: JUST_EXISTING},
+        #     calibration_file_by_epoch={1: JUST_EXISTING},
+        # ),
+        # SpectralSampledEvents(
+        #     events=MOCKS_DIR / 'MOCK_EVENTS.dst.gz',
+        #     stdout=ENDING_WITH_OK,
+        #     stderr=EMPTY,
+        # )
     ]
 
 
