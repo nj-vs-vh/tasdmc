@@ -11,6 +11,7 @@ from typing import List
 from tasdmc import fileio
 from tasdmc.logs.step_progress import EventType, PipelineStepProgress
 from tasdmc.logs.utils import str2datetime, datetime2str, timedelta2str
+from tasdmc.logs import pipeline_progress
 
 
 def print_multiprocessing_log(n_messages: int):
@@ -45,22 +46,22 @@ def print_multiprocessing_log(n_messages: int):
 def print_pipelines_progress():
     pipeline_stack_by_id = defaultdict(set)
     for pipeline_step_progress in PipelineStepProgress.load():
-        plid = pipeline_step_progress.pipeline_id
-        if pipeline_stack_by_id[plid] is None:  # pipeline has failed
+        pipeline_id = pipeline_step_progress.pipeline_id
+        if pipeline_stack_by_id[pipeline_id] is None:  # pipeline has failed
             continue
         if pipeline_step_progress.event_type is EventType.STARTED:
-            pipeline_stack_by_id[plid].add(pipeline_step_progress.step_input_hash)
+            pipeline_stack_by_id[pipeline_id].add(pipeline_step_progress.step_input_hash)
         elif pipeline_step_progress.event_type is EventType.COMPLETED:
-            pipeline_stack_by_id[plid].discard(pipeline_step_progress.step_input_hash)
+            pipeline_stack_by_id[pipeline_id].discard(pipeline_step_progress.step_input_hash)
         elif pipeline_step_progress.event_type is EventType.FAILED:
-            pipeline_stack_by_id[plid] = None
+            pipeline_stack_by_id[pipeline_id] = None
 
     pipelines_total = sum(1 for _ in fileio.corsika_input_files_dir().iterdir())
     pipelines_failed = 0
     pipelines_completed = 0
     pipelines_running = 0
-    for plid, stack in pipeline_stack_by_id.items():
-        if stack is None:
+    for pipeline_id, stack in pipeline_stack_by_id.items():
+        if pipeline_progress.is_failed(pipeline_id) or stack is None:
             pipelines_failed += 1
         elif len(stack) == 0:
             pipelines_completed += 1
