@@ -1,3 +1,5 @@
+![tests](https://github.com/nj-vs-vh/tasdmc/actions/workflows/pull_request.yml/badge.svg)
+
 # `tasdmc` - Telescope Array Surface Detectors Monte Carlo simulation
 
 `tasdmc` aims at providing set of scripts to run Telescope Array Surface Detectors Monte Carlo
