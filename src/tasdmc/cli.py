@@ -194,10 +194,10 @@ def fix_failed_pipelines(name: str, hard: bool):
 @click.option("-p", "--page", "pagesize", default=0, help="Page size or 0 for no pagination (default)")
 @click.option("-f", "--failed", is_flag=True, default=False, help="Inspect only failed pipelines")
 @_run_name_argument('name')
-def failures_cmd(name: str, pagesize: int, verbose: bool, failures: bool):
+def failures_cmd(name: str, pagesize: int, verbose: bool, failed: bool):
     if not _load_config_by_run_name(name):
         return
-    pipeline_ids = fileio.get_failed_pipeline_ids() if failures else fileio.get_all_pipeline_ids()
+    pipeline_ids = fileio.get_failed_pipeline_ids() if failed else fileio.get_all_pipeline_ids()
     inspect.inspect_pipelines(pipeline_ids, page_size=pagesize, verbose=verbose, fix=False)
 
 
