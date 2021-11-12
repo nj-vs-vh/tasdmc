@@ -13,10 +13,11 @@ def str2datetime(s: str) -> datetime:
 
 
 def timedelta2str(t: timedelta) -> str:
-    hours = t.seconds // (3600)
-    minutes = t.seconds // (60) - hours * 60
+    total_seconds = t.total_seconds()
+    total_hours = total_seconds // 3600
+    minutes = (total_seconds // 60) - total_hours * 60
     if t.days:
-        hours -= t.days * 24
-        return f"{t.days}d {hours}h {minutes}m"
+        total_hours -= t.days * 24
+        return f"{t.days}d {total_hours}h {minutes}m"
     else:
-        return f"{hours}h {minutes}m"
+        return f"{total_hours}h {minutes}m"
