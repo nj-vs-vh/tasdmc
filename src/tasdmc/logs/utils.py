@@ -13,7 +13,7 @@ def str2datetime(s: str) -> datetime:
 
 
 def timedelta2str(t: timedelta) -> str:
-    total_seconds = t.total_seconds()
+    total_seconds = int(t.total_seconds())
     total_hours = total_seconds // 3600
     minutes = (total_seconds // 60) - total_hours * 60
     if t.days:
