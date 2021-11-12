@@ -108,15 +108,21 @@ def print_system_monitoring(include_previous_runs: bool = False, evaluation_time
         for entry in system_resources_log.read_text().splitlines():
             m = entry_re.match(entry)
             try:
-                timestamps.append(str2datetime(m.group('timestamp')))
-                cpu.append(
-                    sum([float(cpu_per_worker) for cpu_per_worker in m.group('cpu_perc').split() if cpu_per_worker])
+                entry_timestamp = str2datetime(m.group('timestamp'))
+                cpu_entry = sum(
+                    [float(cpu_per_worker) for cpu_per_worker in m.group('cpu_perc').split() if cpu_per_worker]
                 )
-                mem.append(
-                    sum([float(mem_per_worker) for mem_per_worker in m.group('mem_usage').split() if mem_per_worker])
+                mem_entry = sum(
+                    [float(mem_per_worker) for mem_per_worker in m.group('mem_usage').split() if mem_per_worker]
                 )
-                disk_used.append(float(m.group('disk_used_by_run')))
-                disk_avl.append(float(m.group('disk_available')))
+                disk_used_entry = float(m.group('disk_used_by_run'))
+                disk_avl_entry = float(m.group('disk_available'))
+
+                timestamps.append(entry_timestamp)
+                cpu.append(cpu_entry)
+                mem.append(mem_entry)
+                disk_used.append(disk_used_entry)
+                disk_avl.append(disk_avl_entry)
             except Exception:
                 click.secho(f"Can't parse system resources log entry: '{entry}'")
         n_entries_after = len(timestamps)
@@ -157,7 +163,7 @@ def print_system_monitoring(include_previous_runs: bool = False, evaluation_time
             previous_runs_evaluation_time = run_eval_times[i] + timedelta(
                 minutes=1
             )  # as if there was 1 min between runs
-        xs = [t.seconds for t in run_eval_times]
+        xs = [t.total_seconds() for t in run_eval_times]
         tick_label_from_value = lambda x: timedelta2str(timedelta(seconds=x))
         x_axis_label = "Run evaluation time"
     else:
