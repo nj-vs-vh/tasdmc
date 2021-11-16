@@ -40,6 +40,13 @@ throwing:  # determines how CORSIKA showers will be 'thrown' onto the SD grid to
 
 spectral_sampling:
   target: HiRes # HiRes | TASD2015 | E_minus_3; target spectrum for generated MC events
+  aux_log10E_min: # by default spectrum is sampled with log10E_min = input_files.log10E_min,
+                  # producing a spectrum with a full range of simulated energies.
+                  # for some applications (e.g. neural net training), spectra with higher minimum
+                  # energies are useful as the default one will likely contain only a small sample
+                  # of high-energy events
+    - 18.95
+    - 19.45
 
 resources:
   max_processes: 2

@@ -247,6 +247,7 @@ def run_spectral_sampling(
                 '-s', target_spectrum.value,
                 '-i', dndE_exponent_source,
                 '-e', 10 ** (log10E_min - 18),  # log10(E/eV) => EeV
+                '-t',
                 events_file,
             ],
             stdout,

@@ -37,7 +37,7 @@ def standard_pipeline_steps(
                 + "instance or list of paths to CORSIKA cards"
             )
 
-    # TODO: make batch size configurable -------------------> here?
+    # TODO: make batch size configurable here?
     for corsika_steps_batch in batches(corsika_steps, config.used_processes()):
         steps.extend(corsika_steps_batch)
         for corsika_step in corsika_steps_batch:
@@ -51,8 +51,8 @@ def standard_pipeline_steps(
             steps.append(tothrow_gen)
             events_generation = EventsGenerationStep.from_corsika2geant_with_tothrow(corsika2geant, tothrow_gen)
             steps.append(events_generation)
-            spctr_sampling = SpectralSamplingStep.from_events_generation(events_generation)
-            steps.append(spctr_sampling)
+            for spctr_sampling in SpectralSamplingStep.from_events_generation(events_generation):
+                steps.append(spctr_sampling)
     return steps
 
 

@@ -16,7 +16,13 @@ from .internal import get_config
 
 
 # safe to change means that no work would be lost
-SAFE_TO_CHANGE = ['resources', 'corsika.default_executable_name', 'input_files.event_number_multiplier', 'debug']
+SAFE_TO_CHANGE = [
+    'resources',
+    'corsika.default_executable_name',
+    'input_files.event_number_multiplier',
+    'debug',
+    'spectral_sampling.aux_log10E_min',
+]
 
 
 @dataclass
