@@ -1,5 +1,7 @@
 from concurrent.futures import ProcessPoolExecutor, Future, wait
+import multiprocessing as mp
 from pathlib import Path
+from ctypes import c_int8
 
 from typing import List
 
@@ -16,6 +18,7 @@ from tasdmc.steps import (
 )
 from tasdmc.steps.corsika_cards_generation import generate_corsika_cards
 from tasdmc.system.monitor import run_system_monitor
+from tasdmc.steps.base.step_status_shared import set_step_statuses_array
 from tasdmc.utils import batches
 
 
@@ -60,11 +63,19 @@ def run_standard_pipeline(continuing: bool):
     config.validate(set(step.__class__ for step in steps))
     system.run_in_background(run_system_monitor, keep_session=True)
 
-    def init_worker_process():
+    step_indices = list(range(len(steps)))
+    for step, idx in zip(steps, step_indices):
+        step.set_index(idx)
+    shared_array = mp.Array(c_int8, len(steps), lock=True)  # initially all zeros = steps pending
+
+    def init_worker_process(shared_array):
         system.set_process_title("tasdmc worker")
+        set_step_statuses_array(shared_array)
 
     n_processes = config.used_processes()
-    with ProcessPoolExecutor(max_workers=n_processes, initializer=init_worker_process) as executor:
+    with ProcessPoolExecutor(
+        max_workers=n_processes, initializer=init_worker_process, initargs=(shared_array,)
+    ) as executor:
         futures_queue: List[Future] = []
         for step in steps:
             step.schedule(executor, futures_queue)

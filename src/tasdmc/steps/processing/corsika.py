@@ -7,7 +7,6 @@ from typing import List
 
 from tasdmc import fileio, config
 from tasdmc.steps.base import Files, PipelineStep
-from tasdmc.steps.corsika_cards_generation import CorsikaCardsGenerationStep, CorsikaCardsSet
 from tasdmc.steps.exceptions import FilesCheckFailed
 from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty, check_last_line_contains
 

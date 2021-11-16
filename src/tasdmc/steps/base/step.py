@@ -7,13 +7,13 @@ from time import sleep
 from concurrent.futures import Future
 import traceback
 from random import random
-from multiprocessing import Array
 
 from typing import Optional, List
 
 from tasdmc import logs
 from tasdmc.logs import step_progress, pipeline_progress
 from .files import Files
+from .step_status_shared import StepRuntimeStatus
 
 
 @dataclass
@@ -28,10 +28,12 @@ class PipelineStep(ABC):
     input_: Files
     output: Files
     previous_steps: Optional[List[PipelineStep]] = None
+    _step_status_index_in_shared_array: Optional[int] = None
 
     @property
     def pipeline_id(self) -> str:
-        """Any string uniquely identifying a pipeline (e.g. DATnnnnnn for standard pipeline).
+        """A string uniquely identifying a pipeline (a set of sequential steps). Example is 'DATnnnnnn'
+        for standard simulation.
 
         Must be overriden for the first step in the pipeline."""
         if not self.previous_steps:
@@ -46,8 +48,15 @@ class PipelineStep(ABC):
     def id_(self):
         return f'{self.__class__.__name__}:{self.input_.id_}:{self.output.id_}'
 
-    def set_shared_array_index(self, i: int):
-        self._shared_array_index = i
+    def set_index(self, i: int):
+        self._step_status_index_in_shared_array = i
+
+    @property
+    def runtime_status(self) -> StepRuntimeStatus:
+        return StepRuntimeStatus.load(self._step_status_index_in_shared_array)
+
+    def save_runtime_status(self, status: StepRuntimeStatus):
+        status.save(self._step_status_index_in_shared_array)
 
     @property
     @abstractmethod
@@ -62,35 +71,55 @@ class PipelineStep(ABC):
             executor (ProcessPoolExecutor): ProcessPoolExecutor to submit step to
             futures_list (list of Future): list of futures to add this run future result into
         """
-        futures_list.append(executor.submit(self.run))
+        assert (
+            self._step_status_index_in_shared_array is not None
+        ), f"Step status index was not assigned for '{self.description}'!"
+        futures_list.append(executor.submit(self.run_in_executor))
 
-    def run(self):
-        sleep(3 * random())  # in hopes of avoiding race condition for simultaneously running steps
-        sleep_time = 60  # sec
+    def run_in_executor(self):
+        waiting_msg_logged = False
         while True:
-            if pipeline_progress.is_failed(self.pipeline_id):
-                logs.multiprocessing_info(f"Exiting '{self.description}', pipeline marked as failed")
-                return
-            elif self.previous_steps is None:  # first step in a pipeline
+            if self.previous_steps is None:  # the first step in a pipeline
                 break
-            elif not all(previous_step.output.files_were_produced() for previous_step in self.previous_steps):
-                logs.multiprocessing_info(
-                    f"Steps previous to '{self.description}' aren't completed, sleeping for {sleep_time} sec"
-                )
-                sleep(sleep_time)
-            elif not self.input_.files_were_produced():
+            previous_step_statuses = [ps.runtime_status for ps in self.previous_steps]
+            if any(s is StepRuntimeStatus.FAILED for s in previous_step_statuses):
+                logs.multiprocessing_info(f"Exiting '{self.description}' one of its previous steps has failed")
+                return
+            if all(s is StepRuntimeStatus.COMPLETED for s in previous_step_statuses):
+                break
+            if not waiting_msg_logged:
+                logs.multiprocessing_info(f"Steps previous to '{self.description}' aren't completed, waiting")
+                waiting_msg_logged = True
+            sleep(5)
+
+        if pipeline_progress.is_failed(self.pipeline_id):
+            logs.multiprocessing_info(f"Exiting '{self.description}', pipeline marked as failed")
+            return
+
+        # pipeline integrity check
+        if self.previous_steps is not None:
+            previous_steps: List[PipelineStep] = self.previous_steps
+            if not all(previous_step.output.files_were_produced() for previous_step in previous_steps):
                 pipeline_progress.mark_failed(
                     self.pipeline_id,
                     errmsg=(
-                        f"Pipeline configuration error in {self.__class__.__name__} ({self.input_.contents_hash}):\n\n"
-                        + f"Previous steps' outputs produced:\n"
-                        + "\n".join([f"\t{s.output}" for s in self.previous_steps])
+                        f"Pipeline configuration error in {self.id_}\n\n"
+                        + f"Previous steps were completed, but not all their outputs are produced:\n"
+                        + "\n".join([f"\t{s.output}" for s in previous_steps])
+                    ),
+                )
+                return
+            if not self.input_.files_were_produced():
+                pipeline_progress.mark_failed(
+                    self.pipeline_id,
+                    errmsg=(
+                        f"Pipeline configuration error in {self.id_}\n\n"
+                        + f"Previous steps were completed, their outputs produced:\n"
+                        + "\n".join([f"\t{s.output}" for s in previous_steps])
                         + f"\nBut this step's input is not:\n\t{self.input_}"
                     ),
                 )
                 return
-            else:
-                break
 
         logs.multiprocessing_info(f"Entering '{self.description}'")
         try:
@@ -106,6 +135,7 @@ class PipelineStep(ABC):
                 self.output.assert_files_are_ready()
                 self._post_run()
                 step_progress.completed(self, output_size_mb=self.output.total_size('Mb'))
+            self.save_runtime_status(StepRuntimeStatus.COMPLETED)
         except Exception as e:
             step_progress.failed(self, errmsg=str(e))
             pipeline_progress.mark_failed(
@@ -115,6 +145,7 @@ class PipelineStep(ABC):
                     + f"with traceback:\n\n{traceback.format_exc()}"
                 ),
             )
+            self.save_runtime_status(StepRuntimeStatus.FAILED)
 
     @abstractmethod
     def _run(self):
