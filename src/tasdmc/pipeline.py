@@ -1,6 +1,5 @@
-from concurrent.futures import ProcessPoolExecutor, Future
+from concurrent.futures import ProcessPoolExecutor, Future, wait
 from pathlib import Path
-import time
 
 from typing import List, Optional
 
@@ -80,6 +79,4 @@ def run_standard_pipeline(continuing: bool):
         futures_queue: List[Future] = []
         for step in steps:
             step.schedule(executor, futures_queue)
-        for f in futures_queue:
-            time.sleep(1)
-            f.result()
+        wait(futures_queue)

@@ -27,7 +27,7 @@ class SpectralSampledEvents(Files):
 
     @property
     def must_exist(self) -> List[Path]:
-        return [self.events]
+        return [self.stdout, self.stderr]  # events file may not exist if nothing was sampled!
 
     @classmethod
     def from_events_file(cls, events_file: EventFiles, log10E_min: float) -> SpectralSampledEvents:
