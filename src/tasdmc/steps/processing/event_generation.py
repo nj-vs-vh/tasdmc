@@ -7,6 +7,7 @@ import re
 from functools import lru_cache
 import random
 from gdown.cached_download import assert_md5sum
+import tarfile
 
 from typing import List, Dict, Iterable, Tuple
 
@@ -55,6 +56,7 @@ class EventFiles(Files):
     stdout: Path
     stderr: Path
     concat_log: Path
+    logs_archive: Path
     events_file_by_epoch: Dict[int, Path]
     events_log_by_epoch: Dict[int, Path]
 
@@ -92,6 +94,7 @@ class EventFiles(Files):
             stdout=fileio.events_dir() / f'{corsika_event_name}.evgen.stdout',
             stderr=fileio.events_dir() / f'{corsika_event_name}.evgen.stderr',
             concat_log=fileio.events_dir() / f'{corsika_event_name}.dstconcat.stderr',
+            logs_archive=fileio.events_dir() / f'{corsika_event_name}.per-epoch-logs.tar.gz',
             events_file_by_epoch=events_file_by_epoch,
             events_log_by_epoch=events_log_by_epoch,
             calibration_file_by_epoch=calibration_by_epoch,
@@ -222,8 +225,11 @@ class EventsGenerationStep(PipelineStep):
                 self.output.concat_log,
                 self.output.concat_log,
             )
-            for _, epoch_events_file, *_ in self.output.per_epoch_files():
-                epoch_events_file.unlink()
+            with tarfile.open(self.output.logs_archive, 'w:gz') as tar:
+                for _, epoch_events_file, epoch_log, _ in self.output.per_epoch_files():
+                    epoch_events_file.unlink()
+                    tar.add(epoch_log, epoch_log.name, recursive=False)
+                    epoch_log.unlink()
             stdout.write("\nOK\n")
 
         stdout.close()
