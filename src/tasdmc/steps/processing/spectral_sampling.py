@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import List
 
 from tasdmc import config, fileio
-from tasdmc.steps.base import Files, FileInFileOutPipelineStep
+from tasdmc.steps.base import Files, PipelineStep
 from tasdmc.steps.processing.event_generation import EventFiles, EventsGenerationStep
 
 from tasdmc.c_routines_wrapper import run_spectral_sampling, TargetSpectrum
@@ -50,7 +50,7 @@ class SpectralSampledEvents(Files):
         check_last_line_contains(self.stdout, must_contain="OK")
 
 
-class SpectralSamplingStep(FileInFileOutPipelineStep):
+class SpectralSamplingStep(PipelineStep):
     input_: EventFiles
     output: SpectralSampledEvents
 

@@ -11,7 +11,7 @@ from gdown.cached_download import assert_md5sum
 from typing import List, Dict, Iterable, Tuple
 
 from tasdmc import fileio, config
-from tasdmc.steps.base import Files, FileInFileOutPipelineStep
+from tasdmc.steps.base import Files, PipelineStep
 from tasdmc.steps.exceptions import FilesCheckFailed, BadDataFiles
 from tasdmc.steps.utils import check_file_is_empty, check_last_line_contains, check_dst_file_not_empty, passed
 from .corsika2geant import C2GOutputFiles, Corsika2GeantStep
@@ -118,7 +118,7 @@ class EventFiles(Files):
         check_dst_file_not_empty(self.merged_events_file)
 
 
-class EventsGenerationStep(FileInFileOutPipelineStep):
+class EventsGenerationStep(PipelineStep):
     input_: C2GOutputWithTothrowFiles
     output: EventFiles
 

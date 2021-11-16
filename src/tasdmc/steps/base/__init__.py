@@ -1,10 +1,10 @@
 from .files import Files, NotAllRetainedFiles
-from .step import FileInFileOutStep, FileInFileOutPipelineStep
+from .step import PipelineStep
 
 
 __all__ = [
     'Files',
     'NotAllRetainedFiles',
-    'FileInFileOutPipelineStep',
+    'PipelineStep',
     'FileInFileOutStep',
 ]

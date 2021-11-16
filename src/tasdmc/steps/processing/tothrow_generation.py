@@ -15,7 +15,7 @@ import re
 from typing import List, Tuple
 
 from tasdmc import config
-from tasdmc.steps.base import Files, FileInFileOutPipelineStep
+from tasdmc.steps.base import Files, PipelineStep
 from tasdmc.steps.processing.corsika2geant import C2GOutputFiles, Corsika2GeantStep
 from tasdmc.steps.corsika_cards_generation import get_cards_count_by_log10E, log10E_bounds_from_config
 
@@ -40,7 +40,7 @@ class TothrowFile(Files):
         return showlib_file, n_particles_per_epoch
 
 
-class TothrowGenerationStep(FileInFileOutPipelineStep):
+class TothrowGenerationStep(PipelineStep):
     input_: C2GOutputFiles
     output: TothrowFile
 

@@ -1,6 +1,6 @@
 from typing import List, Type
 
-from .base import FileInFileOutStep, FileInFileOutPipelineStep
+from .base import PipelineStep
 
 from .processing.corsika import CorsikaStep
 from .processing.particle_file_splitting import ParticleFileSplittingStep
@@ -11,7 +11,7 @@ from .processing.event_generation import EventsGenerationStep
 from .processing.spectral_sampling import SpectralSamplingStep
 
 
-all_steps: List[Type[FileInFileOutStep]] = [
+all_steps: List[Type[PipelineStep]] = [
     CorsikaStep,
     ParticleFileSplittingStep,
     DethinningStep,

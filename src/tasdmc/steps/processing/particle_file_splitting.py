@@ -7,7 +7,7 @@ from typing import List
 from tasdmc import config
 from tasdmc.c_routines_wrapper import split_thinned_corsika_output
 
-from tasdmc.steps.base import NotAllRetainedFiles, FileInFileOutPipelineStep
+from tasdmc.steps.base import NotAllRetainedFiles, PipelineStep
 from .corsika import CorsikaStep, CorsikaOutputFiles
 from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty, check_last_line_contains
 
@@ -43,7 +43,7 @@ class SplitParticleFiles(NotAllRetainedFiles):
 
 
 @dataclass
-class ParticleFileSplittingStep(FileInFileOutPipelineStep):
+class ParticleFileSplittingStep(PipelineStep):
     input_: CorsikaOutputFiles
     output: SplitParticleFiles
 

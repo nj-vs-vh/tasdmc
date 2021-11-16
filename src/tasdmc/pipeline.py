@@ -12,17 +12,17 @@ from tasdmc.steps import (
     TothrowGenerationStep,
     EventsGenerationStep,
     SpectralSamplingStep,
-    FileInFileOutPipelineStep,
+    PipelineStep,
 )
 from tasdmc.steps.corsika_cards_generation import generate_corsika_cards
 from tasdmc.system.monitor import run_system_monitor
 from tasdmc.utils import batches
 
 
-def standard_simulation_steps(corsika_card_paths: List[Path]) -> List[FileInFileOutPipelineStep]:
+def standard_simulation_steps(corsika_card_paths: List[Path]) -> List[PipelineStep]:
     """List of pipeline steps *in order of optimal execution*"""
-    steps: List[FileInFileOutPipelineStep] = []
-    corsika_steps = CorsikaStep.from_corsika_card_paths(corsika_card_paths)
+    steps: List[PipelineStep] = []
+    corsika_steps = CorsikaStep.from_corsika_cards(corsika_card_paths)
 
     # TODO: make batch size configurable here?
     for corsika_steps_batch in batches(corsika_steps, config.used_processes()):
@@ -43,7 +43,7 @@ def standard_simulation_steps(corsika_card_paths: List[Path]) -> List[FileInFile
     return steps
 
 
-def with_pipelines_mask(steps: List[FileInFileOutPipelineStep]) -> List[FileInFileOutPipelineStep]:
+def with_pipelines_mask(steps: List[PipelineStep]) -> List[PipelineStep]:
     pipelines_mask: List[str] = config.get_key('debug.pipelines_mask', default=False)
     if not pipelines_mask:
         return steps

@@ -15,7 +15,7 @@ from tasdmc.config.internal import remove_config_key
 from tasdmc.steps.exceptions import HashComputationFailed, FilesCheckFailed
 from tasdmc.utils import user_confirmation
 
-from tasdmc.steps.base import Files, FileInFileOutPipelineStep
+from tasdmc.steps.base import Files, PipelineStep
 
 
 class StepStatus(Enum):
@@ -76,7 +76,7 @@ class StepInspectionResult:
         return produced, deleted, check_failed_errmsg
 
     @classmethod
-    def inspect(cls, step: FileInFileOutPipelineStep) -> StepInspectionResult:
+    def inspect(cls, step: PipelineStep) -> StepInspectionResult:
         if str(step) in cls.cached:
             return cls.cached[str(step)]
 
@@ -166,7 +166,7 @@ def _inspect_pipeline_steps(pipeline_id: str, fix: bool = False, verbose: bool =
                     _echo_indented("* no error message available", indent=3)
         if step_status is StepStatus.PREV_STEP_RERUN_REQUIRED:
 
-            def collect_deleted_outputs_to_clean(step: FileInFileOutPipelineStep, recursive: bool = True) -> List[Files]:
+            def collect_deleted_outputs_to_clean(step: PipelineStep, recursive: bool = True) -> List[Files]:
                 step_inspection = StepInspectionResult.inspect(step)
                 if not step_inspection.inputs_were_deleted or step.previous_steps is None:
                     return []

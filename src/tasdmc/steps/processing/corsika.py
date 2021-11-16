@@ -6,7 +6,7 @@ import corsika_wrapper as cw
 from typing import List
 
 from tasdmc import fileio, config
-from tasdmc.steps.base import Files, FileInFileOutPipelineStep
+from tasdmc.steps.base import Files, PipelineStep
 from tasdmc.steps.corsika_cards_generation import CorsikaCardsGenerationStep, CorsikaCardsSet
 from tasdmc.steps.exceptions import FilesCheckFailed
 from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty, check_last_line_contains
@@ -19,10 +19,6 @@ class CorsikaCard(Files):
     @property
     def must_exist(self) -> List[Path]:
         return [self.card]
-
-    @classmethod
-    def from_corsika_cards_set(cls, ccfs: CorsikaCardsSet) -> List[CorsikaCard]:
-        return [cls(card) for card in ccfs.files]
 
 
 @dataclass
@@ -66,7 +62,7 @@ class CorsikaOutputFiles(Files):
         check_particle_file_contents(self.particle)
 
 
-class CorsikaStep(FileInFileOutPipelineStep):
+class CorsikaStep(PipelineStep):
     input_: CorsikaCard
     output: CorsikaOutputFiles
 
@@ -79,17 +75,9 @@ class CorsikaStep(FileInFileOutPipelineStep):
         return self.output.particle.name
 
     @classmethod
-    def _from_corsika_cards_set(cls, ccs: CorsikaCardsSet) -> List[CorsikaStep]:
-        inputs = CorsikaCard.from_corsika_cards_set(ccs)
+    def from_corsika_cards(cls, corsika_card_paths: List[Path]) -> List[CorsikaStep]:
+        inputs = [CorsikaCard(f) for f in corsika_card_paths]
         return [CorsikaStep(input_, CorsikaOutputFiles.from_corsika_card(input_)) for input_ in inputs]
-
-    @classmethod
-    def from_corsika_cards_generation(cls, corsika_cards_generation: CorsikaCardsGenerationStep) -> List[CorsikaStep]:
-        return cls._from_corsika_cards_set(corsika_cards_generation.output)
-
-    @classmethod
-    def from_corsika_card_paths(cls, card_paths: List[Path]) -> List[CorsikaStep]:
-        return cls._from_corsika_cards_set(CorsikaCardsSet(card_paths))
 
     def _run(self):
         input_file = self.input_.card

@@ -7,6 +7,7 @@ from time import sleep
 from concurrent.futures import Future
 import traceback
 from random import random
+from multiprocessing import Array
 
 from typing import Optional, List
 
@@ -16,32 +17,17 @@ from .files import Files
 
 
 @dataclass
-class FileInFileOutStep(ABC):
-    """Abstract class representing a single file-in-file-out operation in tasdmc pipeline"""
-
-    @abstractmethod
-    def run(self, *args, **kwargs):
-        """Main method for running the step. Must be overriden by subclasses."""
-        pass
-
-    @classmethod
-    def validate_config(self):
-        """Validation of config values relevant to the step. May (and should) be overriden by subclasses"""
-        pass
-
-
-@dataclass
-class FileInFileOutPipelineStep(FileInFileOutStep):
-    """Abstract subclass representing a FileInFileOutStep as a part of pipeline. This means that it
+class PipelineStep(ABC):
+    """Abstract class representing a file-in-file-out step in a simulation pipeline.
 
     * can be run in parallel with other steps
     * checks input/output files before doing anything
-    * maintains pipeline status in a dedicated file
+    * reports pipeline failure to a dedicated file
     """
 
     input_: Files
     output: Files
-    previous_steps: Optional[List[FileInFileOutPipelineStep]] = None
+    previous_steps: Optional[List[PipelineStep]] = None
 
     @property
     def pipeline_id(self) -> str:
@@ -59,6 +45,9 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
     @property
     def id_(self):
         return f'{self.__class__.__name__}:{self.input_.id_}:{self.output.id_}'
+
+    def set_shared_array_index(self, i: int):
+        self._shared_array_index = i
 
     @property
     @abstractmethod
@@ -141,4 +130,9 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
 
         May be overriden by subclasses.
         """
+        pass
+
+    @classmethod
+    def validate_config(self):
+        """Validation of config values relevant to the step. May (and should) be overriden by subclasses"""
         pass

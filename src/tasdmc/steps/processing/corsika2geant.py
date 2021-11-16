@@ -9,7 +9,7 @@ from typing import List
 
 from tasdmc import fileio
 from tasdmc.c_routines_wrapper import run_corsika2geant, run_tile_file_check
-from tasdmc.steps.base import Files, NotAllRetainedFiles, FileInFileOutPipelineStep
+from tasdmc.steps.base import Files, NotAllRetainedFiles, PipelineStep
 from tasdmc.steps.utils import check_file_is_empty, concatenate_and_hash, check_last_line_contains
 from tasdmc.steps.exceptions import FilesCheckFailed
 
@@ -99,7 +99,7 @@ class C2GOutputFiles(Files):
             check_stderr.unlink(missing_ok=True)
 
 
-class Corsika2GeantStep(FileInFileOutPipelineStep):
+class Corsika2GeantStep(PipelineStep):
     input_: C2GInputFiles
     output: C2GOutputFiles
 
