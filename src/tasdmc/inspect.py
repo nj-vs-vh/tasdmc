@@ -10,7 +10,7 @@ from typing import List, Tuple, Optional, ClassVar, Dict
 
 from tasdmc import fileio
 from tasdmc.utils import batches
-from tasdmc.pipeline import standard_pipeline_steps
+from tasdmc.pipeline import standard_simulation_steps
 from tasdmc.config.internal import remove_config_key
 from tasdmc.steps.exceptions import HashComputationFailed, FilesCheckFailed
 from tasdmc.utils import user_confirmation
@@ -143,7 +143,7 @@ def _inspect_pipeline_steps(pipeline_id: str, fix: bool = False, verbose: bool =
     pipeline_card_file = fileio.corsika_input_files_dir() / f"{pipeline_id}.in"
     if not pipeline_card_file.exists():
         click.secho("Can't find CORSIKA input card for pipeline!", fg='red', bold=True)
-    pipeline_steps = standard_pipeline_steps(cards_generation_step=None, card_paths_override=[pipeline_card_file])
+    pipeline_steps = standard_simulation_steps(corsika_card_paths=[pipeline_card_file])
 
     for step in pipeline_steps:
         step_inspection = StepInspectionResult.inspect(step)

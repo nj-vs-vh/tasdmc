@@ -4,14 +4,12 @@ Based on runcorsd-old/gen_infiles_primary.sh
 """
 
 from __future__ import annotations
-from dataclasses import dataclass
 from pathlib import Path
 import getpass
 
 from typing import List, Tuple
 
 from tasdmc import config, fileio, logs
-from ..base import Files, FileInFileOutStep
 from .corsika_card import (
     CorsikaCardData,
     BTS_PAR,
@@ -22,138 +20,111 @@ from .corsika_card import (
 )
 
 
-@dataclass
-class CorsikaCardsSet(Files):
-    files: List[Path]
+def generate_corsika_cards() -> List[Path]:
+    generated_card_paths: List[Path] = []
 
-    @property
-    def must_exist(self):
-        return self.files
+    particle, particle_id = _particle_id_from_config()
+    logs.cards_generation_info(f'Primary particle: {particle} (id {particle_id})')
 
+    log10E_min, log10E_max = log10E_bounds_from_config()
+    logs.cards_generation_info(
+        f'Energy scale (log10(E / eV)): {log10E_min:.1f} ... {log10E_max:.1f}, with step {LOG10_E_STEP:.1f}'
+    )
 
-@dataclass
-class CorsikaCardsGenerationStep(FileInFileOutStep):
-    output: CorsikaCardsSet
-    input_: None = None
+    high_E_model = config.get_key('corsika.high_E_hadronic_interactions_model')
+    low_E_model = config.get_key('corsika.low_E_hadronic_interactions_model')
+    logs.cards_generation_info(f'Hadronic interactions models: {high_E_model}/{low_E_model}')
 
-    @classmethod
-    def create_and_run(cls) -> CorsikaCardsGenerationStep:
-        """For CORSIKA cards generation a set of output files cannot be easily determined in advance.
-        Instead, it is done in runtime based on optimal number of cards per energy bin.
+    event_number_multiplier = _event_number_multiplier_from_config()
+    logs.cards_generation_info(
+        f"Event numbers are multiplied by {event_number_multiplier:.3f} in each energy bin"
+    )
 
-        Because of that, instead of instantiate-then-run, use this class method
-        >>> CorsikaInputFilesGeneration.create_and_run()
-        """
-        instance = CorsikaCardsGenerationStep(CorsikaCardsSet([]))
-        instance.run()  # here corsika input files are added to output.files list
-        # making sure only generated .in files are there and no others; we'll use .in files for reference!
-        output_files_set = set(instance.output.files)
-        for card_file in fileio.corsika_input_files_dir().iterdir():
-            if card_file not in output_files_set:
-                card_file.unlink()
-        return instance
+    # common corsika card parameters
+    cd = CorsikaCardData()
+    cd.set_USER(getpass.getuser())
+    cd.set_HOST("chpc")
+    cd.set_PRMPAR(particle_id)
+    cd.replace_card("DIRECT", str(fileio.corsika_output_files_dir()) + '/')  # directing .long and particle file
 
-    def run(self):
-        particle, particle_id = _particle_id_from_config()
-        logs.cards_generation_info(f'Primary particle: {particle} (id {particle_id})')
+    if high_E_model == 'EPOS':
+        cd.add_EPOS_CARDS()
 
-        log10E_min, log10E_max = log10E_bounds_from_config()
+    # as noted by Yana Zhezher, CORSIKA fails with this model and default ECUTS
+    if low_E_model == 'URQMD':
+        cd.replace_card("ECUTS", "0.3  0.05  0.00025  0.00025")
+
+    logs.cards_generation_info('\nCards per energy bin')
+    for E_bin_i in range(1 + int((log10E_max - log10E_min) / LOG10_E_STEP)):
+        log10E = log10E_min + E_bin_i * LOG10_E_STEP
+        cd.set_fixed_log10en(log10E)
+        params = BTS_PAR[log10E]
+        energy_id = int(params[0])
+        cd.set_THIN(params[1], params[2], params[3])
+        cd.set_THINH(params[4], params[5])
+
+        cards_count = get_cards_count_by_log10E(log10E)
+
+        # NOTE: this limitation is eliminated in the latest corsika
+        # NRREXT option may be used, files are then named DATnnnnnnnnn istead of DATnnnnnn
+        if not 0 <= cards_count <= 10000:
+            raise ValueError(
+                f"Event number multiplier {event_number_multiplier} results in the file index outside [0; 9999] "
+                + f"(event number without multiplication = {params[6]})."
+            )
+
+        skipped_cards_count = 0
+
+        def file_index_to_runnr(idx: int, energy_id: int) -> str:
+            return f"{idx * 100 + energy_id:06d}"
+
+        for file_index in range(cards_count):
+            runnr = file_index_to_runnr(file_index, energy_id)
+            cd.set_RUNNR(runnr)
+            cd.set_random_seeds()
+            card_file = fileio.corsika_input_files_dir() / f"DAT{runnr}.in"
+            generated_card_paths.append(card_file)
+            if card_file.exists():
+                skipped_cards_count += 1
+                continue
+            else:
+                with open(card_file, "w") as f:
+                    f.write(cd.buf + "\n")
+
+        skipped_msg = (
+            ''
+            if skipped_cards_count == 0
+            else (
+                ' (already found in the run dir)'
+                if skipped_cards_count == cards_count
+                else f' ({skipped_cards_count}/{cards_count} of cards already found in the run dir)'
+            )
+        )
         logs.cards_generation_info(
-            f'Energy scale (log10(E / eV)): {log10E_min:.1f} ... {log10E_max:.1f}, with step {LOG10_E_STEP:.1f}'
+            f"PRIMARY {particle_id:d} ENERGY {log10E:.1f} ({energy_id:02d}): "
+            + f"{cards_count:d} cards: "
+            + f"DAT{file_index_to_runnr(0, energy_id)} ... DAT{file_index_to_runnr(cards_count - 1, energy_id)}"
+            + skipped_msg,
         )
 
-        high_E_model = config.get_key('corsika.high_E_hadronic_interactions_model')
-        low_E_model = config.get_key('corsika.low_E_hadronic_interactions_model')
-        logs.cards_generation_info(f'Hadronic interactions models: {high_E_model}/{low_E_model}')
+    return generated_card_paths
 
-        event_number_multiplier = _event_number_multiplier_from_config()
-        logs.cards_generation_info(
-            f"Event numbers are multiplied by {event_number_multiplier:.3f} in each energy bin"
+
+def validate_config():
+    _particle_id_from_config()
+    log10E_bounds_from_config()
+    _event_number_multiplier_from_config()
+
+    allowed_high_E_models = ('QGSJETII', 'EPOS')
+    if config.get_key('corsika.high_E_hadronic_interactions_model') not in allowed_high_E_models:
+        raise ValueError(
+            f"high_E_hadronic_interactions_model must be one of: {', '.join(allowed_high_E_models)}"
         )
-
-        # common corsika card parameters
-        cd = CorsikaCardData()
-        cd.set_USER(getpass.getuser())
-        cd.set_HOST("chpc")
-        cd.set_PRMPAR(particle_id)
-        cd.replace_card("DIRECT", str(fileio.corsika_output_files_dir()) + '/')  # directing .long and particle file
-
-        if high_E_model == 'EPOS':
-            cd.add_EPOS_CARDS()
-
-        # as noted by Yana Zhezher, CORSIKA fails with this model and default ECUTS
-        if low_E_model == 'URQMD':
-            cd.replace_card("ECUTS", "0.3  0.05  0.00025  0.00025")
-
-        logs.cards_generation_info('\nCards per energy bin')
-        for E_bin_i in range(1 + int((log10E_max - log10E_min) / LOG10_E_STEP)):
-            log10E = log10E_min + E_bin_i * LOG10_E_STEP
-            cd.set_fixed_log10en(log10E)
-            params = BTS_PAR[log10E]
-            energy_id = int(params[0])
-            cd.set_THIN(params[1], params[2], params[3])
-            cd.set_THINH(params[4], params[5])
-
-            cards_count = get_cards_count_by_log10E(log10E)
-
-            # NOTE: this limitation is eliminated in the latest corsika
-            # NRREXT option may be used, files are then named DATnnnnnnnnn istead of DATnnnnnn
-            if not 0 <= cards_count <= 10000:
-                raise ValueError(
-                    f"Event number multiplier {event_number_multiplier} results in the file index outside [0; 9999] "
-                    + f"(event number without multiplication = {params[6]})."
-                )
-
-            skipped_cards_count = 0
-
-            def file_index_to_runnr(idx: int, energy_id: int) -> str:
-                return f"{idx * 100 + energy_id:06d}"
-
-            for file_index in range(cards_count):
-                runnr = file_index_to_runnr(file_index, energy_id)
-                cd.set_RUNNR(runnr)
-                cd.set_random_seeds()
-                card_file = fileio.corsika_input_files_dir() / f"DAT{runnr}.in"
-                self.output.files.append(card_file)
-                if card_file.exists():
-                    skipped_cards_count += 1
-                    continue
-                else:
-                    with open(card_file, "w") as f:
-                        f.write(cd.buf + "\n")
-
-            skipped_msg = (
-                ''
-                if skipped_cards_count == 0
-                else (
-                    ' (already found in the run dir)'
-                    if skipped_cards_count == cards_count
-                    else f' ({skipped_cards_count}/{cards_count} of cards already found in the run dir)'
-                )
-            )
-            logs.cards_generation_info(
-                f"PRIMARY {particle_id:d} ENERGY {log10E:.1f} ({energy_id:02d}): "
-                + f"{cards_count:d} cards: "
-                + f"DAT{file_index_to_runnr(0, energy_id)} ... DAT{file_index_to_runnr(cards_count - 1, energy_id)}"
-                + skipped_msg,
-            )
-
-    @classmethod
-    def validate_config(cls):
-        _particle_id_from_config()
-        log10E_bounds_from_config()
-        _event_number_multiplier_from_config()
-
-        allowed_high_E_models = ('QGSJETII', 'EPOS')
-        if config.get_key('corsika.high_E_hadronic_interactions_model') not in allowed_high_E_models:
-            raise ValueError(
-                f"high_E_hadronic_interactions_model must be one of: {', '.join(allowed_high_E_models)}"
-            )
-        allowed_low_E_models = ('FLUKA', 'URQMD', 'GHEISHA')
-        if config.get_key('corsika.low_E_hadronic_interactions_model') not in allowed_low_E_models:
-            raise ValueError(
-                f"low_E_hadronic_interactions_model must be one of: {', '.join(allowed_low_E_models)}"
-            )
+    allowed_low_E_models = ('FLUKA', 'URQMD', 'GHEISHA')
+    if config.get_key('corsika.low_E_hadronic_interactions_model') not in allowed_low_E_models:
+        raise ValueError(
+            f"low_E_hadronic_interactions_model must be one of: {', '.join(allowed_low_E_models)}"
+        )
 
 
 def get_cards_count_by_log10E(log10E: float):

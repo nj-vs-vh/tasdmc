@@ -2,7 +2,6 @@ from typing import List, Type
 
 from .base import FileInFileOutStep, FileInFileOutPipelineStep
 
-from .corsika_cards_generation import CorsikaCardsGenerationStep
 from .processing.corsika import CorsikaStep
 from .processing.particle_file_splitting import ParticleFileSplittingStep
 from .processing.dethinning import DethinningStep
@@ -13,7 +12,6 @@ from .processing.spectral_sampling import SpectralSamplingStep
 
 
 all_steps: List[Type[FileInFileOutStep]] = [
-    CorsikaCardsGenerationStep,
     CorsikaStep,
     ParticleFileSplittingStep,
     DethinningStep,

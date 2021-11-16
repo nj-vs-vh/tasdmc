@@ -1,11 +1,10 @@
 from concurrent.futures import ProcessPoolExecutor, Future, wait
 from pathlib import Path
 
-from typing import List, Optional
+from typing import List
 
 from tasdmc import config, fileio, system
 from tasdmc.steps import (
-    CorsikaCardsGenerationStep,
     CorsikaStep,
     ParticleFileSplittingStep,
     DethinningStep,
@@ -15,26 +14,15 @@ from tasdmc.steps import (
     SpectralSamplingStep,
     FileInFileOutPipelineStep,
 )
+from tasdmc.steps.corsika_cards_generation import generate_corsika_cards
 from tasdmc.system.monitor import run_system_monitor
 from tasdmc.utils import batches
 
 
-def standard_pipeline_steps(
-    cards_generation_step: Optional[CorsikaCardsGenerationStep],
-    card_paths_override: Optional[List[Path]] = None,
-) -> List[FileInFileOutPipelineStep]:
+def standard_simulation_steps(corsika_card_paths: List[Path]) -> List[FileInFileOutPipelineStep]:
     """List of pipeline steps *in order of optimal execution*"""
     steps: List[FileInFileOutPipelineStep] = []
-    if cards_generation_step:
-        corsika_steps = CorsikaStep.from_corsika_cards_generation(cards_generation_step)
-    else:
-        if card_paths_override:
-            corsika_steps = CorsikaStep.from_corsika_card_paths(card_paths_override)
-        else:
-            raise ValueError(
-                "standard pipeline steps may be created from either CorsikaCardsGenerationStep "
-                + "instance or list of paths to CORSIKA cards"
-            )
+    corsika_steps = CorsikaStep.from_corsika_card_paths(corsika_card_paths)
 
     # TODO: make batch size configurable here?
     for corsika_steps_batch in batches(corsika_steps, config.used_processes()):
@@ -66,16 +54,17 @@ def with_pipelines_mask(steps: List[FileInFileOutPipelineStep]) -> List[FileInFi
 def run_standard_pipeline(continuing: bool):
     system.set_process_title("tasdmc main")
     fileio.prepare_run_dir(continuing)
-    cards_generation = CorsikaCardsGenerationStep.create_and_run()
-    steps = standard_pipeline_steps(cards_generation_step=cards_generation)
+    steps = standard_simulation_steps(corsika_card_paths=generate_corsika_cards())
     steps = with_pipelines_mask(steps)
     # workaround; TODO: pack steps sequence in a pipeline class
     config.validate(set(step.__class__ for step in steps))
     system.run_in_background(run_system_monitor, keep_session=True)
+
+    def init_worker_process():
+        system.set_process_title("tasdmc worker")
+
     n_processes = config.used_processes()
-    with ProcessPoolExecutor(
-        max_workers=n_processes, initializer=lambda: system.set_process_title("tasdmc worker")
-    ) as executor:
+    with ProcessPoolExecutor(max_workers=n_processes, initializer=init_worker_process) as executor:
         futures_queue: List[Future] = []
         for step in steps:
             step.schedule(executor, futures_queue)
