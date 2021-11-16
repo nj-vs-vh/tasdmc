@@ -23,7 +23,7 @@ class Files(ABC):
         return super(Files, cls).__new__(cls)
 
     def __str__(self):
-        return self._stored_hash_path.name
+        return self.id_
 
     @property
     def all_files(self) -> List[Path]:
@@ -112,25 +112,29 @@ class Files(ABC):
     # methods for calculating Files' hash and storing it on disk for later check
 
     @property
-    def to_be_hashed(self) -> Optional[List[Path]]:
-        """Explicit list of file Paths that should be used to get Files' hash.
+    def id_paths(self) -> Optional[List[Path]]:
+        """Explicit list of file paths that uniquely identify the Files instance
 
         If not overriden by a subclass and subclass is a dataclass, all Path and List[Path] fields are used.
         """
         return None
 
     @property
-    def _to_be_hashed(self) -> List[Path]:
-        if self.to_be_hashed is not None:
-            return self.to_be_hashed
+    def _id_paths(self) -> List[Path]:
+        if self.id_paths is not None:
+            return self.id_paths
         else:
             return self.all_files
 
     @property
+    def id_(self) -> str:
+        """Unique identitifer for Files instance"""
+        paths_id = concatenate_and_hash(self._id_paths)
+        return f"{self.__class__.__name__}.{paths_id}"
+
+    @property
     def _stored_hash_path(self) -> Path:
-        """Hash is stored in a file with class name and file paths' (not content!) hash"""
-        paths_id = concatenate_and_hash(self._to_be_hashed)
-        return fileio.input_hashes_dir() / f"{self.__class__.__name__}.{paths_id}"
+        return fileio.input_hashes_dir() / self.id_
 
     def _get_file_contents_hash(self, file: Path) -> str:
         if not file.exists():
@@ -148,7 +152,7 @@ class Files(ABC):
             pass
 
         file_hashes = []
-        for file in self._to_be_hashed:
+        for file in self._id_paths:
             file_hashes.append(self._get_file_contents_hash(file))
         contents_hash = concatenate_and_hash(file_hashes)
 

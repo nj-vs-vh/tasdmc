@@ -57,6 +57,10 @@ class FileInFileOutPipelineStep(FileInFileOutStep):
             return self.previous_steps[0].pipeline_id
 
     @property
+    def id_(self):
+        return f'{self.__class__.__name__}:{self.input_.id_}:{self.output.id_}'
+
+    @property
     @abstractmethod
     def description(self) -> str:
         """Step description string, used for logging"""

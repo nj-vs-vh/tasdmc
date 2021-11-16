@@ -61,16 +61,16 @@ class EventFiles(Files):
     calibration_file_by_epoch: Dict[int, Path]
 
     @property
-    def to_be_hashed(self) -> List[Path]:
+    def id_paths(self) -> List[Path]:
         return [self.merged_events_file, self.stdout, self.stderr]
 
     @property
     def must_exist(self) -> List[Path]:
-        return self.to_be_hashed
+        return self.id_paths
 
     @property
     def all_files(self) -> List[Path]:
-        return self.to_be_hashed + [
+        return self.id_paths + [
             *self.events_file_by_epoch.values(),
             *self.events_log_by_epoch.values(),
             self.concat_log,
