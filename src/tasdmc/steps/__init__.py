@@ -9,6 +9,7 @@ from .processing.corsika2geant import Corsika2GeantStep
 from .processing.tothrow_generation import TothrowGenerationStep
 from .processing.event_generation import EventsGenerationStep
 from .processing.spectral_sampling import SpectralSamplingStep
+from .processing.reconstruction import ReconstructionStep
 
 
 all_steps: List[Type[PipelineStep]] = [
@@ -19,6 +20,7 @@ all_steps: List[Type[PipelineStep]] = [
     TothrowGenerationStep,
     EventsGenerationStep,
     SpectralSamplingStep,
+    ReconstructionStep,
 ]
 
 

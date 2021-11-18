@@ -28,8 +28,12 @@ def execute_routine(
 @dataclass
 class Pipes:
     stdout_file: Path
-    stderr_file: Path
+    stderr_file: Optional[Path] = None
     append: bool = False
+
+    def __post_init__(self):
+        if self.stderr_file is None:
+            self.stderr_file = self.stdout_file
 
     def __enter__(self):
         if not self.append:

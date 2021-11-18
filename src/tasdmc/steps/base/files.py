@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from pathlib import Path
 from dataclasses import fields, is_dataclass
 from functools import lru_cache
@@ -16,6 +16,12 @@ class Files(ABC):
 
     Subclassed by each step to incapsulate specific behavior and checks.
     """
+
+    @property
+    @abstractmethod
+    def must_exist(self) -> List[Path]:
+        """List of file Paths that must exist for Files to be a valid step output. Must be overriden by subclasses."""
+        pass
 
     def __new__(cls, *args, **kwargs):
         if not is_dataclass(cls):
@@ -70,11 +76,6 @@ class Files(ABC):
 
     # Files' validation methods
 
-    @property
-    def must_exist(self) -> List[Path]:
-        """List of file Paths that must exist for Files to be a valid step output. May be overriden by subclasses."""
-        return []
-
     def assert_files_are_ready(self):
         """Check Files if they are ready and raise FilesCheckFailes exception if there's a problem.
 
@@ -93,7 +94,12 @@ class Files(ABC):
             self._check_contents()
 
     def files_were_produced(self) -> bool:
-        """Returns bool value indicating if Files' were already produced."""
+        """Returns bool value indicating if Files' were already produced.
+        
+        This differs from assert_files_are_ready in semantics: files were once produced (i.e. the step producing it was
+        completed) vs files are ready at the moment (i.e. ready to be consumed by a step as input). See subclasses for
+        details.
+        """
         try:
             self.assert_files_are_ready()
             return True
@@ -180,26 +186,101 @@ class Files(ABC):
         return self.contents_hash == stored_hash
 
 
-class NotAllRetainedFiles(Files):
-    """Subclass of Files for cases when some of the files are not retained (for example, they are too big)"""
+class _AllowedToBeMissingFiles(Files):
+    """Files assume that all files in must_exist must actually exist but this may not be the case"""
 
-    def clean(self):
-        for f in self.all_files:
-            f.unlink(missing_ok=True)
-            _with_deleted_suffix(f).unlink(missing_ok=True)
+    @abstractmethod
+    def _get_missing_file_contents_hash(self, file: Path) -> str:
+        pass
+
+    def _get_file_contents_hash(self, file: Path) -> str:
+        if not file.exists():
+            return self._get_missing_file_contents_hash(file)
+        else:
+            return super()._get_file_contents_hash(file)
+
+    @abstractmethod
+    def _files_were_produced_but_some_missing(self) -> bool:
+        pass
+
+    def files_were_produced(self) -> bool:
+        for f in self.must_exist:
+            if not f.exists():
+                return self._files_were_produced_but_some_missing()
+        return super().files_were_produced()
+
+
+class NotAllRetainedFiles(_AllowedToBeMissingFiles):
+    """Subclass for cases when some of the files are not retained (e.g., they are too big or just redundant)
+    
+    In this case the "original" file will be deleted and "original.deleted" will be created in its place,
+    containing info about "original"'s size and contents hash.
+    """
 
     @property
+    @abstractmethod
     def not_retained(self) -> List[Path]:
         """List of file Paths that can be removed after they have been used in pipeline. This should include
         temporary or very large files, unnecessary for the end result. May be overriden by subclasses.
         """
-        return []
+        pass
+
+    def __post_init__(self):
+        if not set(self.not_retained).issubset(self.must_exist):
+            raise ValueError(f"All not retained files must also be marked as must_exist")
+
+    def _get_missing_file_contents_hash(self, file: Path) -> str:
+        deleted_file = self._with_deleted_suffix(file)
+        if deleted_file.exists():
+            with open(deleted_file, 'r') as df:
+                last_line = ''
+                for line in df:
+                    if line.strip():
+                        last_line = line
+                if len(last_line) == 32:
+                    return last_line
+                else:
+                    raise HashComputationFailed(
+                        f"Can't recover {self.__class__.__name__}'s contents hash from {deleted_file}"
+                    )
+        else:
+            raise HashComputationFailed(
+                f"Can't compute {self.__class__.__name__}'s contents hash, "
+                + "some files to be hashed and their .deleted traces do not exist"
+            )
+
+    def _files_were_produced_but_some_missing(self) -> bool:
+        for f in self.must_exist:
+            if not f.exists():
+                if f not in self.not_retained or not self._with_deleted_suffix(f).exists():
+                    if _file_checks_log_enabled():
+                        if f not in self.not_retained:
+                            file_checks_debug(
+                                f"{self} check failed:\n"
+                                + f"{f.name} is missing and isn't marked as not retained"
+                            )
+                        elif not self._with_deleted_suffix(f).exists():
+                            file_checks_debug(
+                                f"{self} check failed:\n"
+                                + f"both {f.name} and {self._with_deleted_suffix(f).name} are missing"
+                            )
+                    return False
+        return True
+
+    def clean(self):
+        for f in self.all_files:
+            f.unlink(missing_ok=True)
+            self._with_deleted_suffix(f).unlink(missing_ok=True)
+
+    @staticmethod
+    def _with_deleted_suffix(p: Path) -> Path:
+        return Path(str(p) + '.deleted')
 
     def delete_not_retained_files(self):
         """Delete files that are not retained after pipeline end and create .deleted files in their place"""
         for f in self.not_retained:
             if f.exists():
-                with open(_with_deleted_suffix(f), 'w') as del_f:
+                with open(self._with_deleted_suffix(f), 'w') as del_f:
                     del_f.write(
                         f'{f}\nwas produced bytes and then deleted\n\n'
                         + f'its size was {f.stat().st_size} bytes\n\n'
@@ -208,66 +289,34 @@ class NotAllRetainedFiles(Files):
                     )
                 f.unlink()
 
-    def _get_file_contents_hash(self, file: Path) -> str:
-        if not file.exists():
-            deleted_file = _with_deleted_suffix(file)
-            if deleted_file.exists():
-                with open(deleted_file, 'r') as df:
-                    last_line = ''
-                    for line in df:
-                        if line.strip():
-                            last_line = line
-                    if len(last_line) == 32:
-                        return last_line
-                    else:
-                        raise HashComputationFailed(
-                            f"Can't recover {self.__class__.__name__}'s contents hash from {deleted_file}"
-                        )
-            else:
-                raise HashComputationFailed(
-                    f"Can't compute {self.__class__.__name__}'s contents hash, "
-                    + "some files to be hashed and their .deleted traces do not exist"
-                )
-        return file_contents_hash(file, hasher_name='md5')
 
-    def files_were_produced(self) -> bool:
-        """Returns bool value indicating if Files' were already produced.
+class OptionalFiles(Files):
+    """Subclass for cases when Files may or may not be produced. If they are, they are checked as always."""
 
-        This is not the same as assert_files_are_ready as it also checks for files that may have been deleted
-        because they are listed in not_retained.
-        """
-        try_checking_contents = True
-        for f in self.must_exist:
-            if not f.exists():
-                if f in self.not_retained and _with_deleted_suffix(f).exists():
-                    try_checking_contents = False  # there's no point in checking contents anymore
-                else:
-                    if _file_checks_log_enabled():
-                        if f not in self.not_retained:
-                            file_checks_debug(
-                                f"{self} check failed:\n"
-                                + f"{f.name} is missing not marked as not retained"
-                            )
-                        elif not _with_deleted_suffix(f).exists():
-                            file_checks_debug(
-                                f"{self} check failed:\n"
-                                + f"{f.name} and {_with_deleted_suffix(f).name} are missing"
-                            )
-                    return False
+    @property
+    @abstractmethod
+    def optional(self) -> List[Path]:
+        pass
 
-        if try_checking_contents:
-            try:
-                self._check_contents()
-            except FilesCheckFailed as e:
-                if _file_checks_log_enabled():
-                    file_checks_debug(f"{self} check failed: bad contents:\n{e}")
-                return False
+    def __post_init__(self):
+        if set(self.optional).intersection(self.must_exist):
+            raise ValueError(f"All not retained files must also be marked as must_exist")
 
-        return True
+    @property
+    def is_realized(self) -> bool:
+        return all(f.exists() for f in self.optional)
 
+    def _check_contents(self):
+        self._check_mandatory_files_contents()
+        if self.is_realized:
+            self._check_optional_files_contents()
 
-def _with_deleted_suffix(p: Path) -> Path:
-    return Path(str(p) + '.deleted')
+    def _check_mandatory_files_contents(self):
+        pass
+
+    def _check_optional_files_contents(self):
+        """May be overriden in the same way as _check_contents for other Files"""
+        pass            
 
 
 @lru_cache(1)

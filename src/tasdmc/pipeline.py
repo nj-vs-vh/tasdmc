@@ -15,6 +15,7 @@ from tasdmc.steps import (
     EventsGenerationStep,
     SpectralSamplingStep,
     PipelineStep,
+    ReconstructionStep,
 )
 from tasdmc.steps.corsika_cards_generation import generate_corsika_cards
 from tasdmc.system.monitor import run_system_monitor
@@ -43,6 +44,8 @@ def standard_simulation_steps(corsika_card_paths: List[Path]) -> List[PipelineSt
             steps.append(events_generation)
             for spctr_sampling in SpectralSamplingStep.from_events_generation(events_generation):
                 steps.append(spctr_sampling)
+                reconstruction = ReconstructionStep.from_spectral_sampling(spctr_sampling)
+                # steps.append(reconstruction)
     return steps
 
 

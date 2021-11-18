@@ -8,18 +8,18 @@ from enum import Enum
 from typing import List
 
 from tasdmc import config, fileio
-from tasdmc.steps.base import Files, PipelineStep
+from tasdmc.steps.base import OptionalFiles, PipelineStep
 from tasdmc.steps.processing.event_generation import EventFiles, EventsGenerationStep
 
 from tasdmc.c_routines_wrapper import execute_routine, Pipes
 from tasdmc.steps.corsika_cards_generation import log10E_bounds_from_config
 from tasdmc.steps.processing.tothrow_generation import dnde_exponent_from_config
 
-from tasdmc.steps.utils import check_file_is_empty, check_last_line_contains
+from tasdmc.steps.utils import check_file_is_empty, check_last_line_contains, check_dst_file_not_empty
 
 
 @dataclass
-class SpectralSampledEvents(Files):
+class SpectralSampledEvents(OptionalFiles):
     events: Path
     stdout: Path
     stderr: Path
@@ -28,11 +28,11 @@ class SpectralSampledEvents(Files):
 
     @property
     def must_exist(self) -> List[Path]:
-        return [self.stdout, self.stderr]  # events file may not exist if nothing was sampled!
+        return [self.stdout, self.stderr]
 
     @property
-    def not_empty(self) -> bool:
-        return self.events.exists()
+    def optional(self) -> List[Path]:
+        return [self.events]
 
     @classmethod
     def from_events_file(cls, events_file: EventFiles, log10E_min: float) -> SpectralSampledEvents:
@@ -46,13 +46,16 @@ class SpectralSampledEvents(Files):
             log10E_min=log10E_min,
         )
 
-    def _check_contents(self):
+    def _check_mandatory_files_contents(self):
         check_file_is_empty(
             self.stderr,
             ignore_strings=["$$$ dst_get_block_ : End of input file reached"],
             include_file_contents_in_error=True,
         )
         check_last_line_contains(self.stdout, must_contain="OK")
+
+    def _check_optional_files_contents(self):
+        check_dst_file_not_empty(self.events)
 
 
 class SpectralSamplingStep(PipelineStep):
@@ -85,7 +88,7 @@ class SpectralSamplingStep(PipelineStep):
                     '-o',
                     self.output.events,
                     '-s',
-                    TargetSpectrum.from_config(),
+                    TargetSpectrum.from_config().value,
                     '-i',
                     dnde_exponent_from_config(),
                     '-e',
