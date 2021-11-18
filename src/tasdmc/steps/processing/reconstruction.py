@@ -15,6 +15,7 @@ from .spectral_sampling import SpectralSampledEvents, SpectralSamplingStep
 @dataclass
 class ReconstructedEvents(OptionalFiles):
     log: Path
+    errorlog: Path
 
     rufptn_dst: Path
     rufptn_log: Path
@@ -44,6 +45,7 @@ class ReconstructedEvents(OptionalFiles):
         dir = fileio.reconstruction_dir()
         return ReconstructedEvents(
             log=dir / (base_name + ".log"),
+            errorlog=dir / (base_name + ".errorlog"),
             rufptn_dst=dir / (base_name + ".rufptn.dst.gz"),
             rufptn_log=dir / (base_name + ".rufptn.log"),
             sdtrgbk_dst=dir / (base_name + '.sdtrgbk.dst.gz'),
@@ -59,7 +61,7 @@ class ReconstructedEvents(OptionalFiles):
         check_last_line_contains(self.rufptn_log, "Done")
         check_last_line_contains(self.sdtrgbk_log, "Done")
         check_last_line_contains(self.rufldf_log, "Done")
-        check_dst_file_not_empty(self.output.rufldf_dst)
+        check_dst_file_not_empty(self.rufldf_dst)
 
 
 @dataclass
@@ -88,7 +90,7 @@ class ReconstructionStep(PipelineStep):
                 return
 
             log.write("Running rufptn\n")
-            with Pipes(self.output.rufptn_log) as pipes:
+            with Pipes(self.output.rufptn_log, self.output.errorlog) as pipes:
                 execute_routine(
                     'rufptn.run',
                     [self.input_.events, "-o1f", self.output.rufptn_dst, "-v", verbosity, "-f"],
@@ -98,7 +100,7 @@ class ReconstructionStep(PipelineStep):
             check_dst_file_not_empty(self.output.rufptn_dst)
 
             log.write("Running sdtrgbk\n")
-            with Pipes(self.output.sdtrgbk_log) as pipes:
+            with Pipes(self.output.sdtrgbk_log, self.output.errorlog) as pipes:
                 execute_routine(
                     'sdtrgbk.run',
                     [self.output.rufptn_dst, "-o1f", self.output.sdtrgbk_dst, "-v", verbosity, "-f"],
@@ -108,7 +110,7 @@ class ReconstructionStep(PipelineStep):
             check_dst_file_not_empty(self.output.sdtrgbk_dst)
 
             log.write("Running rufldf\n")
-            with Pipes(self.output.rufldf_log) as pipes:
+            with Pipes(self.output.rufldf_log, self.output.errorlog) as pipes:
                 execute_routine(
                     'rufldf.run',
                     [self.output.sdtrgbk_dst, "-o1f", self.output.rufldf_dst, "-v", verbosity, "-f", "-no_bw"],
