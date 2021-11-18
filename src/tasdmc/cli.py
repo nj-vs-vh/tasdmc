@@ -5,6 +5,7 @@ try:
     from pathlib import Path
     import gdown
     from gdown.cached_download import assert_md5sum
+    from time import sleep
 
     from tasdmc import __version__
     from tasdmc import config, fileio, system, pipeline, inspect, extract_calibration, hard_cleanup
@@ -121,11 +122,24 @@ def update_config_in_run(action: str, name: str, new_config_filename: str):
 
 
 @cli.command("progress", help="Display progress for run NAME")
+@click.option(
+    "-f",
+    "--follow",
+    is_flag=True,
+    default=False,
+    help="Update progress bar each few seconds. Warning: clears terminal!",
+)
 @_run_name_argument('name')
-def run_progress(name: str):
+def run_progress(name: str, follow: bool):
     if not _load_config_by_run_name(name):
         return
-    display_logs.print_pipelines_progress()
+    if not follow:
+        display_logs.print_pipelines_progress()
+    else:
+        while True:
+            click.clear()
+            display_logs.print_pipelines_progress()
+            sleep(3)
 
 
 @cli.command("inputs", help="Display inputs for run NAME")
