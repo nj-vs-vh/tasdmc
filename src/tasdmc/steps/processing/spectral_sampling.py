@@ -3,6 +3,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
+from enum import Enum
 
 from typing import List
 
@@ -10,7 +11,7 @@ from tasdmc import config, fileio
 from tasdmc.steps.base import Files, PipelineStep
 from tasdmc.steps.processing.event_generation import EventFiles, EventsGenerationStep
 
-from tasdmc.c_routines_wrapper import run_spectral_sampling, TargetSpectrum
+from tasdmc.c_routines_wrapper import execute_routine, Pipes
 from tasdmc.steps.corsika_cards_generation import log10E_bounds_from_config
 from tasdmc.steps.processing.tothrow_generation import dnde_exponent_from_config
 
@@ -73,36 +74,47 @@ class SpectralSamplingStep(PipelineStep):
         ]
 
     def _run(self):
-        run_spectral_sampling(
-            self.input_.merged_events_file,
-            self.output.events,
-            log10E_min=self.output.log10E_min,
-            stdout_file=self.output.stdout,
-            stderr_file=self.output.stderr,
-            target_spectrum=target_spectrum_from_config(),
-            dndE_exponent_source=dnde_exponent_from_config(),
-        )
+        with Pipes(self.output.stdout, self.output.stderr) as (stdout, stderr):
+            execute_routine(
+                'sdmc_conv_e2_to_spctr.run',
+                [
+                    '-o', self.output.events,
+                    '-s', TargetSpectrum.from_config(),
+                    '-i', dnde_exponent_from_config(),
+                    '-e', 10 ** (self.output.log10E_min - 18),  # log10(E/eV) => EeV
+                    self.input_.merged_events_file,
+                ],
+                stdout,
+                stderr,
+                global_=True,
+            )
 
     @classmethod
     def validate_config(cls):
-        target_spectrum_from_config()
+        TargetSpectrum.from_config()
         log10E_mins_from_config()
         dnde_exponent_from_config()
 
 
-def target_spectrum_from_config() -> TargetSpectrum:
-    target_spectrum_str = config.get_key("spectral_sampling.target")
-    matching_target_spectra = []
-    for ts in TargetSpectrum:
-        if ts.name.lower().startswith(target_spectrum_str.lower()):
-            matching_target_spectra.append(ts)
-    if len(matching_target_spectra) != 1:
-        ts_options_str = '\n'.join([ts.name for ts in TargetSpectrum])
-        raise ValueError(
-            f"Can't find unique target spectrum matching '{target_spectrum_str}', options:\n{ts_options_str}"
-        )
-    else:
-        return matching_target_spectra[0]
+class TargetSpectrum(Enum):
+    HIRES2008 = 1  # according to PRL 2008 (https://doi.org/10.1103/PhysRevLett.100.101101)
+    TASD2015 = 2  # according to ICRC 2015 paper
+    E_MINUS_3 = 3  # dN/dE ~ E^-3 power law
+
+    @classmethod
+    def from_config(cls) -> TargetSpectrum:
+        target_spectrum_str = config.get_key("spectral_sampling.target")
+        matching_target_spectra = []
+        for ts in TargetSpectrum:
+            if ts.name.lower().startswith(target_spectrum_str.lower()):
+                matching_target_spectra.append(ts)
+        if len(matching_target_spectra) != 1:
+            ts_options_str = '\n'.join([ts.name for ts in TargetSpectrum])
+            raise ValueError(
+                f"Can't find unique target spectrum matching '{target_spectrum_str}', options:\n{ts_options_str}"
+            )
+        else:
+            return matching_target_spectra[0]
 
 
 def log10E_mins_from_config() -> List[float]:

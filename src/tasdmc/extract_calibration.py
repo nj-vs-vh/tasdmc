@@ -11,7 +11,7 @@ from typing import List
 
 from tasdmc import config
 from tasdmc.utils import batches
-from tasdmc.c_routines_wrapper import run_sdmc_calib_extract
+from tasdmc.c_routines_wrapper import execute_routine, Pipes
 
 
 DAYS_IN_EPOCH = 30
@@ -19,6 +19,20 @@ DAYS_IN_EPOCH = 30
 
 def _date_from_raw_calibration_file(raw_calib_file: Path) -> date:
     return datetime.strptime(raw_calib_file.name, r'tasdcalib_pass2_%y%m%d.dst').date()
+
+
+def _run_sdmc_calib_extract(
+    constants_file: Path, output_file: Path, raw_calibration_files: List[Path], stdout_file: Path, stderr_file: Path
+):
+    """Exctracting calibration from a set of per-day raw .dst files and packing it into single epoch calibration"""
+    with Pipes(stdout_file, stderr_file) as (stdout, stderr):
+        execute_routine(
+            'sdmc_calib_extract.run',
+            ['-c', constants_file, '-o', output_file, *raw_calibration_files],
+            stdout,
+            stderr,
+            global_=True,
+        )
 
 
 def extract_calibration(raw_calibration_data_dir: Path, n_threads: int = 1):
@@ -65,7 +79,7 @@ def extract_calibration(raw_calibration_data_dir: Path, n_threads: int = 1):
         for i_epoch, raw_files_in_epoch in enumerate(batches(selected_raw_calibration_files, size=DAYS_IN_EPOCH)):
             i_epoch_str = str(i_epoch + 1).rjust(ceil(len(selected_raw_calibration_files) / DAYS_IN_EPOCH), '0')
             f = executor.submit(
-                run_sdmc_calib_extract,
+                _run_sdmc_calib_extract,
                 constants_file=constants_file,
                 output_file=output_files_dir / f'sdcalib_{i_epoch_str}.bin',
                 stdout_file=output_files_dir / f'{i_epoch_str}.stdout.log',

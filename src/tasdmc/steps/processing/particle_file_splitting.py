@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List
 
 from tasdmc import config
-from tasdmc.c_routines_wrapper import split_thinned_corsika_output
+from tasdmc.c_routines_wrapper import execute_routine, Pipes
 
 from tasdmc.steps.base import NotAllRetainedFiles, PipelineStep
 from .corsika import CorsikaStep, CorsikaOutputFiles
@@ -64,7 +64,8 @@ class ParticleFileSplittingStep(PipelineStep):
         return f"Splitting CORSIKA particle file {self.input_.particle.name} into {self.split_to} parts"
 
     def _run(self):
-        split_thinned_corsika_output(self.input_.particle, self.split_to, self.output.stdout, self.output.stderr)
+        with Pipes(self.output.stdout, self.output.stderr) as (stdout, stderr):
+            execute_routine('corsika_split_th.run', [self.input_.particle, self.split_to], stdout, stderr)
 
     @classmethod
     def validate_config(self):

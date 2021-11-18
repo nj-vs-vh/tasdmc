@@ -8,7 +8,7 @@ from uuid import uuid4
 from typing import List
 
 from tasdmc import fileio
-from tasdmc.c_routines_wrapper import run_corsika2geant, run_tile_file_check
+from tasdmc.c_routines_wrapper import execute_routine, Pipes
 from tasdmc.steps.base import Files, NotAllRetainedFiles, PipelineStep
 from tasdmc.steps.utils import check_file_is_empty, concatenate_and_hash, check_last_line_contains
 from tasdmc.steps.exceptions import FilesCheckFailed
@@ -89,7 +89,13 @@ class C2GOutputFiles(Files):
         check_stdout = Path(str(self.tile) + f'.check.stdout.{uuid}')
         check_stderr = Path(str(self.tile) + f'.check.stderr.{uuid}')
         try:
-            run_tile_file_check(self.tile, check_stdout, check_stderr)
+            with Pipes(check_stdout, check_stderr) as (stdout, stderr):
+                execute_routine(
+                    'check_gea_dat_file.run',
+                    [self.tile],
+                    stdout,
+                    stderr,
+                )
             check_file_is_empty(check_stderr)
             check_last_line_contains(check_stdout, 'OK')
         except CalledProcessError as e:
@@ -115,12 +121,13 @@ class Corsika2GeantStep(PipelineStep):
 
     def _run(self):
         self.input_.create_listing_file()
-        run_corsika2geant(
-            self.input_.dethinned_files_listing,
-            self.output.tile,
-            self.output.stdout,
-            self.output.stderr,
-        )
+        with Pipes(self.output.stdout, self.output.stderr) as (stdout, stderr):
+            execute_routine(
+                'corsika2geant.run',
+                [self.input_.dethinned_files_listing, fileio.DataFiles.sdgeant, self.output.tile],
+                stdout,
+                stderr,
+            )
         for temp_file in fileio.c2g_output_files_dir().glob(f"{self.output.tile.name}.tmp???"):
             temp_file.unlink()
 

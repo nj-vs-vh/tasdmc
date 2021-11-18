@@ -3,11 +3,13 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
-import re
 from functools import lru_cache
+import os
+import re
 import random
-from gdown.cached_download import assert_md5sum
 import tarfile
+import resource
+from gdown.cached_download import assert_md5sum
 
 from typing import List, Dict, Iterable, Tuple
 
@@ -19,13 +21,11 @@ from .corsika2geant import C2GOutputFiles, Corsika2GeantStep
 from .tothrow_generation import TothrowFile, TothrowGenerationStep
 
 from tasdmc.c_routines_wrapper import (
-    test_sdmc_spctr_runnable,
-    run_sdmc_spctr,
-    set_limits_for_sdmc_spctr,
-    run_sdmc_tsort,
     concatenate_dst_files,
     list_events_in_dst_file,
 )
+
+from tasdmc.c_routines_wrapper import execute_routine, Pipes
 
 
 @dataclass
@@ -158,14 +158,26 @@ class EventsGenerationStep(PipelineStep):
                 epoch_log_file.unlink(missing_ok=True)
                 for i_try in range(1, n_try + 1):
                     stdout.write(f'\tAttempt {i_try}/{n_try}\n')
-                    # fmt: off
-                    sdmc_spctr_exited_ok = run_sdmc_spctr(
-                        self.input_.c2g_output.tile, epoch_events_file, n_particles_per_epoch,
-                        random.randint(1, int(1e6)), epoch, sdcalib_file, smear_energies, epoch_log_file, epoch_log_file,
-                        # TODO: azi.txt file may be passed here
-                    )
-                    # fmt: on
-                    if sdmc_spctr_exited_ok and passed(check_last_line_contains)(epoch_log_file, must_contain="Done"):
+                    with Pipes(epoch_log_file, epoch_log_file, append=True) as (stdout, stderr):
+                        sdmc_spctr_res = execute_routine(
+                            _get_sdmc_spctr_executable(),
+                            [
+                                self.input_.c2g_output.tile,
+                                epoch_events_file,
+                                n_particles_per_epoch,
+                                random.randint(1, int(1e6)),
+                                epoch,
+                                sdcalib_file,
+                                fileio.DataFiles.atmos,
+                                1 if smear_energies else 0,
+                                # TODO: azi.txt file may optionally be passed here
+                            ],
+                            stdout=stdout,
+                            stderr=stderr,
+                            global_=True,
+                            check_errors=False,
+                        )
+                    if sdmc_spctr_res.returncode == 0 and passed(check_last_line_contains)(epoch_log_file, "Done"):
                         break
                 else:
                     stderr.write(f'Events for epoch {epoch} not generated after {n_try} attempts\n')
@@ -200,11 +212,17 @@ class EventsGenerationStep(PipelineStep):
                 epoch_events_file_stem = epoch_events_file.name.split('.')[0]
                 epoch_events_file_unsorted = epoch_events_file.parent / (epoch_events_file_stem + '_unsorted.dst.gz')
                 epoch_events_file.rename(epoch_events_file_unsorted)
-                sorting_success = run_sdmc_tsort(
-                    epoch_events_file_unsorted, epoch_events_file, epoch_log_file, epoch_log_file
-                )
+                with Pipes(epoch_log_file, epoch_log_file, append=True) as (stdout, stderr):
+                    tsort_res = execute_routine(
+                        'sdmc_tsort.run',
+                        [epoch_events_file_unsorted, '-o1f', epoch_events_file],
+                        stdout,
+                        stderr,
+                        global_=True,
+                        check_errors=False,
+                    )
                 epoch_events_file_unsorted.unlink(missing_ok=True)
-                if not sorting_success:
+                if tsort_res.returncode != 0:
                     stderr.write(
                         f'Time-sorting of events in {epoch_events_file.name} failed, see details in {epoch_log_file}\n'
                     )
@@ -282,3 +300,55 @@ def _get_calibration_files_by_epoch() -> Dict[int, Path]:
         raise BadDataFiles("Calibration epoch number can't be parsed for some sdcalib_*.bin files")
     calibration_file_nums = [int(m.group(1)) for m in calibration_file_num_matches]
     return {num: sdcalib for num, sdcalib in zip(calibration_file_nums, calibration_files)}
+
+
+@lru_cache(1)
+def _get_sdmc_spctr_executable():
+    """Find sdmc_spctr executable as it may be compiled with different suffixes"""
+    sdmc_spctr_candidates: List[Path] = []
+    PATH = os.environ['PATH']
+    for executables_dir in set(PATH.split(':')):
+        executables_dir = executables_dir.strip()
+        if not executables_dir:
+            continue
+        executables_dir = Path(executables_dir)
+        if not executables_dir.exists():
+            continue
+        for executable_file in executables_dir.iterdir():
+            if executable_file.name.startswith('sdmc_spctr'):
+                sdmc_spctr_candidates.append(executable_file)
+
+    if not sdmc_spctr_candidates:
+        raise FileNotFoundError("sdmc_spctr_*.run not found on $PATH!")
+    elif len(sdmc_spctr_candidates) > 1:
+        requested_sdmc_spctr_name = config.get_key("throwing.sdmc_spctr_executable_name", default=None)
+        if requested_sdmc_spctr_name is None:
+            raise FileNotFoundError(
+                "Multiple sdmc_spctr_*.run executables found on $PATH!:\n"
+                + '\n'.join([f"\t{exe}" for exe in sdmc_spctr_candidates])
+                + "\nSpecify throwing.sdmc_spctr_executable_name in run config"
+            )
+        else:
+            sdmc_spctr_candidates = [ef for ef in sdmc_spctr_candidates if ef.name == requested_sdmc_spctr_name]
+            if not sdmc_spctr_candidates:
+                raise FileNotFoundError(f"Requested {requested_sdmc_spctr_name} executable not found on $PATH")
+            elif len(sdmc_spctr_candidates) > 1:
+                raise FileNotFoundError(
+                    f"Found multiple executables matching requested {requested_sdmc_spctr_name}:\n"
+                    + '\n'.join([f"\t{exe}" for exe in sdmc_spctr_candidates])
+                    + '\nRemove some of them from $PATH to eliminate conflict'
+                )
+    return sdmc_spctr_candidates[0]  # we've ensured that this is the only option left!
+
+
+def set_limits_for_sdmc_spctr():
+    """Equivalent to ulimit -s unlimited on command line"""
+    _, hard_stack_limit = resource.getrlimit(resource.RLIMIT_STACK)
+    resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, hard_stack_limit))
+
+
+def test_sdmc_spctr_runnable():
+    sdmc_spctr = _get_sdmc_spctr_executable()
+    res = execute_routine(sdmc_spctr, [], global_=True, check_errors=False)
+    if 'Usage: ' not in res.stderr.decode('utf-8'):
+        raise OSError(f'{sdmc_spctr} do not work as expected!')

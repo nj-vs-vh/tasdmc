@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List
 
 from tasdmc import fileio
-from tasdmc.c_routines_wrapper import run_dethinning
+from tasdmc.c_routines_wrapper import execute_routine, Pipes
 
 from tasdmc.steps.base import NotAllRetainedFiles, PipelineStep
 from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty, check_last_line_contains
@@ -82,7 +82,8 @@ class DethinningStep(PipelineStep):
         return f"Dethinning {self.input_.particle.name}"
 
     def _run(self):
-        run_dethinning(self.input_.particle, self.output.dethinned_particle, self.output.stdout, self.output.stderr)
+        with Pipes(self.output.stdout, self.output.stderr) as (stdout, stderr):
+            execute_routine('dethinning.run', [self.input_.particle, self.output.dethinned_particle], stdout, stderr)
 
     def _post_run(self):
         self.input_.delete_not_retained_files()
