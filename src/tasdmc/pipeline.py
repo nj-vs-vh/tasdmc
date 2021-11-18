@@ -42,10 +42,10 @@ def standard_simulation_steps(corsika_card_paths: List[Path]) -> List[PipelineSt
             steps.append(tothrow_gen)
             events_generation = EventsGenerationStep.from_corsika2geant_with_tothrow(corsika2geant, tothrow_gen)
             steps.append(events_generation)
-            for spctr_sampling in SpectralSamplingStep.from_events_generation(events_generation):
-                steps.append(spctr_sampling)
-                reconstruction = ReconstructionStep.from_spectral_sampling(spctr_sampling)
-                # steps.append(reconstruction)
+            spctr_samplings = SpectralSamplingStep.from_events_generation(events_generation)
+            steps.extend(spctr_samplings)
+            reconstructions = [ReconstructionStep.from_spectral_sampling(ss) for ss in spctr_samplings]
+            steps.extend(reconstructions)
     return steps
 
 

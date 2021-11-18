@@ -16,6 +16,10 @@ from .files import Files
 from .step_status_shared import StepRuntimeStatus
 
 
+class StepFailedException(Exception):
+    pass
+
+
 @dataclass
 class PipelineStep(ABC):
     """Abstract class representing a file-in-file-out step in a simulation pipeline.
@@ -77,76 +81,76 @@ class PipelineStep(ABC):
         futures_list.append(executor.submit(self.run_in_executor))
 
     def run_in_executor(self):
-        # waiting for previous steps to complete
-        waiting_msg_logged = False
-        while True:
-            if self.previous_steps is None:  # the first step in a pipeline
-                break
-            previous_step_statuses = [ps.runtime_status for ps in self.previous_steps]
-            if any(s is StepRuntimeStatus.FAILED for s in previous_step_statuses):
-                logs.multiprocessing_info(f"Exiting '{self.description}' one of its previous steps has failed")
-                return
-            if all(s is StepRuntimeStatus.COMPLETED for s in previous_step_statuses):
-                break
-            if not waiting_msg_logged:
-                logs.multiprocessing_info(f"Steps previous to '{self.description}' aren't completed, waiting")
-                waiting_msg_logged = True
-            sleep(1)  # checked each 1 seconds
-
-        if pipeline_progress.is_failed(self.pipeline_id):
-            logs.multiprocessing_info(f"Exiting '{self.description}', pipeline marked as failed")
-            return
-
-        # pipeline integrity check
-        if self.previous_steps is not None:
-            previous_steps: List[PipelineStep] = self.previous_steps
-            if not all(previous_step.output.files_were_produced() for previous_step in previous_steps):
-                pipeline_progress.mark_failed(
-                    self.pipeline_id,
-                    errmsg=(
-                        f"Pipeline configuration error in {self.id_}\n\n"
-                        + f"Previous steps were completed, but not all their outputs are produced:\n"
-                        + "\n".join([f"\t{s.output}" for s in previous_steps])
-                    ),
-                )
-                return
-            if not self.input_.files_were_produced():
-                pipeline_progress.mark_failed(
-                    self.pipeline_id,
-                    errmsg=(
-                        f"Pipeline configuration error in {self.id_}\n\n"
-                        + f"Previous steps were completed, their outputs produced:\n"
-                        + "\n".join([f"\t{s.output}" for s in previous_steps])
-                        + f"\nBut this step's input is not:\n\t{self.input_}"
-                    ),
-                )
-                return
-
-        # actual step run
-        logs.multiprocessing_info(f"Entering '{self.description}'")
         try:
-            if self.output.files_were_produced() and self.input_.same_hash_as_stored():
-                step_progress.skipped(self)
-            else:
-                step_progress.started(self)
-                self.input_.assert_files_are_ready()
-                self.output.prepare_for_step_run()
-                self.input_.store_contents_hash()
-                self._run()
-                assert self.input_.same_hash_as_stored(), "Input hash changed while step was running"
-                self.output.assert_files_are_ready()
-                self._post_run()
-                step_progress.completed(self, output_size_mb=self.output.total_size('Mb'))
-            self.save_runtime_status(StepRuntimeStatus.COMPLETED)
-        except Exception as e:
-            step_progress.failed(self, errmsg=str(e))
-            pipeline_progress.mark_failed(
-                self.pipeline_id,
-                errmsg=(
-                    f"Pipeline failed on step {self.__class__.__name__} ({self.input_.contents_hash}) "
-                    + f"with traceback:\n\n{traceback.format_exc()}"
-                ),
-            )
+            # waiting for previous steps to complete
+            waiting_msg_logged = False
+            while True:
+                if self.previous_steps is None:  # the first step in a pipeline
+                    break
+                previous_step_statuses = [ps.runtime_status for ps in self.previous_steps]
+                if any(s is StepRuntimeStatus.FAILED for s in previous_step_statuses):
+                    logs.multiprocessing_info(f"Exiting '{self.description}' one of its previous steps has failed")
+                    raise StepFailedException()
+                if all(s is StepRuntimeStatus.COMPLETED for s in previous_step_statuses):
+                    break
+                if not waiting_msg_logged:
+                    logs.multiprocessing_info(f"Steps previous to '{self.description}' aren't completed, waiting")
+                    waiting_msg_logged = True
+                sleep(1)  # checked each 1 seconds
+
+            # pipeline integrity check
+            if self.previous_steps is not None:
+                previous_steps: List[PipelineStep] = self.previous_steps
+                if not all(previous_step.output.files_were_produced() for previous_step in previous_steps):
+                    pipeline_progress.mark_failed(
+                        self.pipeline_id,
+                        errmsg=(
+                            f"Pipeline configuration error in {self.id_}\n\n"
+                            + f"Previous steps were completed, but not all their outputs are produced:\n"
+                            + "\n".join([f"\t{s.output}" for s in previous_steps])
+                        ),
+                    )
+                    raise StepFailedException()
+                if not self.input_.files_were_produced():
+                    pipeline_progress.mark_failed(
+                        self.pipeline_id,
+                        errmsg=(
+                            f"Pipeline configuration error in {self.id_}\n\n"
+                            + f"Previous steps were completed, their outputs produced:\n"
+                            + "\n".join([f"\t{s.output}" for s in previous_steps])
+                            + f"\nBut this step's input is not:\n\t{self.input_}"
+                        ),
+                    )
+                    raise StepFailedException()
+
+            # actual step run
+            logs.multiprocessing_info(f"Entering '{self.description}'")
+            try:
+                if self.output.files_were_produced() and self.input_.same_hash_as_stored():
+                    step_progress.skipped(self)
+                else:
+                    step_progress.started(self)
+                    self.input_.assert_files_are_ready()
+                    self.output.prepare_for_step_run()
+                    self.input_.store_contents_hash()
+                    self._run()
+                    assert self.input_.same_hash_as_stored(), "Input hash changed while step was running"
+                    self.output.assert_files_are_ready()
+                    self._post_run()
+                    step_progress.completed(self, output_size_mb=self.output.total_size('Mb'))
+
+                self.save_runtime_status(StepRuntimeStatus.COMPLETED)
+            except Exception as e:  # step execution and/or io files error
+                step_progress.failed(self, errmsg=str(e))
+                pipeline_progress.mark_failed(
+                    self.pipeline_id,
+                    errmsg=(
+                        f"Pipeline failed on step {self.__class__.__name__} ({self.input_.contents_hash}) "
+                        + f"with traceback:\n\n{traceback.format_exc()}"
+                    ),
+                )
+                raise StepFailedException()
+        except StepFailedException:  # any other error during waiting/pipeline integrity check/whatever
             self.save_runtime_status(StepRuntimeStatus.FAILED)
 
     @abstractmethod
