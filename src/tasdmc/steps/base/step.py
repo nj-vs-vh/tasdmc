@@ -82,24 +82,22 @@ class PipelineStep(ABC):
 
     def run_in_executor(self):
         try:
-            # waiting for previous steps to complete
-            waiting_msg_logged = False
-            while True:
-                if self.previous_steps is None:  # the first step in a pipeline
-                    break
-                previous_step_statuses = [ps.runtime_status for ps in self.previous_steps]
-                if any(s is StepRuntimeStatus.FAILED for s in previous_step_statuses):
-                    logs.multiprocessing_info(f"Exiting '{self.description}' one of its previous steps has failed")
-                    raise StepFailedException()
-                if all(s is StepRuntimeStatus.COMPLETED for s in previous_step_statuses):
-                    break
-                if not waiting_msg_logged:
-                    logs.multiprocessing_info(f"Steps previous to '{self.description}' aren't completed, waiting")
-                    waiting_msg_logged = True
-                sleep(1)  # checked each 1 seconds
+            if self.previous_steps is not None:  # not the first step in a pipeline
+                # waiting for previous steps to complete
+                waiting_msg_logged = False
+                while True:
+                    previous_step_statuses = [ps.runtime_status for ps in self.previous_steps]
+                    if any(s is StepRuntimeStatus.FAILED for s in previous_step_statuses):
+                        logs.multiprocessing_info(f"Exiting '{self.description}' one of its previous steps has failed")
+                        raise StepFailedException()
+                    if all(s is StepRuntimeStatus.COMPLETED for s in previous_step_statuses):
+                        break
+                    if not waiting_msg_logged:
+                        logs.multiprocessing_info(f"Steps previous to '{self.description}' aren't completed, waiting")
+                        waiting_msg_logged = True
+                    sleep(1)  # checked each second
 
-            # pipeline integrity check
-            if self.previous_steps is not None:
+                # pipeline integrity check
                 previous_steps: List[PipelineStep] = self.previous_steps
                 if not all(previous_step.output.files_were_produced() for previous_step in previous_steps):
                     pipeline_progress.mark_failed(
@@ -144,10 +142,7 @@ class PipelineStep(ABC):
                 step_progress.failed(self, errmsg=str(e))
                 pipeline_progress.mark_failed(
                     self.pipeline_id,
-                    errmsg=(
-                        f"Pipeline failed on step {self.__class__.__name__} ({self.input_.contents_hash}) "
-                        + f"with traceback:\n\n{traceback.format_exc()}"
-                    ),
+                    errmsg=f"Pipeline failed on {self.id_} with traceback:\n\n{traceback.format_exc()}",
                 )
                 raise StepFailedException()
         except StepFailedException:  # any other error during waiting/pipeline integrity check/whatever

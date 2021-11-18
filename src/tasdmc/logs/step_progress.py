@@ -76,10 +76,14 @@ class PipelineStepProgress:
     def from_step(
         cls, step: 'FileInFileOutPipelineStep', event_type: EventType, value: Optional[Any] = None  # type: ignore
     ) -> PipelineStepProgress:
+        try:
+            input_hash = step.input_.contents_hash
+        except Exception:
+            input_hash = "CAN'T CALCULATE INPUT HASH"
         return PipelineStepProgress(
             event_type,
             step_name=step.__class__.__name__,
-            step_input_hash=step.input_.contents_hash,
+            step_input_hash=input_hash,
             timestamp=datetime.utcnow(),
             pipeline_id=step.pipeline_id,
             value=value,

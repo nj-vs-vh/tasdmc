@@ -298,6 +298,10 @@ class OptionalFiles(Files):
     def optional(self) -> List[Path]:
         pass
 
+    @property
+    def id_paths(self) -> List[Path]:
+        return [p for p in self.all_files if p not in self.optional]
+
     def __post_init__(self):
         if set(self.optional).intersection(self.must_exist):
             raise ValueError(f"All not retained files must also be marked as must_exist")
