@@ -48,7 +48,12 @@ def check_particle_file_contents(particle_file: Path):
     raise FilesCheckFailed(f"{particle_file.name} doesn't contain RUNE bytes at the end")
 
 
-def check_file_is_empty(file: Path, ignore_patterns: List[str] = [], ignore_strings: List[str] = []):
+def check_file_is_empty(
+    file: Path,
+    ignore_patterns: List[str] = [],
+    ignore_strings: List[str] = [],
+    include_file_contents_in_error: bool = False,
+):
     if ignore_patterns or ignore_strings:
         ignore_re = re.compile(
             '|'.join([f'({patt})' for patt in ignore_patterns] + [f'(^{re.escape(s)}$)' for s in ignore_strings])
@@ -64,7 +69,13 @@ def check_file_is_empty(file: Path, ignore_patterns: List[str] = [], ignore_stri
                 continue
             if check_for_ignore and ignore_re.match(line):
                 continue
-            raise FilesCheckFailed(f"{file.name} contains unignored strings:\n\t'{line}'\n\tand maybe more...")
+            errmsg = f"{file.name} contains unignored strings:\n"
+            errmsg += (
+                "=" * 30 + "\n" + file.read_text().strip() + "\n" + "=" * 30
+                if include_file_contents_in_error
+                else f"\t'{line}'\n\tand maybe more..."
+            )
+            raise FilesCheckFailed(errmsg)
 
 
 def check_last_line_contains(file: Path, must_contain: str):

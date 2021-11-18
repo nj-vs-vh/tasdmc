@@ -91,7 +91,7 @@ class PipelineStep(ABC):
             if not waiting_msg_logged:
                 logs.multiprocessing_info(f"Steps previous to '{self.description}' aren't completed, waiting")
                 waiting_msg_logged = True
-            sleep(5)  # checked each 5 seconds
+            sleep(1)  # checked each 1 seconds
 
         if pipeline_progress.is_failed(self.pipeline_id):
             logs.multiprocessing_info(f"Exiting '{self.description}', pipeline marked as failed")
