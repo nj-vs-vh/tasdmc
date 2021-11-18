@@ -47,7 +47,11 @@ class SpectralSampledEvents(Files):
         )
 
     def _check_contents(self):
-        check_file_is_empty(self.stderr, ignore_strings=["$$$ dst_get_block_ : End of input file reached"])
+        check_file_is_empty(
+            self.stderr,
+            ignore_strings=["$$$ dst_get_block_ : End of input file reached"],
+            include_file_contents_in_error=True,
+        )
         check_last_line_contains(self.stdout, must_contain="OK")
 
 
@@ -78,10 +82,14 @@ class SpectralSamplingStep(PipelineStep):
             execute_routine(
                 'sdmc_conv_e2_to_spctr.run',
                 [
-                    '-o', self.output.events,
-                    '-s', TargetSpectrum.from_config(),
-                    '-i', dnde_exponent_from_config(),
-                    '-e', 10 ** (self.output.log10E_min - 18),  # log10(E/eV) => EeV
+                    '-o',
+                    self.output.events,
+                    '-s',
+                    TargetSpectrum.from_config(),
+                    '-i',
+                    dnde_exponent_from_config(),
+                    '-e',
+                    10 ** (self.output.log10E_min - 18),  # log10(E/eV) => EeV
                     self.input_.merged_events_file,
                 ],
                 stdout,
