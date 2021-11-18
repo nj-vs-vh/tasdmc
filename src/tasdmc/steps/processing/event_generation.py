@@ -300,7 +300,7 @@ def _get_calibration_files_by_epoch() -> Dict[int, Path]:
 
 
 @lru_cache(1)
-def _get_sdmc_spctr_executable():
+def _get_sdmc_spctr_executable() -> str:
     """Find sdmc_spctr executable as it may be compiled with different suffixes"""
     sdmc_spctr_candidates: List[Path] = []
     PATH = os.environ['PATH']
@@ -335,7 +335,7 @@ def _get_sdmc_spctr_executable():
                     + '\n'.join([f"\t{exe}" for exe in sdmc_spctr_candidates])
                     + '\nRemove some of them from $PATH to eliminate conflict'
                 )
-    return sdmc_spctr_candidates[0]  # we've ensured that this is the only option left!
+    return str(sdmc_spctr_candidates[0])  # we've ensured that this is the only option left!
 
 
 def set_limits_for_sdmc_spctr():

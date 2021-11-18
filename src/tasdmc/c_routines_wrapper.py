@@ -16,6 +16,9 @@ def execute_routine(
     check_errors: bool = True,
 ):
     executable_path = str(config.Global.bin_dir / executable_name) if not global_ else executable_name
+    # DEBUGGING
+    # with open("cmdlog.txt", 'a') as f:
+    #     f.write(" ".join([str(executable_path), *[str(a) for a in args]]) + "\n")
     return subprocess.run(
         [executable_path, *[str(a) for a in args]],
         stdout=stdout,
