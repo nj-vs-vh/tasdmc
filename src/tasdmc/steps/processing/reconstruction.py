@@ -118,4 +118,4 @@ class ReconstructionStep(PipelineStep):
                     global_=True,
                 )
 
-            log.write("OK")
+            log.write("OK\n")
