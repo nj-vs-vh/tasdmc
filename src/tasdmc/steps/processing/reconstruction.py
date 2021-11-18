@@ -80,7 +80,7 @@ class ReconstructionStep(PipelineStep):
         )
 
     def _run(self):
-        VERBOSITY = 2
+        verbosity = 2
 
         with open(self.output.log, 'w') as log:
             if not self.input_.is_realized:
@@ -91,7 +91,7 @@ class ReconstructionStep(PipelineStep):
             with Pipes(self.output.rufptn_log) as pipes:
                 execute_routine(
                     'rufptn.run',
-                    [self.input_.events, "-o1f", self.output.rufptn_dst, "-v", VERBOSITY, "-f"],
+                    [self.input_.events, "-o1f", self.output.rufptn_dst, "-v", verbosity, "-f"],
                     *pipes,
                     global_=True,
                 )
@@ -101,7 +101,7 @@ class ReconstructionStep(PipelineStep):
             with Pipes(self.output.sdtrgbk_log) as pipes:
                 execute_routine(
                     'sdtrgbk.run',
-                    [self.output.rufptn_dst, "-o1f", self.output.sdtrgbk_dst, "-v", VERBOSITY, "-f"],
+                    [self.output.rufptn_dst, "-o1f", self.output.sdtrgbk_dst, "-v", verbosity, "-f"],
                     *pipes,
                     global_=True,
                 )
@@ -111,7 +111,7 @@ class ReconstructionStep(PipelineStep):
             with Pipes(self.output.rufldf_log) as pipes:
                 execute_routine(
                     'rufldf.run',
-                    [self.output.sdtrgbk_dst, "-o1f", self.output.rufldf_dst, "-v", VERBOSITY, "-f"],
+                    [self.output.sdtrgbk_dst, "-o1f", self.output.rufldf_dst, "-v", verbosity, "-f", "-no_bw"],
                     *pipes,
                     global_=True,
                 )
