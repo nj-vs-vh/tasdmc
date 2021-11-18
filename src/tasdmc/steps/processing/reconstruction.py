@@ -48,8 +48,8 @@ class ReconstructedEvents(OptionalFiles):
             errorlog=dir / (base_name + ".errorlog"),
             rufptn_dst=dir / (base_name + ".rufptn.dst.gz"),
             rufptn_log=dir / (base_name + ".rufptn.log"),
-            sdtrgbk_dst=dir / (base_name + '.sdtrgbk.dst.gz'),
-            sdtrgbk_log=dir / (base_name + '.sdtrgbk.log'),
+            sdtrgbk_dst=dir / (base_name + ".sdtrgbk.dst.gz"),
+            sdtrgbk_log=dir / (base_name + ".sdtrgbk.log"),
             rufldf_dst=dir / (base_name + ".rufldf.dst.gz"),
             rufldf_log=dir / (base_name + ".rufldf.log"),
         )
