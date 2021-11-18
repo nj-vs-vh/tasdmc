@@ -69,6 +69,14 @@ def spectral_sampled_events_dir() -> Path:
 
 
 @internal_dir
+def reconstruction_dir() -> Path:
+    return run_dir() / 'reconstruction'
+
+
+# other service dirs
+
+
+@internal_dir
 def input_hashes_dir() -> Path:
     return run_dir() / '_input_files_hashes'
 

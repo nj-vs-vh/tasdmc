@@ -77,6 +77,7 @@ class PipelineStep(ABC):
         futures_list.append(executor.submit(self.run_in_executor))
 
     def run_in_executor(self):
+        # waiting for previous steps to complete
         waiting_msg_logged = False
         while True:
             if self.previous_steps is None:  # the first step in a pipeline
@@ -90,7 +91,7 @@ class PipelineStep(ABC):
             if not waiting_msg_logged:
                 logs.multiprocessing_info(f"Steps previous to '{self.description}' aren't completed, waiting")
                 waiting_msg_logged = True
-            sleep(5)
+            sleep(5)  # checked each 5 seconds
 
         if pipeline_progress.is_failed(self.pipeline_id):
             logs.multiprocessing_info(f"Exiting '{self.description}', pipeline marked as failed")
@@ -121,6 +122,7 @@ class PipelineStep(ABC):
                 )
                 return
 
+        # actual step run
         logs.multiprocessing_info(f"Entering '{self.description}'")
         try:
             if self.output.files_were_produced() and self.input_.same_hash_as_stored():
