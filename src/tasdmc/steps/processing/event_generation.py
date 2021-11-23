@@ -143,7 +143,6 @@ class EventsGenerationStep(PipelineStep):
         )
 
     def _run(self):
-        set_limits_for_sdmc_spctr()
         n_try = _n_try_from_config()
         smear_energies = _smear_energies_from_config()
         _, n_particles_per_epoch = self.input_.tothrow.get_showlib_and_nparticles()
@@ -163,7 +162,7 @@ class EventsGenerationStep(PipelineStep):
                     epoch_log_file.unlink(missing_ok=True)
                     for i_try in range(1, n_try + 1):
                         log.write(f'\tAttempt {i_try}/{n_try}\n')
-                        with Pipes(epoch_log_file, epoch_log_file, append=True) as (stdout, stderr):
+                        with UnlimitedStackSize(), Pipes(epoch_log_file, epoch_log_file, append=True) as (stdout, stderr):
                             sdmc_spctr_res = execute_routine(
                                 _get_sdmc_spctr_executable(),
                                 [
@@ -259,8 +258,8 @@ class EventsGenerationStep(PipelineStep):
 
     @classmethod
     def validate_config(cls):
-        set_limits_for_sdmc_spctr()
-        test_sdmc_spctr_runnable()
+        with UnlimitedStackSize():
+            test_sdmc_spctr_runnable()
         _n_try_from_config()
         _smear_energies_from_config()
         assert (
@@ -338,14 +337,20 @@ def _get_sdmc_spctr_executable() -> str:
     return str(sdmc_spctr_candidates[0])  # we've ensured that this is the only option left!
 
 
-def set_limits_for_sdmc_spctr():
-    """Equivalent to ulimit -s unlimited on command line"""
-    _, hard_stack_limit = resource.getrlimit(resource.RLIMIT_STACK)
-    resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, hard_stack_limit))
-
-
 def test_sdmc_spctr_runnable():
     sdmc_spctr = _get_sdmc_spctr_executable()
     res = execute_routine(sdmc_spctr, [], global_=True, check_errors=False)
     if 'Usage: ' not in res.stderr.decode('utf-8'):
         raise OSError(f'{sdmc_spctr} do not work as expected!')
+
+
+class UnlimitedStackSize:
+    """Equivalent to ulimit -s unlimited in a bash script"""
+
+    def __enter__(self):
+        soft, hard = resource.getrlimit(resource.RLIMIT_STACK)
+        self.previous_stack_limits = (soft, hard)
+        resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, hard))
+
+    def __exit__(self, *args):
+        resource.setrlimit(resource.RLIMIT_STACK, self.previous_stack_limits)
