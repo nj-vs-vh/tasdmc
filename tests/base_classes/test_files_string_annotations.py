@@ -12,6 +12,13 @@ from typing import List
 from tasdmc.steps.base import Files
 
 
+@dataclass
+class DummyFiles(Files):
+    @property
+    def must_exist(self) -> List[Path]:
+        return []
+
+
 def test_files_must_be_dataclasses():
     class NonDataclassFiles(Files):
         pass
@@ -22,11 +29,11 @@ def test_files_must_be_dataclasses():
 
 def test_all_files_property():
     @dataclass
-    class NestedFiles(Files):
+    class NestedFiles(DummyFiles):
         smth: Path = Path('dummy')
 
     @dataclass
-    class FilesWithPaths(Files):
+    class FilesWithPaths(DummyFiles):
         file1: Path
         file2: Path
 
@@ -39,7 +46,7 @@ def test_all_files_property():
     assert FilesWithPaths(*all_files).all_files == all_files
 
     @dataclass
-    class FilesWithPathLists(Files):
+    class FilesWithPathLists(DummyFiles):
         files1: List[Path]
         files2: List[Path]
 
@@ -52,7 +59,7 @@ def test_all_files_property():
     assert set(FilesWithPathLists(*path_lists).all_files) == set(chain.from_iterable(path_lists))
 
     @dataclass
-    class FilesWithBoth(Files):
+    class FilesWithBoth(DummyFiles):
         file1: Path
         files2: List[Path]
         files3: List[Path]
