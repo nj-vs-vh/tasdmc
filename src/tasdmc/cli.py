@@ -91,6 +91,8 @@ def abort_run(name: str):
     click.secho(f"You are about to kill run '{config.run_name()}'!")
     if user_confirmation_destructive(config.run_name()):
         system.abort_run(main_pid=fileio.get_saved_main_pid())
+    else:
+        click.echo("Not this time...")
 
 
 @cli.command("continue", help="Continue aborted execution of aborted run NAME")
@@ -105,16 +107,17 @@ def continue_run(name: str):
 
 
 @cli.command("config", help="Operations with configuration of run NAME: view, update")
+@click.option("--hard", is_flag=True, default=False, help="Flag to update config without detailed inspection")
 @_run_config_option('new_config_filename')
 @click.argument(
     'action', type=click.STRING, shell_complete=lambda *p: [a for a in ['update', 'view'] if a.startswith(p[2])]
 )
 @_run_name_argument('name')
-def update_config_in_run(action: str, name: str, new_config_filename: str):
+def update_config_in_run(action: str, name: str, new_config_filename: str, hard: bool):
     if not _load_config_by_run_name(name):
         return
     if action == 'update':
-        update_config(new_config_filename)
+        update_config(new_config_filename, hard)
     elif action == 'view':
         view_config()
     else:
