@@ -1,10 +1,16 @@
 import subprocess
 from pathlib import Path
 from dataclasses import dataclass
+from functools import lru_cache
 
 from typing import TextIO, Optional, List, Any
 
-from tasdmc import config
+from tasdmc import config, fileio
+
+
+@lru_cache(1)
+def debug_routines_execution():
+    return bool(config.get_key("debug.external_routine_commands", default=False))
 
 
 def execute_routine(
@@ -16,16 +22,23 @@ def execute_routine(
     check_errors: bool = True,
 ):
     executable_path = str(config.Global.bin_dir / executable_name) if not global_ else executable_name
-    # DEBUGGING
-    # with open("cmdlog.txt", 'a') as f:
-    #     f.write(" ".join([str(executable_path), *[str(a) for a in args]]) + "\n")
-    return subprocess.run(
+    
+    routine_cmd = " ".join([str(a) for a in [executable_path, *args]])
+    if debug_routines_execution():
+        with open(fileio.routine_cmd_debug_log(), 'a') as f:
+            f.write(routine_cmd + "\n")
+
+    result = subprocess.run(
         [executable_path, *[str(a) for a in args]],
         stdout=stdout,
         stderr=stderr,
         capture_output=(stderr is None and stdout is None),
         check=check_errors,
     )
+
+    if debug_routines_execution() and result.returncode != 0:
+        with open(fileio.routine_cmd_debug_log(), 'a') as f:
+            f.write(f"\nFAILED:\n{routine_cmd}\n\n")
 
 
 @dataclass

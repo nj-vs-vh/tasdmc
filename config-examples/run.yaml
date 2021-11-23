@@ -56,6 +56,7 @@ resources:
   monitor_interval: 60  # sec, -1 to disable system resource monitor; defaults to 60
 
 debug:  # all are False/empty by default
-  input_hashes: True
-  file_checks: True
-  pipelines_mask: []
+  input_hashes: False  # write to input_hashes_debug.log when input hash comparison fails
+  file_checks: False  # write to file_checks_debug.log when file check fails
+  external_routine_commands: False  # write to routine_cmd_debug.log external routine invocations
+  pipelines_mask: []  # limit run only to these DATnnnnnn pipelines

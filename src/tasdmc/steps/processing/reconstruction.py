@@ -84,8 +84,6 @@ class ReconstructionStep(PipelineStep):
     def _run(self):
         verbosity = 2
 
-        from time import sleep
-
         with open(self.output.log, 'w') as log:
             if not self.input_.is_realized:
                 log.write("Not running reconstruction, spectral sampling produced no events\n\nOK")
@@ -101,8 +99,6 @@ class ReconstructionStep(PipelineStep):
                 )
             check_dst_file_not_empty(self.output.rufptn_dst)
 
-            sleep(1)
-
             log.write("Running sdtrgbk\n")
             with Pipes(self.output.sdtrgbk_log, self.output.errorlog) as pipes:
                 execute_routine(
@@ -113,9 +109,8 @@ class ReconstructionStep(PipelineStep):
                 )
             check_dst_file_not_empty(self.output.sdtrgbk_dst)
 
-            sleep(1)
-
             log.write("Running rufldf\n")
+            self.output.rufldf_dst.unlink(missing_ok=True)
             with Pipes(self.output.rufldf_log, self.output.errorlog) as pipes:
                 execute_routine(
                     'rufldf.run',

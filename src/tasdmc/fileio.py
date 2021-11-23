@@ -130,6 +130,10 @@ def file_checks_debug_log():
     return logs_dir() / 'file_checks_debug.log'
 
 
+def routine_cmd_debug_log():
+    return logs_dir() / 'routine_cmd_debug.log'
+
+
 # top-level functions
 
 
