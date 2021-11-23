@@ -26,3 +26,5 @@ def delete_all_pipelines(pipeline_ids: List[Path]):
                     click.secho(f"\t{file}", dim=True)
                     file.unlink()
             fileio.pipeline_failed_file(pipeline_id).unlink(missing_ok=True)
+    else:
+        click.echo("Maybe next time...")
