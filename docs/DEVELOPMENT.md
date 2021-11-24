@@ -47,7 +47,7 @@ is required.
    For example, use it like this:
 
    ```bash
-   cp config-examples/tasdmc_dev_env.sh .
+   cp examples/tasdmc_dev_env.sh .
    # edit tasdmc_dev_env.sh if needed, for example point TASDMC_RUNS_DIR to external storage
    echo "source $(pwd)/tasdmc_dev_env.sh" >> $(python -c "import sys; print(sys.prefix)")/bin/activate
    ```

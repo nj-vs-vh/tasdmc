@@ -33,10 +33,8 @@ def _run_config_option(param_name: str):
         '-c',
         '--config',
         param_name,
-        default='run.yaml',  # TODO: remove default, make this required option in prod
-        show_default=True,
         type=click.Path(),
-        help='run configuration .yaml file',
+        help='configuration yaml file, see examples/config.yaml',
     )
 
 
@@ -106,22 +104,14 @@ def continue_run(name: str):
     _run_standard_pipeline_in_background(continuing=True)
 
 
-@cli.command("config", help="Operations with configuration of run NAME: view, update")
+@cli.command("config-update", help="Update configuration of run NAME")
 @click.option("--hard", is_flag=True, default=False, help="Flag to update config without detailed inspection")
 @_run_config_option('new_config_filename')
-@click.argument(
-    'action', type=click.STRING, shell_complete=lambda *p: [a for a in ['update', 'view'] if a.startswith(p[2])]
-)
 @_run_name_argument('name')
-def update_config_in_run(action: str, name: str, new_config_filename: str, hard: bool):
+def update_config_cmd(name: str, new_config_filename: str, hard: bool):
     if not _load_config_by_run_name(name):
         return
-    if action == 'update':
-        update_config(new_config_filename, hard)
-    elif action == 'view':
-        view_config()
-    else:
-        click.echo(f"Unknown action '{action}'; available actions are 'update' and 'view'")
+    update_config(new_config_filename, hard)
 
 
 @cli.command("progress", help="Display progress for run NAME")
@@ -171,7 +161,7 @@ def run_process_status(name: str, n_last_messages: int):
     "absolute_datetime",
     default=False,
     is_flag=True,
-    help="If set to True, X axis on plots represent absolute datetimes in UTC; otherwise Run evaluation Time is used",
+    help="If set to True, X axis on plots represent absolute datetimes in UTC; otherwise Run Evaluation Time is used",
 )
 @click.option(
     "-p",
@@ -250,7 +240,6 @@ def download_data_files():
         (fileio.DataFiles.sdgeant, '1ZTSrrAg2T8bvIDhPuh2ruVShmubwvTWG', '0cebc42f86e227e2fb2397dd46d7d981'),
         (fileio.DataFiles.atmos, '1qZfUNXAyqVg5HwH9BYUGVQ-UDsTwl4FQ', '254c7999be0a48bd65e4bc8cbea4867f'),
     ):
-        pass
         if not data_file.exists():
             data_file.parent.mkdir(parents=True, exist_ok=True)
             gdown.download(id=gdrive_id, output=str(data_file))

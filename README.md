@@ -67,7 +67,7 @@ for now, so please keep your builds and `.yaml` config files (see later) in sync
 
 Run configuration file contains all physical parameters relevant to the simulation
 (primary particle, energy range, etc) and configuration of (almost) all the simulation
-steps. See [example](config-examples/run.yaml) for self-explainatory config example:
+steps. See [example](examples/config.yaml) for self-explainatory config example:
 
 ```yaml
 name: your-run-name

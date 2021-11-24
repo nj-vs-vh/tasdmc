@@ -16,7 +16,7 @@ data/
 # default dir for runs data
 runs/
 
-run.yaml
+config.yaml
 tasdmc_dev_env.sh
-!config-examples/*
+!examples/*
 *.log

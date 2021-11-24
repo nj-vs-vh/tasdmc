@@ -1,4 +1,6 @@
 name: your-run-name
+description:
+  Optional detailed description of run's purpose and other info.
 
 input_files:
   particle: proton

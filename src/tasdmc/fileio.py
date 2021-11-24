@@ -34,11 +34,6 @@ def internal_dir(fn):
 
 
 @internal_dir
-def configs_dir(run_name: Optional[str] = None) -> Path:
-    return run_dir(run_name) / 'configs'
-
-
-@internal_dir
 def corsika_input_files_dir() -> Path:
     return run_dir() / 'corsika_input'
 
@@ -99,7 +94,7 @@ def saved_main_pid_file():
 
 
 def saved_run_config_file(run_name: Optional[str] = None):
-    return configs_dir(run_name) / 'run.yaml'
+    return run_dir(run_name) / 'config.yaml'
 
 
 def system_resources_log():
