@@ -1,7 +1,7 @@
 import pytest
 from pytest import param
 
-from tasdmc.config.update import ConfigChange
+from tasdmc.config.update import RunConfigChange
 
 
 @pytest.mark.parametrize(
@@ -64,5 +64,5 @@ from tasdmc.config.update import ConfigChange
     ]
 )
 def test_dict_diff_plain(old_dict, new_dict, expected_diff):
-    diff = list(ConfigChange.dict_diff_plain(old_dict, new_dict))
+    diff = list(RunConfigChange.dict_diff_plain(old_dict, new_dict))
     assert diff == expected_diff

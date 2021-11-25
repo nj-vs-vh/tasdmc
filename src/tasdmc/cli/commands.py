@@ -5,7 +5,7 @@ import gdown
 from gdown.cached_download import assert_md5sum
 
 from tasdmc import config, system, fileio, inspect, hard_cleanup, extract_calibration
-from tasdmc.config.update import update_config
+from tasdmc.config.update import update_run_config
 from tasdmc.logs import display as display_logs
 from tasdmc.utils import user_confirmation_destructive
 
@@ -73,7 +73,7 @@ def abort_run_cmd(name: str):
 def update_config_cmd(name: str, new_config_filename: str, hard: bool):
     if not load_config_by_run_name(name):
         return
-    update_config(new_config_filename, hard)
+    update_run_config(new_config_filename, hard)
 
 
 # monitoring commands

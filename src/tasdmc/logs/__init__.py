@@ -1,3 +1,5 @@
+"""Formatted logs printing"""
+
 import os
 from datetime import datetime
 from pathlib import Path

@@ -1,5 +1,4 @@
-"""Config updates are tricky: some fields may be changed safely while others may be not.
-This module contains heuristics about how a user can update their config."""
+"""Config update functions"""
 
 from __future__ import annotations
 from dataclasses import dataclass
@@ -25,7 +24,7 @@ SAFE_TO_CHANGE = [
 
 
 @dataclass
-class ConfigChange:
+class RunConfigChange:
     key: str  # dot.separated.value
     from_value: Optional[Any]
     to_value: Optional[Any]
@@ -131,14 +130,14 @@ class ConfigChange:
                         yield full_addel_key, change_tuple
 
     @classmethod
-    def from_configs(cls, old_config: Dict, new_config: Dict) -> List[ConfigChange]:
+    def from_configs(cls, old_config: Dict, new_config: Dict) -> List[RunConfigChange]:
         return [
-            ConfigChange(key, from_value, to_value)
+            RunConfigChange(key, from_value, to_value)
             for key, (from_value, to_value) in cls.dict_diff_plain(old_config, new_config)
         ]
 
 
-def update_config(new_config_path: str, hard: bool):
+def update_run_config(new_config_path: str, hard: bool):
     with open(new_config_path, 'r') as f:
         new_config = yaml.safe_load(f)
     old_config = RunConfig.get()
@@ -148,7 +147,7 @@ def update_config(new_config_path: str, hard: bool):
     
     if not hard:
         try:
-            config_changes = ConfigChange.from_configs(old_config, new_config)
+            config_changes = RunConfigChange.from_configs(old_config, new_config)
         except Exception:
             click.echo("Can't parse config diffs. If you are sure you want to proceed, pass --hard flag.")
         if not config_changes:
@@ -169,7 +168,7 @@ def update_config(new_config_path: str, hard: bool):
         click.echo(str(e))
         return
     if hard or user_confirmation("New config seems valid, apply?", yes="yes", default=False):
-        config.dump(fileio.saved_run_config_file())
+        config.RunConfig.dump(fileio.saved_run_config_file())
         click.echo(f"You will need to abort-continue run {config.run_name()} for changes to take effect")
     else:
         click.echo("Aborted")

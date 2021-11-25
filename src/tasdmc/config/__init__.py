@@ -40,12 +40,12 @@ class Global:
 Global.load()
 
 
-def validate(steps: Optional[List[Type['FileInFileOutStep']]] = None):  # type: ignore
+def validate(step_classes: Optional[List[Type['PipelineStep']]] = None):  # type: ignore
     from tasdmc.steps.corsika_cards_generation import validate_config
     validate_config()
-    if steps is None:
-        from tasdmc.steps import all_steps as steps
-    for Step in steps:
+    if step_classes is None:
+        from tasdmc.steps import all_steps as step_classes
+    for Step in step_classes:
         try:
             Step.validate_config()
         except Exception as e:
