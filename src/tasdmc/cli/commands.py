@@ -4,7 +4,7 @@ from pathlib import Path
 import gdown
 from gdown.cached_download import assert_md5sum
 
-from tasdmc import config, system, fileio, inspect, hard_cleanup, extract_calibration
+from tasdmc import config, system, fileio, inspect, hard_cleanup, extract_calibration, nodes
 from tasdmc.config.update import update_run_config
 from tasdmc.logs import display as display_logs
 from tasdmc.utils import user_confirmation_destructive
@@ -33,6 +33,7 @@ def local_run_cmd(run_config_filename):
 def distributed_run_cmd(run_config_filename: str, nodes_config_filename: str):
     config.RunConfig.load(run_config_filename)
     config.NodesConfig.load(nodes_config_filename)
+    nodes.check_connectivity()
     fileio.prepare_run_dir()
 
 

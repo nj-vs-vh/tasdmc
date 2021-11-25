@@ -5,16 +5,19 @@ from pathlib import Path
 from dataclasses import dataclass, fields, asdict
 from abc import ABC, abstractmethod
 
-from typing import Optional, Union, Dict, Any, List
+from typing import Optional, Union, Dict, Any, List, TypeVar
 
 from .exceptions import ConfigNotReadError, BadConfigError
 
 
+ConfigContentsType = TypeVar("ConfigContentsType")
+
+
 class ConfigContainer:
-    contents: Optional[Any] = None  # any data structure representing config contents
+    contents: Optional[ConfigContentsType] = None  # any data structure representing config contents
 
     @classmethod
-    def get(cls):
+    def get(cls) -> ConfigContentsType:
         if cls.contents is None:
             raise ConfigNotReadError(
                 f"Attempt to read config before it is loaded, run config.{cls.__name__}.load('smth.yaml') first."
@@ -44,7 +47,7 @@ class RunConfig(ConfigContainer):
     def load(cls, filename: Union[str, Path]):
         raw_contents = _read_yaml(filename)
         if not isinstance(raw_contents, dict):
-            raise BadConfigError(f"run config must contain a mapping, got {raw_contents.__class__.__name__}")
+            raise BadConfigError(f"Run config must contain a mapping, got {raw_contents.__class__.__name__}")
         cls.contents = raw_contents
 
     @classmethod
@@ -59,12 +62,12 @@ class RunConfig(ConfigContainer):
 
 @dataclass
 class NodeEntry(ABC):
+    host: str
+    user: str = None
+    conda_env: str = None
     name: Optional[str] = None
     config_override: Optional[Dict[str, Any]] = None
     weight: float = 1.0
-    host: str = None
-    user: str = None
-    conda_env: str = None
 
 
 class NodesConfig(ConfigContainer):
@@ -74,16 +77,18 @@ class NodesConfig(ConfigContainer):
     def load(cls, filename: Union[str, Path]):
         raw_contents = _read_yaml(filename)
         if not isinstance(raw_contents, list):
-            raise BadConfigError(f"hosts config must contain a list of items, got {raw_contents.__class__.__name__}")
+            raise BadConfigError(f"Nodes config must contain a list of items, got {raw_contents.__class__.__name__}")
         cls.contents = []
         field_names = [f.name for f in fields(NodeEntry)]
         for node_entry_data in raw_contents:
             if not isinstance(node_entry_data, dict):
                 raise BadConfigError(
-                    f"each host config entry must be a mapping, got {node_entry_data.__class__.__name__}"
+                    f"Each node entry in nodes config must be a mapping, got {node_entry_data.__class__.__name__}"
                 )
             init_kwargs = {k: v for k, v in node_entry_data.items() if k in field_names}
             cls.contents.append(NodeEntry(**init_kwargs))
+        all_hosts = [ne.host for ne in cls.contents]
+        assert len(set(all_hosts)) == len(all_hosts), "Each node must have unique host field"
 
     @classmethod
     def dump(cls, filename: Path):
