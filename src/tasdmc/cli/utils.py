@@ -31,3 +31,14 @@ def load_config_by_run_name(name: str) -> bool:
         if nodes_config_path.exists():  # in any given run this may (for distr. run) or may not (fot local run) exits
             config.NodesConfig.load(nodes_config_path)
         return True
+
+
+def error_catching(cmd_fn):
+
+    def wrapped(*args, **kwargs):
+        try:
+            cmd_fn(*args, **kwargs)
+        except Exception as e:
+            click.secho(str(e), fg='red', bold=True)
+
+    return wrapped

@@ -10,14 +10,6 @@ from typing import Optional, Union, Dict, Any, List
 from .exceptions import ConfigNotReadError, BadConfigError
 
 
-def _read_yaml(filename: Union[str, Path]) -> Any:
-    try:
-        with open(filename, 'r') as f:
-            return yaml.safe_load(f)
-    except Exception as e:
-        raise BadConfigError(f"Error parsing yaml file: {e}") from e
-
-
 class ConfigContainer:
     contents: Optional[Any] = None  # any data structure representing config contents
 
@@ -57,8 +49,7 @@ class RunConfig(ConfigContainer):
 
     @classmethod
     def dump(cls, filename: Path):
-        with open(filename, 'w') as f:
-            yaml.dump(cls.get(), f, sort_keys=False)
+        _dump_yaml(cls.get(), filename)
 
     @classmethod
     def reset_debug_key(cls):
@@ -71,23 +62,9 @@ class NodeEntry(ABC):
     name: Optional[str] = None
     config_override: Optional[Dict[str, Any]] = None
     weight: float = 1.0
-
-
-@dataclass
-class SelfNode(NodeEntry):
-    pass
-
-
-@dataclass
-class RemoteNode(NodeEntry):
     host: str = None
     user: str = None
     conda_env: str = None
-
-    def __post_init__(self):
-        for attr in [self.host, self.user, self.conda_env]:
-            if not isinstance(attr, str):
-                raise BadConfigError("host, user and conda_env fields must be specified and have string type")
 
 
 class NodesConfig(ConfigContainer):
@@ -99,22 +76,30 @@ class NodesConfig(ConfigContainer):
         if not isinstance(raw_contents, list):
             raise BadConfigError(f"hosts config must contain a list of items, got {raw_contents.__class__.__name__}")
         cls.contents = []
+        field_names = [f.name for f in fields(NodeEntry)]
         for node_entry_data in raw_contents:
             if not isinstance(node_entry_data, dict):
                 raise BadConfigError(
                     f"each host config entry must be a mapping, got {node_entry_data.__class__.__name__}"
                 )
-            is_self = node_entry_data['host'] == 'self'
-            EntryClass = SelfNode if is_self else RemoteNode
-            field_names = [f.name for f in fields(EntryClass)]
             init_kwargs = {k: v for k, v in node_entry_data.items() if k in field_names}
-            try:
-                cls.contents.append(EntryClass(**init_kwargs))
-            except Exception:
-                pass
+            cls.contents.append(NodeEntry(**init_kwargs))
 
     @classmethod
     def dump(cls, filename: Path):
         raw_contents = [asdict(ne) for ne in cls.contents]
         with open(filename, 'w') as f:
             yaml.dump(raw_contents, f)
+
+
+def _read_yaml(filename: Union[str, Path]) -> Any:
+    try:
+        with open(filename, 'r') as f:
+            return yaml.safe_load(f)
+    except Exception as e:
+        raise BadConfigError(f"Error parsing yaml file: {e}") from e
+
+
+def _dump_yaml(data: Any, filename: Path):
+    with open(filename, 'w') as f:
+        yaml.dump(data, f, sort_keys=False)

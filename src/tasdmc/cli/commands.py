@@ -11,7 +11,7 @@ from tasdmc.utils import user_confirmation_destructive
 
 from .group import cli
 from .options import run_config_option, nodes_config_option, run_name_argument
-from .utils import run_standard_pipeline_in_background, load_config_by_run_name
+from .utils import run_standard_pipeline_in_background, load_config_by_run_name, error_catching
 
 
 # new run commands
@@ -19,7 +19,8 @@ from .utils import run_standard_pipeline_in_background, load_config_by_run_name
 
 @cli.command("run-local", help="Run simulation locally on this machine")
 @run_config_option('run_config_filename')
-def run(run_config_filename):
+@error_catching
+def local_run_cmd(run_config_filename):
     config.RunConfig.load(run_config_filename)
     fileio.prepare_run_dir()
     run_standard_pipeline_in_background()
@@ -28,7 +29,8 @@ def run(run_config_filename):
 @cli.command("run-distributed", help="Run simulation distributed across several machines (nodes)")
 @run_config_option('run_config_filename')
 @nodes_config_option('nodes_config_filename')
-def run(run_config_filename: str, nodes_config_filename: str):
+@error_catching
+def distributed_run_cmd(run_config_filename: str, nodes_config_filename: str):
     config.RunConfig.load(run_config_filename)
     config.NodesConfig.load(nodes_config_filename)
     fileio.prepare_run_dir()
@@ -39,7 +41,8 @@ def run(run_config_filename: str, nodes_config_filename: str):
 
 @cli.command("continue", help="Continue execution of aborted run NAME")
 @run_name_argument('name')
-def continue_run(name: str):
+@error_catching
+def continue_run_cmd(name: str):
     if not load_config_by_run_name(name):
         return
     if system.process_alive(pid=fileio.get_saved_main_pid()):
@@ -51,7 +54,8 @@ def continue_run(name: str):
 
 @cli.command("abort", help="Abort execution of run NAME")
 @run_name_argument('name')
-def abort_run(name: str):
+@error_catching
+def abort_run_cmd(name: str):
     if not load_config_by_run_name(name):
         return
     click.secho(f"You are about to kill run '{config.run_name()}'!")
@@ -65,6 +69,7 @@ def abort_run(name: str):
 @click.option("--hard", is_flag=True, default=False, help="Flag to update config without detailed inspection")
 @run_config_option('new_config_filename')
 @run_name_argument('name')
+@error_catching
 def update_config_cmd(name: str, new_config_filename: str, hard: bool):
     if not load_config_by_run_name(name):
         return
@@ -83,7 +88,8 @@ def update_config_cmd(name: str, new_config_filename: str, hard: bool):
     help="Update progress bar each few seconds. Warning: clears terminal!",
 )
 @run_name_argument('name')
-def run_progress(name: str, follow: bool):
+@error_catching
+def progress_cmd(name: str, follow: bool):
     if not load_config_by_run_name(name):
         return
     if not follow:
@@ -98,7 +104,8 @@ def run_progress(name: str, follow: bool):
 @cli.command("ps", help="Display processes status and last debug messages from worker processes for run NAME")
 @run_name_argument('name')
 @click.option("-n", "n_last_messages", default=1, help="Number of messages from worker processes to print")
-def run_process_status(name: str, n_last_messages: int):
+@error_catching
+def process_status_cmd(name: str, n_last_messages: int):
     if not load_config_by_run_name(name):
         return
     system.print_process_status(fileio.get_saved_main_pid())
@@ -124,7 +131,8 @@ def run_process_status(name: str, n_last_messages: int):
     help="If set to True, all previous run execution logs will be merged into one timeline",
 )
 @run_name_argument('name')
-def system_resources(name: str, include_previous_runs: bool, absolute_datetime: bool):
+@error_catching
+def system_resources_cmd(name: str, include_previous_runs: bool, absolute_datetime: bool):
     if not load_config_by_run_name(name):
         return
     display_logs.print_system_monitoring(
@@ -134,7 +142,8 @@ def system_resources(name: str, include_previous_runs: bool, absolute_datetime: 
 
 @cli.command("inputs", help="Display inputs for run NAME")
 @run_name_argument('name')
-def run_inputs(name: str):
+@error_catching
+def inputs_cmd(name: str):
     if not load_config_by_run_name(name):
         return
     click.echo(fileio.cards_gen_info_log().read_text())
@@ -146,7 +155,8 @@ def run_inputs(name: str):
 @cli.command("fix-failed", help="Fix failed pipelines")
 @click.option("--hard", is_flag=True, default=False, help="If specified, removes all failed pipeline files entirely")
 @run_name_argument('name')
-def fix_failed_pipelines(name: str, hard: bool):
+@error_catching
+def fix_failed_pipelines_cmd(name: str, hard: bool):
     if not load_config_by_run_name(name):
         return
     failed_pipeline_ids = fileio.get_failed_pipeline_ids()
@@ -164,7 +174,8 @@ def fix_failed_pipelines(name: str, hard: bool):
 @click.option("-p", "--page", "pagesize", default=0, help="Page size or 0 for no pagination (default)")
 @click.option("-f", "--failed", is_flag=True, default=False, help="Inspect only failed pipelines")
 @run_name_argument('name')
-def failures_cmd(name: str, pagesize: int, verbose: bool, failed: bool):
+@error_catching
+def inspect_cmd(name: str, pagesize: int, verbose: bool, failed: bool):
     if not load_config_by_run_name(name):
         return
     pipeline_ids = fileio.get_failed_pipeline_ids() if failed else fileio.get_all_pipeline_ids()
@@ -183,22 +194,25 @@ def failures_cmd(name: str, pagesize: int, verbose: bool, failed: bool):
     "--raw-data",
     "raw_data_dir",
     required=True,
-    type=click.Path(),
+    type=click.Path(exists=True, resolve_path=True),
     help='Directory containing raw calibration data (calib and const subfolders with .dst files',
 )
 @click.option(
     "-p",
     "--parallel",
     "parallel_threads",
+    type=click.INT,
     default=1,
     help='Number of threads to run in',
 )
-def extract_calibration_cmd(raw_data_dir, parallel_threads):
+@error_catching
+def extract_calibration_cmd(raw_data_dir: str, parallel_threads: int):
     extract_calibration.extract_calibration(Path(raw_data_dir), parallel_threads)
 
 
 @cli.command("download-data-files")
-def download_data_files():
+@error_catching
+def download_data_files_cmd():
     for data_file, gdrive_id, expected_md5 in (
         (fileio.DataFiles.sdgeant, '1ZTSrrAg2T8bvIDhPuh2ruVShmubwvTWG', '0cebc42f86e227e2fb2397dd46d7d981'),
         (fileio.DataFiles.atmos, '1qZfUNXAyqVg5HwH9BYUGVQ-UDsTwl4FQ', '254c7999be0a48bd65e4bc8cbea4867f'),
