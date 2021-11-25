@@ -1,3 +1,5 @@
+# this is a main configuration file with most physical and technical parameters of the simulation
+
 name: your-run-name
 description:
   Optional detailed description of run's purpose and other info.

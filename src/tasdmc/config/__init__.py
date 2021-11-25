@@ -2,7 +2,7 @@
 
 This module serves as a global singleton object:
 >>> from tasdmc import config
->>> config.get_key('your.key.here')
+>>> config.get_key('my.special.key')
 """
 
 from pathlib import Path
@@ -12,11 +12,8 @@ import sys
 from typing import Any, Optional, List, Type
 
 from tasdmc.system import resources
-from .exceptions import BadConfigValue, ConfigNotReadError, ConfigKeyError
-from .internal import get_config, dump, load
-
-
-__all__ = [dump, load]
+from .exceptions import BadConfigValue, ConfigKeyError
+from .storage import RunConfig
 
 
 class Global:
@@ -31,7 +28,7 @@ class Global:
     def load(cls):
         try:
             cls.runs_dir = Path(os.environ['TASDMC_RUNS_DIR'])
-            cls.data_dir = Path(os.environ.get('TASDMC_DATA_DIR'))
+            cls.data_dir = Path(os.environ['TASDMC_DATA_DIR'])
             cls.bin_dir = Path(os.environ['TASDMC_BIN_DIR'])
             cls.memory_per_process_Gb = float(os.environ['TASDMC_MEMORY_PER_PROCESS_GB'])
         except KeyError as e:
@@ -74,10 +71,6 @@ def get_key(key: str, key_prefix: Optional[str] = None, default: Optional[Any] =
     Returns:
         Any: value in the specified key
     """
-    config = get_config()
-    if config is None:
-        raise ConfigNotReadError("Attempt to read config key before it is loaded, run config.load('smth.yaml') first.")
-
     if key_prefix is not None:
         key = key_prefix + '.' + key
     level_keys = key.split('.')
@@ -85,7 +78,7 @@ def get_key(key: str, key_prefix: Optional[str] = None, default: Optional[Any] =
         raise ConfigKeyError('No key specified')
 
     traversed_level_keys = []
-    current_value = config
+    current_value = RunConfig.get()
     for level_key in level_keys:
         current_value = current_value.get(level_key)
         if current_value is None:

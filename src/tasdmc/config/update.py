@@ -6,13 +6,12 @@ from dataclasses import dataclass
 import yaml
 from dictdiffer import diff
 import click
-import sys
 
 from typing import Any, Optional, List, Dict, Tuple, Literal, cast, Generator
 
 from tasdmc import config, fileio
 from tasdmc.utils import user_confirmation
-from .internal import get_config
+from .storage import RunConfig
 
 
 # safe to change means that no work would be lost
@@ -142,7 +141,7 @@ class ConfigChange:
 def update_config(new_config_path: str, hard: bool):
     with open(new_config_path, 'r') as f:
         new_config = yaml.safe_load(f)
-    old_config = get_config()
+    old_config = RunConfig.get()
     if new_config['name'] != old_config['name']:
         click.echo("Attempt to update run's name, aborting")
         return
@@ -163,7 +162,7 @@ def update_config(new_config_path: str, hard: bool):
         for cc in config_changes:
             click.echo(f"\t{cc}")
 
-    config.load(new_config_path)
+    config.RunConfig.load(new_config_path)
     try:
         config.validate()
     except config.BadConfigValue as e:
@@ -174,8 +173,3 @@ def update_config(new_config_path: str, hard: bool):
         click.echo(f"You will need to abort-continue run {config.run_name()} for changes to take effect")
     else:
         click.echo("Aborted")
-
-
-def view_config():
-    click.echo(f"Run config for '{config.run_name()}':\n")
-    yaml.dump(get_config(), sys.stdout, indent=4, sort_keys=False)

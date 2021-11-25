@@ -2,9 +2,13 @@ class ConfigNotReadError(Exception):
     pass
 
 
-class ConfigKeyError(KeyError):
+class BadConfigError(Exception):
     pass
 
 
-class BadConfigValue(ValueError):
+class ConfigKeyError(BadConfigError, KeyError):
+    pass
+
+
+class BadConfigValue(BadConfigError, ValueError):
     pass

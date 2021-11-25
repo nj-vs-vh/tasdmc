@@ -1,7 +1,7 @@
 import pytest
 from pytest import param
 
-from tasdmc.config.actions import ConfigChange
+from tasdmc.config.update import ConfigChange
 
 
 @pytest.mark.parametrize(

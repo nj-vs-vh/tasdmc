@@ -11,7 +11,7 @@ from typing import List, Tuple, Optional, ClassVar, Dict
 from tasdmc import fileio
 from tasdmc.utils import batches
 from tasdmc.pipeline import standard_simulation_steps
-from tasdmc.config.internal import remove_config_key
+from tasdmc.config.storage import RunConfig
 from tasdmc.steps.exceptions import HashComputationFailed, FilesCheckFailed
 from tasdmc.utils import user_confirmation
 
@@ -114,7 +114,7 @@ def inspect_and_fix_failed(failed_pipeline_ids: List[str]):
 
 
 def inspect_pipelines(pipeline_ids: List[str], page_size: int, verbose: bool, fix: bool = False):
-    remove_config_key('debug')  # resetting debug to default to avoid appending to logs
+    RunConfig.reset_debug_key()
     if page_size <= 0:
         page_size = len(pipeline_ids)
         prompt = False

@@ -24,69 +24,72 @@ def run_dir(run_name: Optional[str] = None) -> Path:
     return config.Global.runs_dir / run_name
 
 
-_internal_dir_getters: List[Callable[[], Path]] = []
+_local_run_internal_dir_getters: List[Callable[[], Path]] = []
 
 
-def internal_dir(fn):
+def local_run_internal_dir(fn):
     """Decorator to register internal dir so that it will be created when preparing run dir"""
-    _internal_dir_getters.append(fn)
+    _local_run_internal_dir_getters.append(fn)
     return lru_cache()(fn)
 
 
-@internal_dir
+# processing results directories
+
+
+@local_run_internal_dir
 def corsika_input_files_dir() -> Path:
     return run_dir() / 'corsika_input'
 
 
-@internal_dir
+@local_run_internal_dir
 def corsika_output_files_dir() -> Path:
     return run_dir() / 'corsika_output'
 
 
-@internal_dir
+@local_run_internal_dir
 def dethinning_output_files_dir() -> Path:
     return run_dir() / 'corsika_output_dethinned'
 
 
-@internal_dir
+@local_run_internal_dir
 def c2g_output_files_dir() -> Path:
     return run_dir() / 'corsika2geant_output'
 
 
-@internal_dir
+@local_run_internal_dir
 def events_dir() -> Path:
     return run_dir() / 'events'
 
 
-@internal_dir
+@local_run_internal_dir
 def spectral_sampled_events_dir() -> Path:
     return run_dir() / 'events_spectral_sampled'
 
 
-@internal_dir
+@local_run_internal_dir
 def reconstruction_dir() -> Path:
     return run_dir() / 'reconstruction'
 
 
-# other service dirs
+# service directories
 
 
-@internal_dir
+@local_run_internal_dir
 def input_hashes_dir() -> Path:
     return run_dir() / '_input_files_hashes'
 
 
-@internal_dir
+@local_run_internal_dir
 def logs_dir() -> Path:
-    return run_dir() / 'logs'
+    return run_dir() / '_logs'
 
 
-@internal_dir
+@local_run_internal_dir
 def pipelines_failed_dir() -> Path:
     return logs_dir() / 'failed_pipelines'
 
 
-# individual files
+# service files
 
 
 def saved_main_pid_file():
@@ -94,7 +97,10 @@ def saved_main_pid_file():
 
 
 def saved_run_config_file(run_name: Optional[str] = None):
-    return run_dir(run_name) / 'config.yaml'
+    return run_dir(run_name) / 'run.yaml'
+
+
+# log files
 
 
 def system_resources_log():
@@ -153,7 +159,7 @@ def prepare_run_dir(continuing: bool = False):
             if not old_log.name.startswith('before'):
                 shutil.move(old_log, old_logs_dir / old_log.name)
 
-    for idir_getter in _internal_dir_getters:
+    for idir_getter in _local_run_internal_dir_getters:
         idir_getter().mkdir(exist_ok=continuing)
 
     config.dump(saved_run_config_file())
@@ -183,7 +189,7 @@ def get_all_run_names() -> List[str]:
 
 
 def get_all_internal_dirs() -> List[Path]:
-    return [idir_getter() for idir_getter in _internal_dir_getters]
+    return [idir_getter() for idir_getter in _local_run_internal_dir_getters]
 
 
 # NOTE: THESE METHOD RELY ON HEURISTICS AND NAMING CONVENTIONS AND MAY

@@ -10,7 +10,7 @@ try:
     from tasdmc import __version__
     from tasdmc import config, fileio, system, pipeline, inspect, extract_calibration, hard_cleanup
     from tasdmc.logs import display as display_logs
-    from tasdmc.config.actions import update_config, view_config
+    from tasdmc.config.update import update_config
     from tasdmc.utils import user_confirmation, user_confirmation_destructive
 except ModuleNotFoundError:
     print("'tasdmc' was not installed properly: some dependencies are missing")
@@ -34,7 +34,7 @@ def _run_config_option(param_name: str):
         '--config',
         param_name,
         type=click.Path(),
-        help='configuration yaml file, see examples/config.yaml',
+        help='configuration yaml file, see examples/run.yaml',
     )
 
 
@@ -46,7 +46,7 @@ def _run_standard_pipeline_in_background(continuing: bool):
 @cli.command("run", help="Run simulation")
 @_run_config_option('config_filename')
 def run(config_filename):
-    config.load(config_filename)
+    config.RunConfig.load(config_filename)
     _run_standard_pipeline_in_background(continuing=False)
 
 
@@ -77,7 +77,7 @@ def _load_config_by_run_name(name: str) -> bool:
     if run_config_path is None:
         return False
     else:
-        config.load(run_config_path)
+        config.RunConfig.load(run_config_path)
         return True
 
 
