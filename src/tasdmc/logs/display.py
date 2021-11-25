@@ -217,10 +217,3 @@ def print_system_monitoring(include_previous_runs: bool = False, evaluation_time
     plt.xticks(x_ticks, x_tick_labels)
 
     plt.show(allow_scrolling=True)
-
-
-if __name__ == "__main__":
-    from tasdmc import config
-
-    config.RunConfig.load(fileio.get_run_config_path("test-run"))
-    print_system_monitoring(True, True)

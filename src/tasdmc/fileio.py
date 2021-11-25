@@ -6,7 +6,7 @@ from pathlib import Path
 from functools import lru_cache
 from datetime import datetime
 
-from typing import Optional, List, Callable
+from typing import Optional, List, Callable, Tuple
 
 from tasdmc import config
 
@@ -24,11 +24,17 @@ def run_dir(run_name: Optional[str] = None) -> Path:
     return config.Global.runs_dir / run_name
 
 
+_internal_dir_getters: List[Callable[[], Path]] = []
 _local_run_internal_dir_getters: List[Callable[[], Path]] = []
 
 
-def local_run_internal_dir(fn):
+def internal_run_dir(fn):
     """Decorator to register internal dir so that it will be created when preparing run dir"""
+    _internal_dir_getters.append(fn)
+    return lru_cache()(fn)
+
+
+def internal_local_run_dir(fn):
     _local_run_internal_dir_getters.append(fn)
     return lru_cache()(fn)
 
@@ -36,37 +42,37 @@ def local_run_internal_dir(fn):
 # processing results directories
 
 
-@local_run_internal_dir
+@internal_run_dir
 def corsika_input_files_dir() -> Path:
     return run_dir() / 'corsika_input'
 
 
-@local_run_internal_dir
+@internal_local_run_dir
 def corsika_output_files_dir() -> Path:
     return run_dir() / 'corsika_output'
 
 
-@local_run_internal_dir
+@internal_local_run_dir
 def dethinning_output_files_dir() -> Path:
     return run_dir() / 'corsika_output_dethinned'
 
 
-@local_run_internal_dir
+@internal_local_run_dir
 def c2g_output_files_dir() -> Path:
     return run_dir() / 'corsika2geant_output'
 
 
-@local_run_internal_dir
+@internal_local_run_dir
 def events_dir() -> Path:
     return run_dir() / 'events'
 
 
-@local_run_internal_dir
+@internal_local_run_dir
 def spectral_sampled_events_dir() -> Path:
     return run_dir() / 'events_spectral_sampled'
 
 
-@local_run_internal_dir
+@internal_local_run_dir
 def reconstruction_dir() -> Path:
     return run_dir() / 'reconstruction'
 
@@ -74,17 +80,17 @@ def reconstruction_dir() -> Path:
 # service directories
 
 
-@local_run_internal_dir
+@internal_local_run_dir
 def input_hashes_dir() -> Path:
     return run_dir() / '_input_files_hashes'
 
 
-@local_run_internal_dir
+@internal_local_run_dir
 def logs_dir() -> Path:
     return run_dir() / '_logs'
 
 
-@local_run_internal_dir
+@internal_local_run_dir
 def pipelines_failed_dir() -> Path:
     return logs_dir() / 'failed_pipelines'
 
@@ -98,6 +104,10 @@ def saved_main_pid_file():
 
 def saved_run_config_file(run_name: Optional[str] = None):
     return run_dir(run_name) / 'run.yaml'
+
+
+def saved_nodes_config_file(run_name: Optional[str] = None):
+    return run_dir(run_name) / 'nodes.yaml'
 
 
 # log files
@@ -159,10 +169,15 @@ def prepare_run_dir(continuing: bool = False):
             if not old_log.name.startswith('before'):
                 shutil.move(old_log, old_logs_dir / old_log.name)
 
-    for idir_getter in _local_run_internal_dir_getters:
-        idir_getter().mkdir(exist_ok=continuing)
+    config.RunConfig.dump(saved_run_config_file())
+    for dir_getter in _internal_dir_getters:
+        dir_getter().mkdir(exist_ok=continuing)
 
-    config.dump(saved_run_config_file())
+    if config.is_local_run():
+        for dir_getter in _local_run_internal_dir_getters:
+            dir_getter().mkdir(exist_ok=continuing)
+    if config.is_distributed_run():
+        config.NodesConfig.dump(saved_nodes_config_file())
 
 
 def save_main_process_pid():
@@ -181,10 +196,10 @@ def get_saved_main_pid():
     return int(saved_main_pid_file().read_text())
 
 
-def get_run_config_path(run_name: str) -> Path:
+def get_config_paths(run_name: str) -> Tuple[Path, Path]:
     if not run_dir(run_name).exists():
         raise ValueError(f"Run '{run_name}' not found")
-    return saved_run_config_file(run_name)
+    return saved_run_config_file(run_name), saved_nodes_config_file(run_name)
 
 
 def get_all_run_names() -> List[str]:

@@ -108,7 +108,10 @@ class NodesConfig(ConfigContainer):
             EntryClass = SelfNode if is_self else RemoteNode
             field_names = [f.name for f in fields(EntryClass)]
             init_kwargs = {k: v for k, v in node_entry_data.items() if k in field_names}
-            cls.contents.append(EntryClass(**init_kwargs))
+            try:
+                cls.contents.append(EntryClass(**init_kwargs))
+            except Exception:
+                pass
 
     @classmethod
     def dump(cls, filename: Path):

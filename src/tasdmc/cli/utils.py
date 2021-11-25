@@ -10,10 +10,10 @@ def run_standard_pipeline_in_background():
 
 
 def load_config_by_run_name(name: str) -> bool:
-    run_config_path = None
+    config_paths = None
     try:
         assert len(name), "No run name specified"
-        run_config_path = fileio.get_run_config_path(name)
+        config_paths = fileio.get_config_paths(name)
     except (AssertionError, ValueError) as exc:
         all_run_names = fileio.get_all_run_names()
         click.echo(f"{exc}, following runs exist:\n" + "\n".join([f"\t{r}" for r in all_run_names]))
@@ -22,9 +22,12 @@ def load_config_by_run_name(name: str) -> bool:
             single_matching_run_name = matching_run_names[0]
             if user_confirmation(f"Did you mean '{single_matching_run_name}?'", yes='yes', no='no', default=True):
                 click.echo()
-                run_config_path = fileio.get_run_config_path(single_matching_run_name)
-    if run_config_path is None:
+                config_paths = fileio.get_config_paths(single_matching_run_name)
+    if config_paths is None:
         return False
     else:
+        run_config_path, nodes_config_path = config_paths
         config.RunConfig.load(run_config_path)
+        if nodes_config_path.exists():  # in any given run this may (for distr. run) or may not (fot local run) exits
+            config.NodesConfig.load(nodes_config_path)
         return True

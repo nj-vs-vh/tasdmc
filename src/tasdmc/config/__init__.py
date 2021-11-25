@@ -100,13 +100,13 @@ def run_name() -> str:
     return get_key('name')
 
 
-def is_distributed() -> bool:
+def is_distributed_run() -> bool:
     RunConfig.get()  # asserting that at least run config is loaded
     return NodesConfig.is_loaded()
 
 
-def is_local() -> bool:
-    return not is_distributed()
+def is_local_run() -> bool:
+    return not is_distributed_run()
 
 
 # resources usage computed from config values
