@@ -4,8 +4,8 @@ from tasdmc import system, pipeline, config, fileio
 from tasdmc.utils import user_confirmation
 
 
-def run_standard_pipeline_in_background(continuing: bool):
-    system.run_in_background(pipeline.run_standard_pipeline, continuing)
+def run_standard_pipeline_in_background():
+    system.run_in_background(pipeline.run_standard_pipeline)
     click.echo(f"Running in the background. Use 'tasdmc ps {config.run_name()}' to check run status")
 
 

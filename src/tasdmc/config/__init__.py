@@ -13,7 +13,7 @@ from typing import Any, Optional, List, Type
 
 from tasdmc.system import resources
 from .exceptions import BadConfigValue, ConfigKeyError
-from .storage import RunConfig
+from .storage import RunConfig, NodesConfig
 
 
 class Global:
@@ -98,6 +98,18 @@ def get_key(key: str, key_prefix: Optional[str] = None, default: Optional[Any] =
 
 def run_name() -> str:
     return get_key('name')
+
+
+def is_distributed() -> bool:
+    RunConfig.get()  # asserting that at least run config is loaded
+    return NodesConfig.is_loaded()
+
+
+def is_local() -> bool:
+    return not is_distributed()
+
+
+# resources usage computed from config values
 
 
 def used_processes() -> int:

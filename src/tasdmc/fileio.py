@@ -163,6 +163,9 @@ def prepare_run_dir(continuing: bool = False):
         idir_getter().mkdir(exist_ok=continuing)
 
     config.dump(saved_run_config_file())
+
+
+def save_main_process_pid():
     saved_main_pid_file().write_text(str(os.getpid()))  # saving currend main process ID
 
 

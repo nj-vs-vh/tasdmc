@@ -57,19 +57,21 @@ def with_pipelines_mask(steps: List[PipelineStep]) -> List[PipelineStep]:
         return [s for s in steps if s.pipeline_id in pipelines_mask]
 
 
-def run_standard_pipeline(continuing: bool):
+def run_standard_pipeline():
     system.set_process_title("tasdmc main")
-    fileio.prepare_run_dir(continuing)
+    fileio.save_main_process_pid()
+
+    # workaround; TODO: pack steps sequence in a pipeline class
     steps = standard_simulation_steps(corsika_card_paths=generate_corsika_cards())
     steps = with_pipelines_mask(steps)
-    # workaround; TODO: pack steps sequence in a pipeline class
+
     config.validate(set(step.__class__ for step in steps))
     system.run_in_background(run_system_monitor, keep_session=True)
 
     step_indices = list(range(len(steps)))
     for step, idx in zip(steps, step_indices):
         step.set_index(idx)
-    shared_array = mp.Array(c_int8, len(steps), lock=True)  # initially all zeros = steps pending
+    shared_step_statuses_array = mp.Array(c_int8, len(steps), lock=True)  # initially all zeros = steps pending
 
     def init_worker_process(shared_array):
         system.set_process_title("tasdmc worker")
@@ -77,7 +79,9 @@ def run_standard_pipeline(continuing: bool):
 
     n_processes = config.used_processes()
     with ProcessPoolExecutor(
-        max_workers=n_processes, initializer=init_worker_process, initargs=(shared_array,)
+        max_workers=n_processes,
+        initializer=init_worker_process,  # shared array is sent to each worker process here
+        initargs=(shared_step_statuses_array,),
     ) as executor:
         futures_queue: List[Future] = []
         for step in steps:

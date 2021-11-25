@@ -10,7 +10,7 @@ from tasdmc.logs import display as display_logs
 from tasdmc.utils import user_confirmation_destructive
 
 from .group import cli
-from .options import run_config_option, run_name_argument
+from .options import run_config_option, nodes_config_option, run_name_argument
 from .utils import run_standard_pipeline_in_background, load_config_by_run_name
 
 
@@ -18,23 +18,26 @@ from .utils import run_standard_pipeline_in_background, load_config_by_run_name
 
 
 @cli.command("run-local", help="Run simulation locally on this machine")
-@run_config_option('config_filename')
-def run(config_filename):
-    config.RunConfig.load(config_filename)
-    run_standard_pipeline_in_background(continuing=False)
+@run_config_option('run_config_filename')
+def run(run_config_filename):
+    config.RunConfig.load(run_config_filename)
+    fileio.prepare_run_dir()
+    run_standard_pipeline_in_background()
 
 
-@cli.command("run-distr", help="Run simulation distributed across several machines (nodes)")
-@run_config_option('config_filename')
-def run(config_filename):
-    config.RunConfig.load(config_filename)
-    run_standard_pipeline_in_background(continuing=False)
+@cli.command("run-distributed", help="Run simulation distributed across several machines (nodes)")
+@run_config_option('run_config_filename')
+@nodes_config_option('nodes_config_filename')
+def run(run_config_filename: str, nodes_config_filename: str):
+    config.RunConfig.load(run_config_filename)
+    config.NodesConfig.load(nodes_config_filename)
+    fileio.prepare_run_dir()
 
 
 # existing run control commands
 
 
-@cli.command("continue", help="Continue aborted execution of aborted run NAME")
+@cli.command("continue", help="Continue execution of aborted run NAME")
 @run_name_argument('name')
 def continue_run(name: str):
     if not load_config_by_run_name(name):
@@ -42,7 +45,8 @@ def continue_run(name: str):
     if system.process_alive(pid=fileio.get_saved_main_pid()):
         click.secho(f"Run already alive")
         return
-    run_standard_pipeline_in_background(continuing=True)
+    fileio.prepare_run_dir(continuing=True)
+    run_standard_pipeline_in_background()
 
 
 @cli.command("abort", help="Abort execution of run NAME")
