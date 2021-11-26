@@ -69,6 +69,10 @@ class NodeEntry(ABC):
     config_override: Optional[Dict[str, Any]] = None
     weight: float = 1.0
 
+    def __post_init__(self):
+        if self.host != 'self':
+            assert self.conda_env is not None, "conda_env key must be specified for all remote nodes!"
+
 
 class NodesConfig(ConfigContainer):
     contents: Optional[List[NodeEntry]] = None  # contents of hosts.yaml wrapped in dataclasses

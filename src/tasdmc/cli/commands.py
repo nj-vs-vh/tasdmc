@@ -33,7 +33,7 @@ def local_run_cmd(run_config_filename):
 def distributed_run_cmd(run_config_filename: str, nodes_config_filename: str):
     config.RunConfig.load(run_config_filename)
     config.NodesConfig.load(nodes_config_filename)
-    nodes.check_connectivity()
+    nodes.check()
     fileio.prepare_run_dir()
 
 
@@ -211,7 +211,7 @@ def extract_calibration_cmd(raw_data_dir: str, parallel_threads: int):
     extract_calibration.extract_calibration(Path(raw_data_dir), parallel_threads)
 
 
-@cli.command("download-data-files")
+@cli.command("download-data-files", help="Download data files necessary for the simulation (total of ~350 Mb)")
 @error_catching
 def download_data_files_cmd():
     for data_file, gdrive_id, expected_md5 in (

@@ -5,6 +5,7 @@ import shutil
 from pathlib import Path
 from functools import lru_cache
 from datetime import datetime
+import click
 
 from typing import Optional, List, Callable, Tuple
 
@@ -155,6 +156,7 @@ def prepare_run_dir(continuing: bool = False):
     else:
         try:
             rd.mkdir()
+            click.echo(f"Run directory created: {rd.absolute()}")
         except FileExistsError as fee:
             raise ValueError(
                 f"Run '{rd.name}' already exists, pick another run name. "

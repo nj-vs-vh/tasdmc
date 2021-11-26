@@ -4,9 +4,12 @@ import invoke
 from fabric import Connection, Result
 from pathlib import Path
 from functools import lru_cache
+import click
+import re
 
 from typing import IO, Any, List
 
+from tasdmc import __version__
 from tasdmc.config.storage import NodeEntry, NodesConfig
 
 
@@ -15,10 +18,14 @@ class NodeExecutor(ABC):
     node_entry: NodeEntry
 
     def __str__(self) -> str:
-        return self.node_entry.host
+        return (
+            f"{self.node_entry.name} ({self.node_entry.host})"
+            if self.node_entry.name is not None
+            else self.node_entry.host
+        )
 
     @abstractmethod
-    def check_connectivity(self) -> bool:
+    def check(self) -> bool:
         pass
 
     @abstractmethod
@@ -36,13 +43,30 @@ class NodeExecutor(ABC):
 class RemoteNodeExecutor(NodeExecutor):
     connection: Connection
 
-    def check_connectivity(self) -> bool:
-        with self.connection:
-            try:
-                self.connection.run('uname', hide='both')
-                return True
-            except Exception:
-                return False
+    def check(self) -> bool:
+        try:
+            with self.connection:
+                remote_check_cmd = f"conda activate {self.node_entry.conda_env} && tasdmc --version"
+                res: Result = self.connection.run(remote_check_cmd, hide='both', warn=True)
+                if res.return_code != 0:
+                    errmsg = f"Remote node command error (exit code {res.return_code})"
+                    for stream_contents, stream_name in [
+                        (_postprocess_stream(res.stdout), 'stdout'),
+                        (_postprocess_stream(res.stderr), 'stderr'),
+                    ]:
+                        if stream_contents:
+                            errmsg += f'\n\tCaptured {stream_name}:\n{stream_contents}'
+                    raise Exception(errmsg)
+                remote_node_version_match = re.match(r"tasdmc, version (?P<version>.*)", str(res.stdout))
+                assert remote_node_version_match is not None, f"Can't parse tasdmc version from output '{res.stdout}'"
+                remote_node_version = remote_node_version_match.groupdict()['version']
+                assert (
+                    remote_node_version == __version__
+                ), f"Mismatching version {remote_node_version}, expected {__version__}"
+            return True
+        except Exception as e:
+            click.echo(f"{self}: {e}")
+            return False
 
     def save_to_node(self, contents: IO) -> Path:
         remote_tmp = Path(f'/tmp/tasdmc-remote-node-artifact-{abs(hash(self.connection))}')
@@ -54,8 +78,7 @@ class RemoteNodeExecutor(NodeExecutor):
 
 
 class LocalNodeExecutor(NodeExecutor):
-
-    def check_connectivity(self) -> bool:
+    def check(self) -> bool:
         return True
 
     def save_to_node(self, contents: IO) -> Path:
@@ -81,3 +104,10 @@ def node_executors_from_config() -> List[NodeExecutor]:
 def _node_entries_from_config() -> List[NodeEntry]:
     node_entries: List[NodeEntry] = NodesConfig.get()
     return node_entries
+
+
+def _postprocess_stream(stream: str) -> str:
+    stream = stream.replace("tput: No value for $TERM and no -T specified", "")  # annoying terminal error
+    stream = stream.strip()
+    stream = '\n'.join(['\t> ' + line for line in stream.splitlines()])
+    return stream
