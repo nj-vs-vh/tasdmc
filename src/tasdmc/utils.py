@@ -1,6 +1,6 @@
 import click
 
-from typing import TypeVar, Sequence, Optional
+from typing import TypeVar, Sequence, Optional, Dict, Generator, Tuple, Any
 
 
 SequenceValue = TypeVar('SequenceValue')
@@ -37,3 +37,75 @@ def user_confirmation(
 
 def user_confirmation_destructive(run_name: str):
     return user_confirmation("This is a destructive action!", yes=run_name, default=False)
+
+
+def items_dot_notation(d: Dict) -> Generator[Tuple[str, Any], None, None]:
+    """Generator yielding fully qualified dot notation keys with their values, e.g.
+
+    >>> {
+    ...       "nested":
+    ...         {
+    ...             "dict": {"one": 1, "two": 2},
+    ...             "list": [4, 5, 6]
+    ...         },
+    ...     "top": "level"
+    ... }
+
+    will be turned into generator of
+
+    >>> ("nested.dict.one", 1),
+    >>> ("nested.dict.two", 2),
+    >>> ("nested.list", [4, 5, 6]),  # no recursion into lists!
+    >>> ("top", "level"),
+    """
+    for key, value in d.items():
+        if isinstance(value, dict):
+            for nested_key, nested_value in items_dot_notation(value):
+                yield f"{key}.{nested_key}", nested_value
+        else:
+            yield key, value
+
+
+NO_DEFAULT = object()
+NO_SUCH_KEY = object()
+
+
+def get_dot_notation(d: Dict, key: str, default: Optional[Any] = NO_DEFAULT) -> Any:
+    """Utility function to get (possibly deeply nested) key from dict get nice error messages
+    in case something is wrong.
+
+    Args:
+        key (str): dot notation of required key
+
+    Raises:
+        KeyError: specified key is missing on some nesting level, error message tells what is wrong
+
+    Returns:
+        Any: value in the specified key
+    """
+    level_keys = key.split('.')
+    if not level_keys:
+        raise ValueError('No key specified')
+
+    traversed_level_keys = []
+    current_value = d
+    for level_key in level_keys:
+        if not isinstance(current_value, dict):
+            raise KeyError(
+                f"Expected {'.'.join(traversed_level_keys)} to be dict with {level_key} key, "
+                + f"found {current_value.__class__.__name__}",
+            )
+        current_value = current_value.get(level_key, NO_SUCH_KEY)
+        if current_value is NO_SUCH_KEY:
+            if default is NO_DEFAULT:
+                raise KeyError(
+                    f"Can't find top-level key '{level_key}'"
+                    if not traversed_level_keys
+                    else f"'{'.'.join(traversed_level_keys)}' does not contain required '{level_key}' key"
+                )
+            else:
+                return default
+        else:
+            traversed_level_keys.append(level_key)
+
+    return current_value
