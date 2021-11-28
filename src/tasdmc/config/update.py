@@ -3,13 +3,12 @@
 from __future__ import annotations
 from dataclasses import dataclass
 import yaml
-from dictdiffer import diff
 import click
 
-from typing import Any, Optional, List, Dict, Tuple, Literal, cast, Generator
+from typing import Any, Optional, List, Dict, Tuple, Generator
 
 from tasdmc import config, fileio
-from tasdmc.utils import user_confirmation
+from tasdmc.utils import user_confirmation, items_dot_notation
 from .storage import RunConfig
 
 
@@ -55,79 +54,22 @@ class RunConfigChange:
     def dict_diff_plain(
         old_dict: Dict, new_dict: Dict
     ) -> Generator[Tuple[str, Tuple[Optional[Any], Optional[Any]]], None, None]:
-        """Wrapper around dictdiffer.diff func with post-processing:
+        # here fqk = fully-qualified key
+        old_dict_flat = {fqk: v for fqk, v in items_dot_notation(old_dict)}
+        new_dict_flat = {fqk: v for fqk, v in items_dot_notation(new_dict)}
+        
+        old_fqk = set(old_dict_flat.keys())
+        new_fqk = set(new_dict_flat.keys())
 
-        1. Unrolling dict-typed additions/deletions to flat lists:
-        >>> 'parent_key', 'new_key', {'nested_1': 1, 'nested_2': 2, 'nested_3': {'deep1': 'hello', 'deep2': 'world'}}
-                ↓
-        >>> ('parent_key.new_key.nested_1', 1)
-        >>> ('parent_key.new_key.nested_2', 2)
-        >>> ('parent_key.new_key.nested_3.deep1', 'hello')
-        >>> ('parent_key.new_key.nested_3.deep2', 'world')
+        for fqk in old_fqk - new_fqk:
+            yield fqk, (old_dict_flat[fqk], None)
+        
+        for fqk in new_fqk - old_fqk:
+            yield fqk, (None, new_dict_flat[fqk])
 
-        2. Avoiding in-list recursion
-
-        Returns generator over tuples ("full.changed.key", ["value_from", "value_to"])
-        """
-
-        def _get_value(d: Dict, keys: List[str]):
-            try:
-                value = d
-                for key in keys:
-                    value = value[key]
-                return value
-            except KeyError:
-                raise RuntimeError(f"Got sequence of keys ({keys}) not found in the dict")
-
-        def _unroll_addel_dicts(parent_key: str, addel_key: str, addel_value: Any):
-            full_added_key = parent_key + '.' + addel_key if parent_key else addel_key
-            if isinstance(addel_value, dict):
-                unrolled = []
-                for added_subkey, added_subvalue in addel_value.items():
-                    unrolled.extend(_unroll_addel_dicts(full_added_key, added_subkey, added_subvalue))
-                return unrolled
-            else:
-                return [(full_added_key, addel_value)]
-
-        seen_keys = []  # needed because post-processing can generate duplicates
-        for diff_type, key, changes in diff(old_dict, new_dict):
-            print(f"{diff_type = }, {key = }, {changes = }")
-
-            diff_type = cast(Literal['change', 'remove', 'add'], diff_type)
-            if isinstance(key, list):
-                key_levels = [k for k in key if isinstance(k, str)]  # dropping in-list indices
-                key = '.'.join(key_levels)
-            elif isinstance(key, str):
-                key_levels = key.split('.')
-            else:
-                raise RuntimeError(
-                    f"Got unexpected changed key from diff function: {key} (type {key.__class__.__name__})"
-                )
-            if key in seen_keys:
-                continue
-            seen_keys.append(key)
-
-            try:
-                # sometimes we consider 'change' things that dictdiffer considers 'add' or 'remove'
-                old_value = _get_value(old_dict, key_levels)
-                new_value = _get_value(new_dict, key_levels)
-                if isinstance(old_value, list) and isinstance(new_value, list):
-                    diff_type = 'change'
-            except Exception:
-                pass
-
-            if diff_type == 'change':
-                yield key, (_get_value(old_dict, key_levels), _get_value(new_dict, key_levels))
-            else:
-                for addel_key, addel_value in changes:
-                    for full_addel_key, simple_addel_value in _unroll_addel_dicts(key, addel_key, addel_value):
-                        if diff_type == 'add':
-                            change_tuple = (None, simple_addel_value)
-                        elif diff_type == 'remove':
-                            change_tuple = (simple_addel_value, None)
-                        else:
-                            raise RuntimeError(f"Got unexpected diff type from diff function: {diff_type}")
-                        yield full_addel_key, change_tuple
+        for fqk in old_fqk.intersection(new_fqk):
+            if old_dict_flat[fqk] != new_dict_flat[fqk]:
+                yield fqk, (old_dict_flat[fqk], new_dict_flat[fqk])
 
     @classmethod
     def from_configs(cls, old_config: Dict, new_config: Dict) -> List[RunConfigChange]:
