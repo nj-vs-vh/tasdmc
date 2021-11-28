@@ -73,15 +73,6 @@ NO_SUCH_KEY = object()
 def get_dot_notation(d: Dict, key: str, default: Optional[Any] = NO_DEFAULT) -> Any:
     """Utility function to get (possibly deeply nested) key from dict get nice error messages
     in case something is wrong.
-
-    Args:
-        key (str): dot notation of required key
-
-    Raises:
-        KeyError: specified key is missing on some nesting level, error message tells what is wrong
-
-    Returns:
-        Any: value in the specified key
     """
     level_keys = key.split('.')
     if not level_keys:
@@ -109,3 +100,31 @@ def get_dot_notation(d: Dict, key: str, default: Optional[Any] = NO_DEFAULT) -> 
             traversed_level_keys.append(level_key)
 
     return current_value
+
+
+def set_dot_notation(d: Dict, key: str, value: Any):
+    """Utility function to assign (possibly deeply nested) key in the dict"""
+    level_keys = key.split('.')
+    if not level_keys:
+        raise ValueError('No key specified')
+    n_levels = len(level_keys)
+
+    traversed_keys = []
+    subdict = d
+    for i_level, level_key in enumerate(level_keys):
+        if not isinstance(subdict, dict):
+            raise KeyError(
+                f"Expected {'.'.join(traversed_keys)} to be dict with {level_key} key, "
+                + f"found {subdict.__class__.__name__}",
+            )
+        if i_level == n_levels - 1:
+            subdict[level_key] = value
+            return
+        subsubdict = subdict.get(level_key, NO_SUCH_KEY)
+        if subsubdict is NO_SUCH_KEY:
+            subsubdict = dict()  # automatically appending keys
+            subdict[level_key] = subsubdict
+        subdict = subsubdict
+        traversed_keys.append(level_key)
+
+    return subdict
