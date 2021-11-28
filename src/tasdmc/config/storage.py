@@ -40,8 +40,12 @@ class ConfigContainer:
 
 
 
+RunConfigContentsType = Dict[str, Any]
+
+
+
 class RunConfig(ConfigContainer):
-    contents: Optional[Dict[str, Any]] = None  # verbatim contents of run.yaml
+    contents: Optional[RunConfigContentsType] = None  # verbatim contents of run.yaml
 
     @classmethod
     def load(cls, filename: Union[str, Path]):
@@ -66,7 +70,7 @@ class NodeEntry(ABC):
     user: str = None
     conda_env: str = None
     name: Optional[str] = None
-    config_override: Optional[Dict[str, Any]] = None
+    config_override: Optional[RunConfigContentsType] = None
     weight: float = 1.0
 
     def __post_init__(self):

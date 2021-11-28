@@ -5,12 +5,14 @@ from fabric import Connection, Result
 from pathlib import Path
 from functools import lru_cache
 import click
+import copy
 import re
 
 from typing import IO, Any, List
 
 from tasdmc import __version__
-from tasdmc.config.storage import NodeEntry, NodesConfig
+from tasdmc.config.storage import NodeEntry, NodesConfig, RunConfig, RunConfigContentsType
+from tasdmc.utils import get_dot_notation, set_dot_notation, items_dot_notation
 
 
 @dataclass
@@ -23,6 +25,21 @@ class NodeExecutor(ABC):
             if self.node_entry.name is not None
             else self.node_entry.host
         )
+
+    def get_remote_run_config(self) -> RunConfigContentsType:
+        base = RunConfig.get()
+        override = self.node_entry.config_override
+        if override is None:
+            return base
+        patched = copy.deepcopy(base)
+        for fqk, override_value in items_dot_notation(override):
+            base_value = get_dot_notation(base, fqk)
+            if base_value == override_value:
+                continue
+            set_dot_notation(patched, fqk, override_value)
+            # saving original values under dedicated key
+            set_dot_notation(patched, "before_override." + fqk, base_value)
+        return patched
 
     @abstractmethod
     def check(self) -> bool:
