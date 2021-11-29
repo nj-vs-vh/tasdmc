@@ -52,9 +52,12 @@ class NodeExecutor(ABC):
 
         remote_run_config_path = self.save_to_node(StringIO(yaml.dump(remote_run_config, sort_keys=False)))
         try:
-            self.run(f"{self.get_activation_cmd()} && tasdmc run-local -r {remote_run_config_path}")
+            res: Result = self.run(
+                f"{self.get_activation_cmd()} && tasdmc run-local -r {remote_run_config_path}", hide='both',
+            )
+            _check_result(res)
         finally:
-            self.run(f"rm {remote_run_config_path}")
+            self.run(f"rm {remote_run_config_path}", hide='both')
 
     @abstractmethod
     def check(self) -> bool:
@@ -88,15 +91,7 @@ class RemoteNodeExecutor(NodeExecutor):
             with self.connection:
                 remote_check_cmd = f"{self.get_activation_cmd()} && tasdmc --version"
                 res: Result = self.connection.run(remote_check_cmd, hide='both', warn=True)
-                if res.return_code != 0:
-                    errmsg = f"Remote node command error (exit code {res.return_code})"
-                    for stream_contents, stream_name in [
-                        (_postprocess_stream(res.stdout), 'stdout'),
-                        (_postprocess_stream(res.stderr), 'stderr'),
-                    ]:
-                        if stream_contents:
-                            errmsg += f'\n\tCaptured {stream_name}:\n{stream_contents}'
-                    raise Exception(errmsg)
+                _check_result(res)
                 remote_node_version_match = re.match(r"tasdmc, version (?P<version>.*)", str(res.stdout))
                 assert remote_node_version_match is not None, f"Can't parse tasdmc version from output '{res.stdout}'"
                 remote_node_version = remote_node_version_match.groupdict()['version']
@@ -117,7 +112,7 @@ class RemoteNodeExecutor(NodeExecutor):
 
     def save_to_node(self, contents: IO) -> Path:
         remote_tmp = Path(f'/tmp/tasdmc-remote-node-artifact-{abs(hash(self.connection))}')
-        self.connection.put(contents, remote_tmp)
+        self.connection.put(contents, str(remote_tmp))
         return remote_tmp
 
     def run(self, cmd: str, *args, **kwargs) -> Result:
@@ -169,3 +164,15 @@ def _postprocess_stream(stream: str) -> str:
     stream = stream.strip()
     stream = '\n'.join(['\t> ' + line for line in stream.splitlines()])
     return stream
+
+
+def _check_result(res: Result):
+    if res.return_code != 0:
+        errmsg = f"Remote node command error (exit code {res.return_code})"
+        for stream_contents, stream_name in [
+            (_postprocess_stream(res.stdout), 'stdout'),
+            (_postprocess_stream(res.stderr), 'stderr'),
+        ]:
+            if stream_contents:
+                errmsg += f'\n\tCaptured {stream_name}:\n{stream_contents}'
+        raise Exception(errmsg)

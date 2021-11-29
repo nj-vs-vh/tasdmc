@@ -1,4 +1,5 @@
 import click
+import sys
 
 from tasdmc import system, pipeline, config, fileio
 from tasdmc.utils import user_confirmation
@@ -40,5 +41,6 @@ def error_catching(cmd_fn):
             cmd_fn(*args, **kwargs)
         except Exception as e:
             click.secho(str(e), fg='red', bold=True)
+            sys.exit(1)
 
     return wrapped
