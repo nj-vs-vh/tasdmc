@@ -32,7 +32,7 @@ class NodeExecutor(ABC):
             else self.node_entry.host
         )
 
-    def save_remote_run_config(self) -> Path:
+    def run_node(self):
         base_run_config = RunConfig.get()
         override = self.node_entry.config_override
         if override is None:
@@ -48,10 +48,13 @@ class NodeExecutor(ABC):
 
         set_dot_notation(remote_run_config, "input_files.subset.all_weights", NodesConfig.all_weights())
         set_dot_notation(remote_run_config, "input_files.subset.this_idx", self.index)
-
         remote_run_config["name"] = self.get_node_run_name()
 
-        return self.save_to_node(StringIO(yaml.dump(remote_run_config, sort_keys=False)))
+        remote_run_config_path = self.save_to_node(StringIO(yaml.dump(remote_run_config, sort_keys=False)))
+        try:
+            self.run(f"{self.get_activation_cmd()} && tasdmc run-local -r {remote_run_config_path}")
+        finally:
+            self.run(f"rm {remote_run_config_path}")
 
     @abstractmethod
     def check(self) -> bool:

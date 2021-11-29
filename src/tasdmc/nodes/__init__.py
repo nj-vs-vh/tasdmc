@@ -3,7 +3,7 @@ import click
 from .node_executor import node_executors_from_config
 
 
-def check() -> bool:
+def check_all():
     click.echo("Checking nodes...")
     failed_nodes = []
     for ex in node_executors_from_config():
@@ -16,3 +16,8 @@ def check() -> bool:
         )
     else:
         click.secho("OK", fg='green')
+
+
+def run_all():
+    for ex in node_executors_from_config():
+        ex.run_node()
