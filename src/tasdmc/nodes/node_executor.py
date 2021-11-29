@@ -13,7 +13,7 @@ import invoke
 import socket
 from fabric import Connection, Result
 
-from typing import IO, Any, List
+from typing import IO, List
 
 from tasdmc import __version__, config
 from tasdmc.config.storage import NodeEntry, NodesConfig, RunConfig
@@ -31,6 +31,17 @@ class NodeExecutor(ABC):
             if self.node_entry.name is not None
             else self.node_entry.host
         )
+
+    def _check_command_result(self, res: Result) -> Result:
+        if res.return_code != 0:
+            errmsg = f"Command on node {self} exited with error (code {res.return_code})"
+            for stream_contents, stream_name in [
+                (_postprocess_stream(res.stdout), 'stdout'),
+                (_postprocess_stream(res.stderr), 'stderr'),
+            ]:
+                if stream_contents:
+                    errmsg += f'\n\tCaptured {stream_name}:\n{stream_contents}'
+            raise RuntimeError(errmsg)
 
     def run_node(self):
         base_run_config = RunConfig.get()
@@ -52,10 +63,9 @@ class NodeExecutor(ABC):
 
         remote_run_config_path = self.save_to_node(StringIO(yaml.dump(remote_run_config, sort_keys=False)))
         try:
-            res: Result = self.run(f"{self.get_activation_cmd()} && tasdmc run-local -r {remote_run_config_path}")
-            _check_result(res)
+            self.run(f"{self.get_activation_cmd()} && tasdmc run-local -r {remote_run_config_path}")
         finally:
-            self.run(f"rm {remote_run_config_path}", hide='both')
+            self.run(f"rm {remote_run_config_path}")
 
     @abstractmethod
     def check(self) -> bool:
@@ -79,7 +89,9 @@ class NodeExecutor(ABC):
             kwargs['hide'] = 'both'
         if 'warn' not in kwargs:
             kwargs['warn'] = True
-        return self._run(cmd, **kwargs)
+        res: Result = self._run(cmd, **kwargs)
+        self._check_command_result(res)
+        return res
 
     @abstractmethod
     def _run(self, cmd: str, **kwargs) -> Result:
@@ -95,7 +107,6 @@ class RemoteNodeExecutor(NodeExecutor):
         try:
             with self.connection:
                 res: Result = self.run(f"{self.get_activation_cmd()} && tasdmc --version")
-                _check_result(res)
                 remote_node_version_match = re.match(r"tasdmc, version (?P<version>.*)", str(res.stdout))
                 assert remote_node_version_match is not None, f"Can't parse tasdmc version from output '{res.stdout}'"
                 remote_node_version = remote_node_version_match.groupdict()['version']
@@ -168,15 +179,3 @@ def _postprocess_stream(stream: str) -> str:
     stream = stream.strip()
     stream = '\n'.join(['\t> ' + line for line in stream.splitlines()])
     return stream
-
-
-def _check_result(res: Result):
-    if res.return_code != 0:
-        errmsg = f"Remote node command error (exit code {res.return_code})"
-        for stream_contents, stream_name in [
-            (_postprocess_stream(res.stdout), 'stdout'),
-            (_postprocess_stream(res.stderr), 'stderr'),
-        ]:
-            if stream_contents:
-                errmsg += f'\n\tCaptured {stream_name}:\n{stream_contents}'
-        raise RuntimeError(errmsg)

@@ -90,9 +90,15 @@ def generate_corsika_cards() -> List[Path]:
                 else f' ({skipped_cards_count}/{cards_count} of cards already found in the run dir)'
             )
         )
+        if is_subset_configured():
+            card_index_range = list(card_index_range_from_config(cards_count))
+            cards_count_msg = f"{len(card_index_range)}/{cards_count} cards, starting at {card_index_range[0]}"
+        else:
+            cards_count_msg = f"{cards_count:d} cards"
+
         logs.cards_generation_info(
-            f"PRIMARY {particle_id:d} ENERGY {log10E:.1f} ({energy_id:02d}): "
-            + f"{cards_count:d} cards: "
+            f"PRIMARY {particle_id:d} ENERGY {log10E:.1f} ({energy_id:02d}) - "
+            + f"{cards_count_msg} - "
             + f"DAT{file_index_to_runnr(0, energy_id)} ... DAT{file_index_to_runnr(cards_count - 1, energy_id)}"
             + skipped_msg,
         )
@@ -138,6 +144,10 @@ def get_cards_count_at_log10E(log10E: float):
 
 
 # config accessors with validation
+
+
+def is_subset_configured():
+    return config.get_key('input_files.subset', default=None) is not None
 
 
 def card_index_range_from_config(cards_count: int) -> Iterable[int]:
