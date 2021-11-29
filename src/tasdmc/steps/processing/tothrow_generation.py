@@ -17,7 +17,7 @@ from typing import List, Tuple
 from tasdmc import config
 from tasdmc.steps.base import Files, PipelineStep
 from tasdmc.steps.processing.corsika2geant import C2GOutputFiles, Corsika2GeantStep
-from tasdmc.steps.corsika_cards_generation import get_cards_count_by_log10E, log10E_bounds_from_config
+from tasdmc.steps.corsika_cards_generation import get_cards_count_at_log10E, log10E_bounds_from_config
 
 
 @dataclass
@@ -81,7 +81,7 @@ class TothrowGenerationStep(PipelineStep):
         log10E_min, _ = log10E_bounds_from_config()
         dndlogE_exponent = dndE_exponent - 1
         n_particles_in_energy_bin = N0 * 10 ** (-dndlogE_exponent * (log10E - log10E_min))
-        n_particles = int(n_particles_in_energy_bin / get_cards_count_by_log10E(log10E))
+        n_particles = int(n_particles_in_energy_bin / get_cards_count_at_log10E(log10E))
 
         # legacy values for backward compatibilty, taken from sdmc_prep_sdmc_run script
         NDWORD = 273  # same as in src/c_routines/corsika2geant/constants.h

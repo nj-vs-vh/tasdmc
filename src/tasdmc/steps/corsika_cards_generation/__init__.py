@@ -6,8 +6,9 @@ Based on runcorsd-old/gen_infiles_primary.sh
 from __future__ import annotations
 from pathlib import Path
 import getpass
+from math import ceil
 
-from typing import List, Tuple
+from typing import List, Tuple, Generator, Iterable
 
 from tasdmc import config, fileio, logs
 from .corsika_card import (
@@ -55,41 +56,30 @@ def generate_corsika_cards() -> List[Path]:
         cd.replace_card("ECUTS", "0.3  0.05  0.00025  0.00025")
 
     logs.cards_generation_info('\nCards per energy bin')
-    for E_bin_i in range(1 + int((log10E_max - log10E_min) / LOG10_E_STEP)):
-        log10E = log10E_min + E_bin_i * LOG10_E_STEP
+    for log10E in log10E_range_from_config():
         cd.set_fixed_log10en(log10E)
         params = BTS_PAR[log10E]
         energy_id = int(params[0])
         cd.set_THIN(params[1], params[2], params[3])
         cd.set_THINH(params[4], params[5])
 
-        cards_count = get_cards_count_by_log10E(log10E)
-
-        # NOTE: this limitation is eliminated in the latest corsika
-        # NRREXT option may be used, files are then named DATnnnnnnnnn istead of DATnnnnnn
-        if not 0 <= cards_count <= 10000:
-            raise ValueError(
-                f"Event number multiplier {event_number_multiplier} results in the file index outside [0; 9999] "
-                + f"(event number without multiplication = {params[6]})."
-            )
-
+        cards_count = get_cards_count_at_log10E(log10E)  # a total number of cards
         skipped_cards_count = 0
 
         def file_index_to_runnr(idx: int, energy_id: int) -> str:
             return f"{idx * 100 + energy_id:06d}"
 
-        for file_index in range(cards_count):
-            runnr = file_index_to_runnr(file_index, energy_id)
-            cd.set_RUNNR(runnr)
-            cd.set_random_seeds()
+        for card_index in card_index_range_from_config(cards_count):
+            runnr = file_index_to_runnr(card_index, energy_id)
             card_file = fileio.corsika_input_files_dir() / f"DAT{runnr}.in"
             generated_card_paths.append(card_file)
             if card_file.exists():
                 skipped_cards_count += 1
                 continue
-            else:
-                with open(card_file, "w") as f:
-                    f.write(cd.buf + "\n")
+            cd.set_RUNNR(runnr)
+            cd.set_random_seeds()
+            with open(card_file, "w") as f:
+                f.write(cd.buf + "\n")
 
         skipped_msg = (
             ''
@@ -115,6 +105,11 @@ def validate_config():
     log10E_bounds_from_config()
     _event_number_multiplier_from_config()
 
+    for log10E in log10E_range_from_config():
+        get_cards_count_at_log10E(log10E)
+
+    card_index_range_from_config(1000)
+
     allowed_high_E_models = ('QGSJETII', 'EPOS')
     if config.get_key('corsika.high_E_hadronic_interactions_model') not in allowed_high_E_models:
         raise ValueError(
@@ -127,13 +122,46 @@ def validate_config():
         )
 
 
-def get_cards_count_by_log10E(log10E: float):
+def get_cards_count_at_log10E(log10E: float):
     params = BTS_PAR[log10E]
     event_number_multiplier = _event_number_multiplier_from_config()
-    return int(params[6] * event_number_multiplier)
+    cards_count = int(params[6] * event_number_multiplier)
+
+    # NOTE: this limitation is eliminated in the latest corsika
+    # NRREXT option may be used, files are then named DATnnnnnnnnn istead of DATnnnnnn
+    if not 0 <= cards_count <= 10000:
+        raise ValueError(
+            f"Event number multiplier {event_number_multiplier} results in the file index outside [0; 9999] "
+            + f"(event number without multiplication = {params[6]})."
+        )
+    return cards_count
 
 
 # config accessors with validation
+
+
+def card_index_range_from_config(cards_count: int) -> Iterable[int]:
+    """This function returns range(cards_count) for local runs and for distributed runs returns only """
+    input_files_subset_config = config.get_key('input_files.subset', default=None)
+    if input_files_subset_config is None:  # i.e. this is local run config, generating all cards
+        return range(cards_count)
+
+    all_weights = input_files_subset_config['all_weights']
+    my_weight_idx = input_files_subset_config['my_weight_idx']
+    weight_sum = sum(all_weights)
+    normalized_weights = [w / weight_sum for w in all_weights]
+    subset_sizes = [ceil(nw * cards_count) for nw in normalized_weights]
+    sum_of_subsets = sum(subset_sizes)
+    if sum_of_subsets > cards_count:  # because of rounding up
+        max_subset_idx = subset_sizes.index(max(subset_sizes))
+        subset_sizes[max_subset_idx] -= (sum_of_subsets - cards_count)
+    assert sum(subset_sizes) == cards_count
+
+    subset_bounds = [
+        (sum(subset_sizes[:i]), sum(subset_sizes[:i+1]))
+        for i in range(len(subset_sizes))
+    ]
+    return range(*subset_bounds[my_weight_idx])
 
 
 def _particle_id_from_config() -> Tuple[str, int]:
@@ -160,6 +188,12 @@ def log10E_bounds_from_config() -> Tuple[float, float]:
         return log10E_min, log10E_max
     except (ValueError, AssertionError) as e:
         raise ValueError(str(e))
+
+
+def log10E_range_from_config() -> Generator[float, None, None]:
+    log10E_min, log10E_max = log10E_bounds_from_config()
+    for E_bin_i in range(1 + int((log10E_max - log10E_min) / LOG10_E_STEP)):
+        yield log10E_min + E_bin_i * LOG10_E_STEP
 
 
 def _event_number_multiplier_from_config() -> float:
