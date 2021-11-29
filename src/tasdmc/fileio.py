@@ -25,14 +25,7 @@ def run_dir(run_name: Optional[str] = None) -> Path:
     return config.Global.runs_dir / run_name
 
 
-_internal_dir_getters: List[Callable[[], Path]] = []
 _local_run_internal_dir_getters: List[Callable[[], Path]] = []
-
-
-def internal_run_dir(fn):
-    """Decorator to register internal dir so that it will be created when preparing run dir"""
-    _internal_dir_getters.append(fn)
-    return lru_cache()(fn)
 
 
 def internal_local_run_dir(fn):
@@ -43,7 +36,7 @@ def internal_local_run_dir(fn):
 # processing results directories
 
 
-@internal_run_dir
+@internal_local_run_dir
 def corsika_input_files_dir() -> Path:
     return run_dir() / 'corsika_input'
 
@@ -172,8 +165,6 @@ def prepare_run_dir(continuing: bool = False):
                 shutil.move(old_log, old_logs_dir / old_log.name)
 
     config.RunConfig.dump(saved_run_config_file())
-    for dir_getter in _internal_dir_getters:
-        dir_getter().mkdir(exist_ok=continuing)
 
     if config.is_local_run():
         for dir_getter in _local_run_internal_dir_getters:
