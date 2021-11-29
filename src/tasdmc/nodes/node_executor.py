@@ -1,23 +1,29 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-import invoke
-from fabric import Connection, Result
 from pathlib import Path
 from functools import lru_cache
+from io import StringIO
 import click
 import copy
+import yaml
 import re
+import os
+
+import invoke
+import socket
+from fabric import Connection, Result
 
 from typing import IO, Any, List
 
-from tasdmc import __version__
-from tasdmc.config.storage import NodeEntry, NodesConfig, RunConfig, RunConfigContentsType
+from tasdmc import __version__, config
+from tasdmc.config.storage import NodeEntry, NodesConfig, RunConfig
 from tasdmc.utils import get_dot_notation, set_dot_notation, items_dot_notation
 
 
 @dataclass
 class NodeExecutor(ABC):
     node_entry: NodeEntry
+    index: int
 
     def __str__(self) -> str:
         return (
@@ -26,23 +32,37 @@ class NodeExecutor(ABC):
             else self.node_entry.host
         )
 
-    def get_remote_run_config(self) -> RunConfigContentsType:
-        base = RunConfig.get()
+    def save_remote_run_config(self) -> Path:
+        base_run_config = RunConfig.get()
         override = self.node_entry.config_override
         if override is None:
-            return base
-        patched = copy.deepcopy(base)
+            return base_run_config
+        remote_run_config = copy.deepcopy(base_run_config)
         for fqk, override_value in items_dot_notation(override):
-            base_value = get_dot_notation(base, fqk)
+            base_value = get_dot_notation(base_run_config, fqk)
             if base_value == override_value:
                 continue
-            set_dot_notation(patched, fqk, override_value)
+            set_dot_notation(remote_run_config, fqk, override_value)
             # saving original values under dedicated key
-            set_dot_notation(patched, "before_override." + fqk, base_value)
-        return patched
+            set_dot_notation(remote_run_config, "before_override." + fqk, base_value)
+
+        set_dot_notation(remote_run_config, "input_files.subset.all_weights", NodesConfig.all_weights())
+        set_dot_notation(remote_run_config, "input_files.subset.this_idx", self.index)
+
+        remote_run_config["name"] = self.get_node_run_name()
+
+        return self.save_to_node(StringIO(yaml.dump(remote_run_config, sort_keys=False)))
 
     @abstractmethod
     def check(self) -> bool:
+        pass
+
+    @abstractmethod
+    def get_node_run_name(self) -> str:
+        pass
+
+    @abstractmethod
+    def get_activation_cmd(self) -> str:
         pass
 
     @abstractmethod
@@ -63,7 +83,7 @@ class RemoteNodeExecutor(NodeExecutor):
     def check(self) -> bool:
         try:
             with self.connection:
-                remote_check_cmd = f"conda activate {self.node_entry.conda_env} && tasdmc --version"
+                remote_check_cmd = f"{self.get_activation_cmd()} && tasdmc --version"
                 res: Result = self.connection.run(remote_check_cmd, hide='both', warn=True)
                 if res.return_code != 0:
                     errmsg = f"Remote node command error (exit code {res.return_code})"
@@ -85,6 +105,13 @@ class RemoteNodeExecutor(NodeExecutor):
             click.echo(f"{self}: {e}")
             return False
 
+    def get_node_run_name(self) -> str:
+        this_hostname = socket.gethostname()
+        return f"{config.run_name()}:node-from-{this_hostname}"
+
+    def get_activation_cmd(self) -> str:
+        return f"conda activate {self.node_entry.conda_env}"
+
     def save_to_node(self, contents: IO) -> Path:
         remote_tmp = Path(f'/tmp/tasdmc-remote-node-artifact-{abs(hash(self.connection))}')
         self.connection.put(contents, remote_tmp)
@@ -98,6 +125,15 @@ class LocalNodeExecutor(NodeExecutor):
     def check(self) -> bool:
         return True
 
+    def get_node_run_name(self) -> str:
+        return f"{config.run_name()}:node-local"
+
+    def get_activation_cmd(self) -> str:
+        this_conda_env = os.environ.get("CONDA_DEFAULT_ENV")
+        if this_conda_env is None:
+            return ""  # raise runtime error?
+        return f"conda activate {this_conda_env}"
+
     def save_to_node(self, contents: IO) -> Path:
         remote_tmp = Path(f'/tmp/tasdmc-remote-self-node-artifact')
         with open(remote_tmp, contents.mode) as f:
@@ -110,11 +146,13 @@ class LocalNodeExecutor(NodeExecutor):
 @lru_cache(1)
 def node_executors_from_config() -> List[NodeExecutor]:
     executors = []
-    for ne in _node_entries_from_config():
+    for i, ne in enumerate(_node_entries_from_config()):
         if ne.host == 'self':
-            executors.append(LocalNodeExecutor(node_entry=ne))
+            executors.append(LocalNodeExecutor(node_entry=ne, index=i))
         else:
-            executors.append(RemoteNodeExecutor(node_entry=ne, connection=Connection(host=ne.host, user=ne.user)))
+            executors.append(
+                RemoteNodeExecutor(node_entry=ne, index=i, connection=Connection(host=ne.host, user=ne.user))
+            )
     return executors
 
 

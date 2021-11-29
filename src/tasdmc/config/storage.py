@@ -6,6 +6,7 @@ from dataclasses import dataclass, fields, asdict
 from abc import ABC, abstractmethod
 
 from typing import Optional, Union, Dict, Any, List, TypeVar
+from numbers import Number
 
 from .exceptions import ConfigNotReadError, BadConfigError
 
@@ -97,6 +98,11 @@ class NodesConfig(ConfigContainer):
             cls.contents.append(NodeEntry(**init_kwargs))
         all_hosts = [ne.host for ne in cls.contents]
         assert len(set(all_hosts)) == len(all_hosts), "Each node must have unique host field"
+
+    @classmethod
+    def all_weights(cls) -> List[Number]:
+        node_entries: List[NodeEntry] = cls.get()
+        return [ne.weight for ne in node_entries]
 
     @classmethod
     def dump(cls, filename: Path):

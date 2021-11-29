@@ -112,12 +112,6 @@ def file_contents_hash(file_path: Path, hasher_name: str = 'md5') -> str:
     return hasher.hexdigest()
 
 
-def concatenate_and_hash(contents: List[Any], delimiter: str = ':', hasher_name: str = 'md5') -> str:
-    concat_strings = delimiter.join([str(s) for s in contents])
-    hasher = hashlib.new(hasher_name, data=concat_strings.encode('utf-8'))
-    return hasher.hexdigest()
-
-
 CheckFnArgs = TypeVar("CheckFnArgs")
 
 

@@ -7,8 +7,9 @@ from typing import Optional, List, Any, Literal, get_args, get_origin
 
 from tasdmc import fileio, config
 from tasdmc.logs import input_hashes_debug, file_checks_debug
+from tasdmc.utils import concatenate_and_hash
 from ..exceptions import FilesCheckFailed, HashComputationFailed
-from ..utils import file_contents_hash, concatenate_and_hash
+from ..utils import file_contents_hash
 
 
 class Files(ABC):

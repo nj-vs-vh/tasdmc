@@ -10,8 +10,9 @@ from typing import List
 from tasdmc import fileio
 from tasdmc.c_routines_wrapper import execute_routine, Pipes
 from tasdmc.steps.base import Files, NotAllRetainedFiles, PipelineStep
-from tasdmc.steps.utils import check_file_is_empty, concatenate_and_hash, check_last_line_contains
+from tasdmc.steps.utils import check_file_is_empty, check_last_line_contains
 from tasdmc.steps.exceptions import FilesCheckFailed
+from tasdmc.utils import concatenate_and_hash
 
 from .dethinning import DethinningOutputFiles, DethinningStep
 

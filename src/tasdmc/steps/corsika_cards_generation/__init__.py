@@ -147,7 +147,7 @@ def card_index_range_from_config(cards_count: int) -> Iterable[int]:
         return range(cards_count)
 
     all_weights = input_files_subset_config['all_weights']
-    my_weight_idx = input_files_subset_config['my_weight_idx']
+    this_idx = input_files_subset_config['this_idx']
     weight_sum = sum(all_weights)
     normalized_weights = [w / weight_sum for w in all_weights]
     subset_sizes = [ceil(nw * cards_count) for nw in normalized_weights]
@@ -161,7 +161,7 @@ def card_index_range_from_config(cards_count: int) -> Iterable[int]:
         (sum(subset_sizes[:i]), sum(subset_sizes[:i+1]))
         for i in range(len(subset_sizes))
     ]
-    return range(*subset_bounds[my_weight_idx])
+    return range(*subset_bounds[this_idx])
 
 
 def _particle_id_from_config() -> Tuple[str, int]:

@@ -1,6 +1,7 @@
 import click
+import hashlib
 
-from typing import TypeVar, Sequence, Optional, Dict, Generator, Tuple, Any
+from typing import TypeVar, Sequence, Optional, Dict, Generator, Tuple, Any, List
 
 
 SequenceValue = TypeVar('SequenceValue')
@@ -128,3 +129,9 @@ def set_dot_notation(d: Dict, key: str, value: Any):
         traversed_keys.append(level_key)
 
     return subdict
+
+
+def concatenate_and_hash(contents: List[Any], delimiter: str = ':', hasher_name: str = 'md5') -> str:
+    concat_strings = delimiter.join([str(s) for s in contents])
+    hasher = hashlib.new(hasher_name, data=concat_strings.encode('utf-8'))
+    return hasher.hexdigest()
