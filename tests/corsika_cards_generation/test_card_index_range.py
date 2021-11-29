@@ -9,6 +9,7 @@ from tasdmc.steps.corsika_cards_generation import card_index_range_from_config
     "subset_config, cards_count, expected_range",
     [
         param(None, 1000, range(1000)),
+        param({"all_weights": [100], "this_idx": 0}, 1000, range(1000)),
         param({"all_weights": [1, 1], "this_idx": 0}, 100, range(0, 50)),
         param({"all_weights": [1, 1], "this_idx": 1}, 100, range(50, 100)),
         param({"all_weights": [1, 1, 1], "this_idx": 2}, 100, range(66, 100)),
