@@ -40,7 +40,7 @@ def error_catching(cmd_fn):
         try:
             cmd_fn(*args, **kwargs)
         except Exception as e:
-            click.secho(str(e), fg='red', bold=True)
+            click.secho(str(e), fg='red', bold=True, err=True)
             sys.exit(1)
 
     return wrapped

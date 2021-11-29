@@ -52,9 +52,7 @@ class NodeExecutor(ABC):
 
         remote_run_config_path = self.save_to_node(StringIO(yaml.dump(remote_run_config, sort_keys=False)))
         try:
-            res: Result = self.run(
-                f"{self.get_activation_cmd()} && tasdmc run-local -r {remote_run_config_path}", hide='both',
-            )
+            res: Result = self.run(f"{self.get_activation_cmd()} && tasdmc run-local -r {remote_run_config_path}")
             _check_result(res)
         finally:
             self.run(f"rm {remote_run_config_path}", hide='both')
@@ -76,8 +74,15 @@ class NodeExecutor(ABC):
         """Returns path to file on the node"""
         pass
 
+    def run(self, cmd: str, **kwargs) -> Result:
+        if 'hide' not in kwargs:
+            kwargs['hide'] = 'both'
+        if 'warn' not in kwargs:
+            kwargs['warn'] = True
+        return self._run(cmd, **kwargs)
+
     @abstractmethod
-    def run(self, cmd: str, *args, **kwargs) -> Any:
+    def _run(self, cmd: str, **kwargs) -> Result:
         """Run shell command on the node"""
         pass
 
@@ -89,8 +94,7 @@ class RemoteNodeExecutor(NodeExecutor):
     def check(self) -> bool:
         try:
             with self.connection:
-                remote_check_cmd = f"{self.get_activation_cmd()} && tasdmc --version"
-                res: Result = self.connection.run(remote_check_cmd, hide='both', warn=True)
+                res: Result = self.run(f"{self.get_activation_cmd()} && tasdmc --version")
                 _check_result(res)
                 remote_node_version_match = re.match(r"tasdmc, version (?P<version>.*)", str(res.stdout))
                 assert remote_node_version_match is not None, f"Can't parse tasdmc version from output '{res.stdout}'"
@@ -115,8 +119,8 @@ class RemoteNodeExecutor(NodeExecutor):
         self.connection.put(contents, str(remote_tmp))
         return remote_tmp
 
-    def run(self, cmd: str, *args, **kwargs) -> Result:
-        return self.connection.run(cmd, *args, **kwargs)
+    def _run(self, cmd: str, **kwargs) -> Result:
+        return self.connection.run(cmd, **kwargs)
 
 
 class LocalNodeExecutor(NodeExecutor):
@@ -137,8 +141,8 @@ class LocalNodeExecutor(NodeExecutor):
         with open(remote_tmp, contents.mode) as f:
             f.write(contents.read())
 
-    def run(self, cmd: str, *args, **kwargs) -> Result:
-        return invoke.run(cmd, *args, **kwargs)
+    def _run(self, cmd: str, **kwargs) -> Result:
+        return invoke.run(cmd, **kwargs)
 
 
 @lru_cache(1)
@@ -175,4 +179,4 @@ def _check_result(res: Result):
         ]:
             if stream_contents:
                 errmsg += f'\n\tCaptured {stream_name}:\n{stream_contents}'
-        raise Exception(errmsg)
+        raise RuntimeError(errmsg)
