@@ -57,15 +57,16 @@ def with_pipelines_mask(steps: List[PipelineStep]) -> List[PipelineStep]:
         return [s for s in steps if s.pipeline_id in pipelines_mask]
 
 
-def run_standard_pipeline():
+def run_standard_pipeline(dry: bool = False):
     system.set_process_title("tasdmc main")
     fileio.save_main_process_pid()
-
-    # workaround; TODO: pack steps sequence in a pipeline class
     steps = standard_simulation_steps(corsika_card_paths=generate_corsika_cards())
     steps = with_pipelines_mask(steps)
-
     config.validate(set(step.__class__ for step in steps))
+
+    if dry:
+        return
+
     system.run_in_background(run_system_monitor, keep_session=True)
 
     step_indices = list(range(len(steps)))

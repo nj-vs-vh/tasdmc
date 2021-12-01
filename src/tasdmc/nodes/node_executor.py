@@ -43,7 +43,7 @@ class NodeExecutor(ABC):
                     errmsg += f'\n\tCaptured {stream_name}:\n{stream_contents}'
             raise RuntimeError(errmsg)
 
-    def run_node(self):
+    def run_node(self, dry: bool = False):
         base_run_config = RunConfig.get()
         override = self.node_entry.config_override
         if override is None:
@@ -63,7 +63,8 @@ class NodeExecutor(ABC):
 
         remote_run_config_path = self.save_to_node(StringIO(yaml.dump(remote_run_config, sort_keys=False)))
         try:
-            self.run(f"{self.get_activation_cmd()} && tasdmc run-local -r {remote_run_config_path}")
+            tasdmc_cmd = 'run-local' if not dry else 'run-local-dry'
+            self.run(f"{self.get_activation_cmd()} && {tasdmc_cmd} -r {remote_run_config_path}")
         finally:
             self.run(f"rm {remote_run_config_path}")
 

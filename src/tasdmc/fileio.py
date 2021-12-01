@@ -173,6 +173,12 @@ def prepare_run_dir(continuing: bool = False):
         config.NodesConfig.dump(saved_nodes_config_file())
 
 
+def remove_run_dir():
+    rd = run_dir()
+    shutil.rmtree(rd, ignore_errors=True)
+    click.echo(f"Run directory removed: {rd.absolute()}")
+
+
 def save_main_process_pid():
     saved_main_pid_file().write_text(str(os.getpid()))  # saving currend main process ID
 

@@ -1,10 +1,11 @@
+from os import pipe
 import click
 from time import sleep
 from pathlib import Path
 import gdown
 from gdown.cached_download import assert_md5sum
 
-from tasdmc import config, system, fileio, inspect, hard_cleanup, extract_calibration, nodes
+from tasdmc import config, pipeline, system, fileio, inspect, hard_cleanup, extract_calibration, nodes
 from tasdmc.config.update import update_run_config
 from tasdmc.logs import display as display_logs
 from tasdmc.utils import user_confirmation_destructive
@@ -20,10 +21,25 @@ from .utils import run_standard_pipeline_in_background, load_config_by_run_name,
 @cli.command("run-local", help="Run simulation locally on this machine")
 @run_config_option('run_config_filename')
 @error_catching
-def local_run_cmd(run_config_filename):
+def local_run_cmd(run_config_filename: str):
     config.RunConfig.load(run_config_filename)
     fileio.prepare_run_dir()
     run_standard_pipeline_in_background()
+
+
+@cli.command(
+    "run-local-dry",
+    help="Dry run: create simulation directory, validate config, "
+    + "generate input files and then cleanup as if nothing happened",
+)
+@run_config_option('run_config_filename')
+@error_catching
+def local_run_cmd(run_config_filename: str):
+    config.RunConfig.load(run_config_filename)
+    fileio.prepare_run_dir()
+    pipeline.run_standard_pipeline(dry=True)
+    fileio.remove_run_dir()
+    click.secho("OK", fg="green")
 
 
 @cli.command("run-distributed", help="Run simulation distributed across several machines (nodes)")
@@ -35,6 +51,7 @@ def distributed_run_cmd(run_config_filename: str, nodes_config_filename: str):
     config.NodesConfig.load(nodes_config_filename)
     nodes.check_all()
     fileio.prepare_run_dir()
+    nodes.run_all_dry()
     nodes.run_all()
 
 

@@ -18,6 +18,11 @@ def check_all():
         click.secho("OK", fg='green')
 
 
+def run_all_dry():
+    for ex in node_executors_from_config():
+        ex.run_node(dry=True)
+
+
 def run_all():
     for ex in node_executors_from_config():
         ex.run_node()
