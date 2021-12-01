@@ -37,9 +37,10 @@ def local_run_cmd(run_config_filename: str):
 def local_run_cmd(run_config_filename: str):
     config.RunConfig.load(run_config_filename)
     fileio.prepare_run_dir()
-    pipeline.run_standard_pipeline(dry=True)
-    fileio.remove_run_dir()
-    click.secho("OK", fg="green")
+    try:
+        pipeline.run_standard_pipeline(dry=True)
+    finally:
+        fileio.remove_run_dir()
 
 
 @cli.command("run-distributed", help="Run simulation distributed across several machines (nodes)")
