@@ -164,7 +164,7 @@ def node_executors_from_config() -> List[NodeExecutor]:
             executors.append(LocalNodeExecutor(node_entry=ne, index=i))
         else:
             executors.append(
-                RemoteNodeExecutor(node_entry=ne, index=i, connection=Connection(host=ne.host, user=ne.user))
+                RemoteNodeExecutor(node_entry=ne, index=i, connection=Connection(host=ne.host))
             )
     return executors
 

@@ -68,7 +68,6 @@ class RunConfig(ConfigContainer):
 @dataclass
 class NodeEntry(ABC):
     host: str
-    user: str = None
     conda_env: str = None
     name: Optional[str] = None
     config_override: Optional[RunConfigContentsType] = None

@@ -1,7 +1,6 @@
 # this is distributed run nodes configuration
 
-- host: worker-machine.url.org
-  user: username_on_worker_machine  # ssh keys must be placed on host beforehand!
+- host: worker-machine.url.org  # ssh keys must be placed on host beforehand!
   conda_env: conda_env_with_tasdmc_installed
   name: node1  # optional name for display
   config_override:  # overrides run.yaml's 'default' fields for this worker
@@ -11,7 +10,6 @@
       max_processes: 4
       max_memory: 12
 - host: another-worker-machine.url.org
-  user: another_username
   conda_env: conda_env_name_on_another_host
   weight: 0.8  # optional weight determining how much work will be sent to the node relative to others; defaults to 1.0
   config_override:  # overrides run.yaml's 'default' fields for this worker
