@@ -51,8 +51,8 @@ def distributed_run_cmd(run_config_filename: str, nodes_config_filename: str):
     config.RunConfig.load(run_config_filename)
     config.NodesConfig.load(nodes_config_filename)
     nodes.check_all()
-    fileio.prepare_run_dir()
     nodes.run_all_dry()
+    fileio.prepare_run_dir()
     nodes.run_all()
 
 
