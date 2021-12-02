@@ -13,7 +13,7 @@ import invoke
 import socket
 from fabric import Connection, Result
 
-from typing import IO, List
+from typing import IO, List, Optional
 
 from tasdmc import __version__, config
 from tasdmc.config.storage import NodeEntry, NodesConfig, RunConfig
@@ -74,21 +74,23 @@ class NodeExecutor(ABC):
         """Returns path to file on the node"""
         pass
 
-    def run(self, cmd: str, **kwargs) -> Result:
+    def run(self, cmd: str, **kwargs) -> Optional[Result]:
         if 'hide' not in kwargs:
             kwargs['hide'] = 'both'
         if 'warn' not in kwargs:
             kwargs['warn'] = True
-        res: Result = self._run(cmd, **kwargs)
+        res = self._run(cmd, **kwargs)
         self._check_command_result(res)
         return res
 
     @abstractmethod
-    def _run(self, cmd: str, **kwargs) -> Result:
+    def _run(self, cmd: str, **kwargs) -> Optional[Result]:
         """Run shell command on the node"""
         pass
 
-    def _check_command_result(self, res: Result) -> Result:
+    def _check_command_result(self, res: Optional[Result]):
+        if res is None:
+            return
         if res.return_code != 0:
             errmsg = f"Command on node {self} exited with error (code {res.return_code})"
             for stream_contents, stream_name in [
@@ -132,7 +134,7 @@ class RemoteNodeExecutor(NodeExecutor):
         self.connection.put(contents, str(remote_tmp))
         return remote_tmp
 
-    def _run(self, cmd: str, **kwargs) -> Result:
+    def _run(self, cmd: str, **kwargs) -> Optional[Result]:
         return self.connection.run(cmd, **kwargs)
 
 
@@ -154,7 +156,7 @@ class LocalNodeExecutor(NodeExecutor):
         with open(remote_tmp, contents.mode) as f:
             f.write(contents.read())
 
-    def _run(self, cmd: str, **kwargs) -> Result:
+    def _run(self, cmd: str, **kwargs) -> Optional[Result]:
         print(cmd)
         return invoke.run(cmd, **kwargs)
 

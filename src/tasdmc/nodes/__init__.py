@@ -12,7 +12,7 @@ def _echo_fail():
 
 
 def check_all():
-    click.echo("Checking nodes connectivity...", nl=False)
+    click.echo("Checking nodes connectivity... ", nl=False)
     failed_nodes = []
     for ex in node_executors_from_config():
         if not ex.check():
@@ -28,7 +28,7 @@ def check_all():
 
 
 def run_all_dry():
-    click.echo(f"Checking if nodes are ready to run their parts of the simulations...")
+    click.echo(f"Checking if nodes are ready to run their parts of the simulation...")
     for ex in node_executors_from_config():
         click.echo(f"{ex}: ", nl=False)
         try:
