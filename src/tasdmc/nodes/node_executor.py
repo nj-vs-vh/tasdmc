@@ -53,7 +53,7 @@ class NodeExecutor(ABC):
         node_run_config_path = self.save_to_node(StringIO(yaml.dump(node_run_config, sort_keys=False)))
         try:
             tasdmc_cmd = 'run-local' if not dry else 'run-local-dry'
-            self.run(f"{self.get_activation_cmd()} && tasdmc {tasdmc_cmd} -r {node_run_config_path}", pty=True)
+            self.run(f"{self.get_activation_cmd()} tasdmc {tasdmc_cmd} -r {node_run_config_path}", pty=True)
         finally:
             self.run(f"rm {node_run_config_path}")
 
@@ -110,7 +110,7 @@ class RemoteNodeExecutor(NodeExecutor):
     def check(self) -> bool:
         try:
             with self.connection:
-                res: Result = self.run(f"{self.get_activation_cmd()} && tasdmc --version")
+                res: Result = self.run(f"{self.get_activation_cmd()} tasdmc --version")
                 remote_node_version_match = re.match(r"tasdmc, version (?P<version>.*)", str(res.stdout))
                 assert remote_node_version_match is not None, f"Can't parse tasdmc version from output '{res.stdout}'"
                 remote_node_version = remote_node_version_match.groupdict()['version']
@@ -123,11 +123,10 @@ class RemoteNodeExecutor(NodeExecutor):
             return False
 
     def get_node_run_name(self) -> str:
-        this_hostname = socket.gethostname()
-        return f"{config.run_name()}:node-from-{this_hostname}"
+        return f"{config.run_name()}:node-from-{socket.gethostname()}"
 
     def get_activation_cmd(self) -> str:
-        return f"conda activate {self.node_entry.conda_env}"
+        return f"conda activate {self.node_entry.conda_env} &&"
 
     def save_to_node(self, contents: TextIO) -> Path:
         remote_tmp = Path(f'/tmp/tasdmc-remote-node-artifact-{abs(hash(self.connection))}')
@@ -146,10 +145,7 @@ class LocalNodeExecutor(NodeExecutor):
         return f"{config.run_name()}:node-local"
 
     def get_activation_cmd(self) -> str:
-        this_conda_env = os.environ.get("CONDA_DEFAULT_ENV")
-        if this_conda_env is None:
-            return ""  # raise runtime error?
-        return f"conda activate {this_conda_env}"
+        return ""
 
     def save_to_node(self, contents: TextIO) -> Path:
         remote_tmp = Path(f'/tmp/tasdmc-remote-self-node-artifact')
