@@ -48,25 +48,25 @@ class NodeExecutor(ABC):
         override = self.node_entry.config_override
         if override is None:
             return base_run_config
-        remote_run_config = copy.deepcopy(base_run_config)
+        node_run_config = copy.deepcopy(base_run_config)
         for fqk, override_value in items_dot_notation(override):
             base_value = get_dot_notation(base_run_config, fqk)
             if base_value == override_value:
                 continue
-            set_dot_notation(remote_run_config, fqk, override_value)
+            set_dot_notation(node_run_config, fqk, override_value)
             # saving original values under dedicated key
-            set_dot_notation(remote_run_config, "before_override." + fqk, base_value)
+            set_dot_notation(node_run_config, "before_override." + fqk, base_value)
 
-        set_dot_notation(remote_run_config, "input_files.subset.all_weights", NodesConfig.all_weights())
-        set_dot_notation(remote_run_config, "input_files.subset.this_idx", self.index)
-        remote_run_config["name"] = self.get_node_run_name()
+        set_dot_notation(node_run_config, "input_files.subset.all_weights", NodesConfig.all_weights())
+        set_dot_notation(node_run_config, "input_files.subset.this_idx", self.index)
+        node_run_config["name"] = self.get_node_run_name()
 
-        remote_run_config_path = self.save_to_node(StringIO(yaml.dump(remote_run_config, sort_keys=False)))
+        node_run_config_path = self.save_to_node(StringIO(yaml.dump(node_run_config, sort_keys=False)))
         try:
             tasdmc_cmd = 'run-local' if not dry else 'run-local-dry'
-            self.run(f"{self.get_activation_cmd()} && tasdmc {tasdmc_cmd} -r {remote_run_config_path}", disown=(not dry))
+            self.run(f"{self.get_activation_cmd()} && tasdmc {tasdmc_cmd} -r {node_run_config_path}", disown=(not dry))
         finally:
-            self.run(f"rm {remote_run_config_path}")
+            self.run(f"rm {node_run_config_path}")
 
     @abstractmethod
     def check(self) -> bool:
