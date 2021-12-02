@@ -83,20 +83,21 @@ def get_dot_notation(d: Dict, key: str, default: Optional[Any] = NO_DEFAULT) -> 
     current_value = d
     for level_key in level_keys:
         if not isinstance(current_value, dict):
+            if default is not NO_DEFAULT:
+                return default
             raise KeyError(
                 f"Expected {'.'.join(traversed_level_keys)} to be dict with {level_key} key, "
                 + f"found {current_value.__class__.__name__}",
             )
         current_value = current_value.get(level_key, NO_SUCH_KEY)
         if current_value is NO_SUCH_KEY:
-            if default is NO_DEFAULT:
-                raise KeyError(
-                    f"Can't find top-level key '{level_key}'"
-                    if not traversed_level_keys
-                    else f"'{'.'.join(traversed_level_keys)}' does not contain required '{level_key}' key"
-                )
-            else:
+            if default is not NO_DEFAULT:
                 return default
+            raise KeyError(
+                f"Can't find top-level key '{level_key}'"
+                if not traversed_level_keys
+                else f"'{'.'.join(traversed_level_keys)}' does not contain required '{level_key}' key"
+            )
         else:
             traversed_level_keys.append(level_key)
 
