@@ -53,7 +53,7 @@ class NodeExecutor(ABC):
         node_run_config_path = self.save_to_node(StringIO(yaml.dump(node_run_config, sort_keys=False)))
         try:
             tasdmc_cmd = 'run-local' if not dry else 'run-local-dry'
-            self.run(f"{self.get_activation_cmd()} && tasdmc {tasdmc_cmd} -r {node_run_config_path}", disown=(not dry))
+            self.run(f"{self.get_activation_cmd()} && tasdmc {tasdmc_cmd} -r {node_run_config_path}", pty=True)
         finally:
             self.run(f"rm {node_run_config_path}")
 
