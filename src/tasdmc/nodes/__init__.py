@@ -30,7 +30,7 @@ def check_all():
 def run_all_dry():
     click.echo(f"Checking if nodes are ready to run their parts of the simulation...")
     for ex in node_executors_from_config():
-        click.echo(f"{ex}: ", nl=False)
+        click.echo(f"\t{ex}: ", nl=False)
         try:
             ex.run_node(dry=True)
             _echo_ok()
