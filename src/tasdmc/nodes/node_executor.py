@@ -32,17 +32,6 @@ class NodeExecutor(ABC):
             else self.node_entry.host
         )
 
-    def _check_command_result(self, res: Result) -> Result:
-        if res.return_code != 0:
-            errmsg = f"Command on node {self} exited with error (code {res.return_code})"
-            for stream_contents, stream_name in [
-                (_postprocess_stream(res.stdout), 'stdout'),
-                (_postprocess_stream(res.stderr), 'stderr'),
-            ]:
-                if stream_contents:
-                    errmsg += f'\n\tCaptured {stream_name}:\n{stream_contents}'
-            raise RuntimeError(errmsg)
-
     def run_node(self, dry: bool = False):
         base_run_config = RunConfig.get()
         override = self.node_entry.config_override
@@ -99,6 +88,18 @@ class NodeExecutor(ABC):
         """Run shell command on the node"""
         pass
 
+    def _check_command_result(self, res: Result) -> Result:
+        if res.return_code != 0:
+            errmsg = f"Command on node {self} exited with error (code {res.return_code})"
+            for stream_contents, stream_name in [
+                (_postprocess_stream(res.stdout), 'stdout'),
+                (_postprocess_stream(res.stderr), 'stderr'),
+            ]:
+                if stream_contents:
+                    errmsg += f'\n\tCaptured {stream_name}:\n{stream_contents}'
+            raise RuntimeError(errmsg)
+
+
 
 @dataclass
 class RemoteNodeExecutor(NodeExecutor):
@@ -154,6 +155,7 @@ class LocalNodeExecutor(NodeExecutor):
             f.write(contents.read())
 
     def _run(self, cmd: str, **kwargs) -> Result:
+        print(cmd)
         return invoke.run(cmd, **kwargs)
 
 
