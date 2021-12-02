@@ -13,7 +13,7 @@ import invoke
 import socket
 from fabric import Connection, Result
 
-from typing import IO, List, Optional
+from typing import TextIO, List, Optional
 
 from tasdmc import __version__, config
 from tasdmc.config.storage import NodeEntry, NodesConfig, RunConfig
@@ -70,7 +70,7 @@ class NodeExecutor(ABC):
         pass
 
     @abstractmethod
-    def save_to_node(self, contents: IO) -> Path:
+    def save_to_node(self, contents: TextIO) -> Path:
         """Returns path to file on the node"""
         pass
 
@@ -129,7 +129,7 @@ class RemoteNodeExecutor(NodeExecutor):
     def get_activation_cmd(self) -> str:
         return f"conda activate {self.node_entry.conda_env}"
 
-    def save_to_node(self, contents: IO) -> Path:
+    def save_to_node(self, contents: TextIO) -> Path:
         remote_tmp = Path(f'/tmp/tasdmc-remote-node-artifact-{abs(hash(self.connection))}')
         self.connection.put(contents, str(remote_tmp))
         return remote_tmp
@@ -151,9 +151,9 @@ class LocalNodeExecutor(NodeExecutor):
             return ""  # raise runtime error?
         return f"conda activate {this_conda_env}"
 
-    def save_to_node(self, contents: IO) -> Path:
+    def save_to_node(self, contents: TextIO) -> Path:
         remote_tmp = Path(f'/tmp/tasdmc-remote-self-node-artifact')
-        with open(remote_tmp, contents.mode) as f:
+        with open(remote_tmp, "w") as f:
             f.write(contents.read())
 
     def _run(self, cmd: str, **kwargs) -> Optional[Result]:
