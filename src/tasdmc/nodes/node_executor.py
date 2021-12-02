@@ -155,9 +155,9 @@ class LocalNodeExecutor(NodeExecutor):
         remote_tmp = Path(f'/tmp/tasdmc-remote-self-node-artifact')
         with open(remote_tmp, "w") as f:
             f.write(contents.read())
+        return remote_tmp
 
     def _run(self, cmd: str, **kwargs) -> Optional[Result]:
-        print(cmd)
         return invoke.run(cmd, **kwargs)
 
 
