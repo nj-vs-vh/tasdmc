@@ -7,7 +7,6 @@ import click
 import copy
 import yaml
 import re
-import os
 
 import invoke
 import socket
@@ -32,19 +31,19 @@ class NodeExecutor(ABC):
             else self.node_entry.host
         )
 
-    def run_node(self, dry: bool = False):
+    def run_simulation(self, dry: bool = False):
         base_run_config = RunConfig.get()
-        override = self.node_entry.config_override
-        if override is None:
-            return base_run_config
         node_run_config = copy.deepcopy(base_run_config)
-        for fqk, override_value in items_dot_notation(override):
-            base_value = get_dot_notation(base_run_config, fqk)
-            if base_value == override_value:
-                continue
-            set_dot_notation(node_run_config, fqk, override_value)
-            # saving original values under dedicated key
-            set_dot_notation(node_run_config, "before_override." + fqk, base_value)
+
+        override = self.node_entry.config_override
+        if override is not None:
+            for fqk, override_value in items_dot_notation(override):
+                base_value = get_dot_notation(base_run_config, fqk)
+                if base_value == override_value:
+                    continue
+                set_dot_notation(node_run_config, fqk, override_value)
+                # saving original values under dedicated key
+                set_dot_notation(node_run_config, "before_override." + fqk, base_value)
 
         set_dot_notation(node_run_config, "input_files.subset.all_weights", NodesConfig.all_weights())
         set_dot_notation(node_run_config, "input_files.subset.this_idx", self.index)
@@ -53,7 +52,12 @@ class NodeExecutor(ABC):
         node_run_config_path = self.save_to_node(StringIO(yaml.dump(node_run_config, sort_keys=False)))
         try:
             tasdmc_cmd = 'run-local' if not dry else 'run-local-dry'
-            self.run(f"{self.get_activation_cmd()} tasdmc {tasdmc_cmd} -r {node_run_config_path}", pty=True)
+            # NOTE: for some reason disown=True is required for local run launched with
+            # invoke.run, but if used for remote run, the task is not run!
+            disown = not dry and isinstance(self, LocalNodeExecutor)
+            self.run(
+                f"{self.get_activation_cmd()} tasdmc {tasdmc_cmd} -r {node_run_config_path}", pty=True, disown=disown
+            )
         finally:
             self.run(f"rm {node_run_config_path}")
 
@@ -100,7 +104,6 @@ class NodeExecutor(ABC):
                 if stream_contents:
                     errmsg += f'\n\tCaptured {stream_name}:\n{stream_contents}'
             raise RuntimeError(errmsg)
-
 
 
 @dataclass
@@ -154,6 +157,7 @@ class LocalNodeExecutor(NodeExecutor):
         return remote_tmp
 
     def _run(self, cmd: str, **kwargs) -> Optional[Result]:
+        # print(f"\n\n{cmd}\n\n")
         return invoke.run(cmd, **kwargs)
 
 
@@ -164,9 +168,7 @@ def node_executors_from_config() -> List[NodeExecutor]:
         if ne.host == 'self':
             executors.append(LocalNodeExecutor(node_entry=ne, index=i))
         else:
-            executors.append(
-                RemoteNodeExecutor(node_entry=ne, index=i, connection=Connection(host=ne.host))
-            )
+            executors.append(RemoteNodeExecutor(node_entry=ne, index=i, connection=Connection(host=ne.host)))
     return executors
 
 

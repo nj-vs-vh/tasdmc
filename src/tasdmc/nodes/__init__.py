@@ -32,7 +32,7 @@ def run_all_dry():
     for ex in node_executors_from_config():
         click.echo(f"\t{ex}: ", nl=False)
         try:
-            ex.run_node(dry=True)
+            ex.run_simulation(dry=True)
             _echo_ok()
         except Exception as e:
             _echo_fail()
@@ -43,4 +43,4 @@ def run_all():
     click.echo(f"Running...")
     for ex in node_executors_from_config():
         click.echo(ex)
-        ex.run_node()
+        ex.run_simulation()
