@@ -126,7 +126,7 @@ class RemoteNodeExecutor(NodeExecutor):
                 remote_node_version = remote_node_version_match.groupdict()['version']
                 assert (
                     remote_node_version == __version__
-                ), f"Mismatching version {remote_node_version}, expected {__version__}"
+                ), f"Mismatching version '{remote_node_version}', expected '{__version__}'"
             return True
         except Exception as e:
             click.echo(f"{self}: {e}")
