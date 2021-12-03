@@ -138,7 +138,7 @@ class RemoteNodeExecutor(NodeExecutor):
 
     @property
     def activation_cmd(self) -> str:
-        return f"conda activate {self.node_entry.conda_env} &&"
+        return f"conda activate {self.node_entry.conda_env}"
 
     @property
     def allows_disown(self) -> bool:
