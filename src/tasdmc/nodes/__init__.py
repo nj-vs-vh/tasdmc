@@ -49,7 +49,7 @@ def continue_all():
     click.echo(f"Continuing nodes...")
     failed_nodes = []
     for ex in node_executors_from_config():
-        click.echo(ex)
+        click.echo(ex, nl=False)
         try:
             ex.continue_simulation()
             _echo_ok()
