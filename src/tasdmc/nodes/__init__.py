@@ -62,3 +62,9 @@ def continue_all():
             f"Continuing nodes failed: "
             + ", ".join([str(ex) for ex in failed_nodes])
         )
+
+
+def abort_all():
+    click.echo(f"Aborting nodes...")
+    for ex in node_executors_from_config():
+        ex.run(f"tasdmc abort {ex.node_run_name} --confirm")

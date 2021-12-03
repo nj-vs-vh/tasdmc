@@ -83,12 +83,18 @@ def continue_run_cmd():
 
 
 @cli.command("abort", help="Abort execution of run NAME")
+@click.option("--confirm", is_flag=True, default=False, help="Disable confirmation prompt")
 @loading_run_by_name
 @error_catching
-def abort_run_cmd():
+def abort_run_cmd(confirm: bool):
+    if config.is_distributed_run():
+        nodes.check_all()
     click.secho(f"You are about to kill run '{config.run_name()}'!")
-    if user_confirmation_destructive(config.run_name()):
-        system.abort_run(main_pid=fileio.get_saved_main_pid())
+    if confirm or user_confirmation_destructive(config.run_name()):
+        if config.is_local_run():
+            system.abort_run(main_pid=fileio.get_saved_main_pid())
+        else:
+            nodes.abort_all()
     else:
         click.echo("Not this time...")
 
