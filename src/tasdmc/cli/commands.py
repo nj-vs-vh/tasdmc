@@ -71,11 +71,14 @@ def distributed_run_cmd(run_config_filename: str, nodes_config_filename: str, dr
 @loading_run_by_name
 @error_catching
 def continue_run_cmd():
-    if system.process_alive(pid=fileio.get_saved_main_pid()):
-        click.secho(f"Run already alive")
-        return
-    fileio.prepare_run_dir(continuing=True)
-    run_standard_pipeline_in_background()
+    if config.is_local_run():
+        if system.process_alive(pid=fileio.get_saved_main_pid()):
+            click.secho(f"Run already alive")
+            return
+        fileio.prepare_run_dir(continuing=True)
+        run_standard_pipeline_in_background()
+    else:
+        pass
 
 
 @cli.command("abort", help="Abort execution of run NAME")
@@ -231,3 +234,9 @@ def download_data_files_cmd():
             data_file.parent.mkdir(parents=True, exist_ok=True)
             gdown.download(id=gdrive_id, output=str(data_file))
         assert_md5sum(data_file, expected_md5)
+
+
+@cli.command("list", help="List existing runs")
+@error_catching
+def list_cmd():
+    click.echo('\n'.join(fileio.get_all_run_names()))
