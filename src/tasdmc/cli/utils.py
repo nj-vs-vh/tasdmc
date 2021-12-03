@@ -10,7 +10,7 @@ def run_standard_pipeline_in_background():
     click.echo(f"Running in the background. Use 'tasdmc ps {config.run_name()}' to check run status")
 
 
-def load_config_by_run_name(name: str) -> bool:
+def _load_config_by_run_name(name: str) -> bool:
     config_paths = None
     try:
         assert len(name), "No run name specified"
@@ -40,7 +40,7 @@ def loading_run_by_name(cmd_func):
 
     @click.argument("run_name", type=click.STRING, default="", shell_complete=autocomplete)
     def wrapped_cmd_func(run_name: str, *args, **kwargs):
-        if not load_config_by_run_name(run_name):
+        if not _load_config_by_run_name(run_name):
             return
         cmd_func(*args, **kwargs)
 
