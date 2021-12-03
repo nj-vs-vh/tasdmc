@@ -34,8 +34,20 @@ def load_config_by_run_name(name: str) -> bool:
         return True
 
 
-def error_catching(cmd_fn):
+def loading_run_by_name(cmd_func):
+    def autocomplete(ctx, param, incomplete):
+        return [run_name for run_name in fileio.get_all_run_names() if run_name.startswith(incomplete)]
 
+    @click.argument("run_name", type=click.STRING, default="", shell_complete=autocomplete)
+    def wrapped_cmd_func(run_name: str, *args, **kwargs):
+        if not load_config_by_run_name(run_name):
+            return
+        cmd_func(*args, **kwargs)
+
+    return wrapped_cmd_func
+
+
+def error_catching(cmd_fn):
     def wrapped(*args, **kwargs):
         try:
             cmd_fn(*args, **kwargs)

@@ -11,8 +11,8 @@ from tasdmc.logs import display as display_logs
 from tasdmc.utils import user_confirmation_destructive
 
 from .group import cli
-from .options import run_config_option, nodes_config_option, run_name_argument
-from .utils import run_standard_pipeline_in_background, load_config_by_run_name, error_catching
+from .options import run_config_option, nodes_config_option
+from .utils import run_standard_pipeline_in_background, loading_run_by_name, error_catching
 
 
 # new run commands
@@ -68,11 +68,9 @@ def distributed_run_cmd(run_config_filename: str, nodes_config_filename: str, dr
 
 
 @cli.command("continue", help="Continue execution of aborted run NAME")
-@run_name_argument('name')
+@loading_run_by_name
 @error_catching
-def continue_run_cmd(name: str):
-    if not load_config_by_run_name(name):
-        return
+def continue_run_cmd():
     if system.process_alive(pid=fileio.get_saved_main_pid()):
         click.secho(f"Run already alive")
         return
@@ -81,11 +79,9 @@ def continue_run_cmd(name: str):
 
 
 @cli.command("abort", help="Abort execution of run NAME")
-@run_name_argument('name')
+@loading_run_by_name
 @error_catching
-def abort_run_cmd(name: str):
-    if not load_config_by_run_name(name):
-        return
+def abort_run_cmd():
     click.secho(f"You are about to kill run '{config.run_name()}'!")
     if user_confirmation_destructive(config.run_name()):
         system.abort_run(main_pid=fileio.get_saved_main_pid())
@@ -96,11 +92,9 @@ def abort_run_cmd(name: str):
 @cli.command("config-update", help="Update configuration of run NAME")
 @click.option("--hard", is_flag=True, default=False, help="Flag to update config without detailed inspection")
 @run_config_option('new_config_filename')
-@run_name_argument('name')
+@loading_run_by_name
 @error_catching
-def update_config_cmd(name: str, new_config_filename: str, hard: bool):
-    if not load_config_by_run_name(name):
-        return
+def update_config_cmd(new_config_filename: str, hard: bool):
     update_run_config(new_config_filename, hard)
 
 
@@ -115,11 +109,9 @@ def update_config_cmd(name: str, new_config_filename: str, hard: bool):
     default=False,
     help="Update progress bar each few seconds. Warning: clears terminal!",
 )
-@run_name_argument('name')
+@loading_run_by_name
 @error_catching
-def progress_cmd(name: str, follow: bool):
-    if not load_config_by_run_name(name):
-        return
+def progress_cmd(follow: bool):
     if not follow:
         display_logs.print_pipelines_progress()
     else:
@@ -130,12 +122,10 @@ def progress_cmd(name: str, follow: bool):
 
 
 @cli.command("ps", help="Display processes status and last debug messages from worker processes for run NAME")
-@run_name_argument('name')
 @click.option("-n", "n_last_messages", default=1, help="Number of messages from worker processes to print")
+@loading_run_by_name
 @error_catching
-def process_status_cmd(name: str, n_last_messages: int):
-    if not load_config_by_run_name(name):
-        return
+def process_status_cmd(n_last_messages: int):
     system.print_process_status(fileio.get_saved_main_pid())
     if n_last_messages:
         display_logs.print_multiprocessing_log(n_last_messages)
@@ -158,22 +148,18 @@ def process_status_cmd(name: str, n_last_messages: int):
     is_flag=True,
     help="If set to True, all previous run execution logs will be merged into one timeline",
 )
-@run_name_argument('name')
+@loading_run_by_name
 @error_catching
-def system_resources_cmd(name: str, include_previous_runs: bool, absolute_datetime: bool):
-    if not load_config_by_run_name(name):
-        return
+def system_resources_cmd(include_previous_runs: bool, absolute_datetime: bool):
     display_logs.print_system_monitoring(
         include_previous_runs=include_previous_runs, evaluation_time_as_x=(not absolute_datetime)
     )
 
 
 @cli.command("inputs", help="Display inputs for run NAME")
-@run_name_argument('name')
+@loading_run_by_name
 @error_catching
-def inputs_cmd(name: str):
-    if not load_config_by_run_name(name):
-        return
+def inputs_cmd():
     click.echo(fileio.cards_gen_info_log().read_text())
 
 
@@ -182,11 +168,9 @@ def inputs_cmd(name: str):
 
 @cli.command("fix-failed", help="Fix failed pipelines")
 @click.option("--hard", is_flag=True, default=False, help="If specified, removes all failed pipeline files entirely")
-@run_name_argument('name')
+@loading_run_by_name
 @error_catching
-def fix_failed_pipelines_cmd(name: str, hard: bool):
-    if not load_config_by_run_name(name):
-        return
+def fix_failed_pipelines_cmd(hard: bool):
     failed_pipeline_ids = fileio.get_failed_pipeline_ids()
     if not failed_pipeline_ids:
         click.echo("No failed pipelines to fix")
@@ -201,11 +185,9 @@ def fix_failed_pipelines_cmd(name: str, hard: bool):
 @click.option("-v", "--verbose", is_flag=True, default=False, help="Print verbose information about steps")
 @click.option("-p", "--page", "pagesize", default=0, help="Page size or 0 for no pagination (default)")
 @click.option("-f", "--failed", is_flag=True, default=False, help="Inspect only failed pipelines")
-@run_name_argument('name')
+@loading_run_by_name
 @error_catching
-def inspect_cmd(name: str, pagesize: int, verbose: bool, failed: bool):
-    if not load_config_by_run_name(name):
-        return
+def inspect_cmd(pagesize: int, verbose: bool, failed: bool):
     pipeline_ids = fileio.get_failed_pipeline_ids() if failed else fileio.get_all_pipeline_ids()
     inspect.inspect_pipelines(pipeline_ids, page_size=pagesize, verbose=verbose, fix=False)
 
