@@ -90,6 +90,7 @@ class NodeExecutor(ABC):
         if with_activation:
             if self.activation_cmd is not None:
                 cmd = f"{self.activation_cmd} && {cmd}"
+        click.echo(f"running {cmd}")
         res = self._run(cmd, **kwargs)
         self._check_command_result(res)
         return res
@@ -120,10 +121,12 @@ class RemoteNodeExecutor(NodeExecutor):
     def check(self) -> bool:
         try:
             with self.connection:
-                res: Result = self.run("tasdmc --version")
+                res: Result = self.run("tasdmc --version", pty=False)
                 remote_node_version_match = re.match(r"tasdmc, version (?P<version>.*)", str(res.stdout))
                 assert remote_node_version_match is not None, f"Can't parse tasdmc version from output '{res.stdout}'"
                 remote_node_version = remote_node_version_match.groupdict()['version']
+                click.echo(remote_node_version)
+                click.echo(__version__)
                 assert (
                     remote_node_version == __version__
                 ), f"Mismatching version '{remote_node_version}', expected '{__version__}'"
