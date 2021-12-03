@@ -12,7 +12,7 @@ import invoke
 import socket
 from fabric import Connection, Result
 
-from typing import TextIO, List, Optional
+from typing import TextIO, List, Optional, Dict, Any
 
 from tasdmc import __version__, config
 from tasdmc.config.storage import NodeEntry, NodesConfig, RunConfig
@@ -47,30 +47,35 @@ class NodeExecutor(ABC):
 
         set_dot_notation(node_run_config, "input_files.subset.all_weights", NodesConfig.all_weights())
         set_dot_notation(node_run_config, "input_files.subset.this_idx", self.index)
-        node_run_config["name"] = self.get_node_run_name()
+        node_run_config["name"] = self.node_run_name
 
         node_run_config_path = self.save_to_node(StringIO(yaml.dump(node_run_config, sort_keys=False)))
         try:
             tasdmc_cmd = 'run-local' if not dry else 'run-local-dry'
-            # NOTE: for some reason disown=True is required for local run launched with
-            # invoke.run, but if used for remote run, the task is not run!
-            disown = not dry and isinstance(self, LocalNodeExecutor)
-            self.run(
-                f"{self.get_activation_cmd()} tasdmc {tasdmc_cmd} -r {node_run_config_path}", pty=True, disown=disown
-            )
+            self.run(f"tasdmc {tasdmc_cmd} -r {node_run_config_path}", disown=(not dry and self.allows_disown))
         finally:
-            self.run(f"rm {node_run_config_path}")
+            self.run(f"rm {node_run_config_path}", with_activation=False)
+
+    def continue_simulation(self):
+        self.run(f"tasdmc continue {self.node_run_name}", disown=self.allows_disown)
 
     @abstractmethod
     def check(self) -> bool:
         pass
 
+    @property
     @abstractmethod
-    def get_node_run_name(self) -> str:
+    def node_run_name(self) -> str:
         pass
 
+    @property
     @abstractmethod
-    def get_activation_cmd(self) -> str:
+    def activation_cmd(self) -> Optional[str]:
+        pass
+
+    @property
+    @abstractmethod
+    def allows_disown(self) -> bool:
         pass
 
     @abstractmethod
@@ -78,11 +83,13 @@ class NodeExecutor(ABC):
         """Returns path to file on the node"""
         pass
 
-    def run(self, cmd: str, **kwargs) -> Optional[Result]:
-        if 'hide' not in kwargs:
-            kwargs['hide'] = 'both'
-        if 'warn' not in kwargs:
-            kwargs['warn'] = True
+    def run(self, cmd: str, with_activation: bool = True, **kwargs) -> Optional[Result]:
+        for fabric_param_name, default_value in [('hide', 'both'), ('warn', True), ('pty', True)]:
+            if fabric_param_name not in kwargs:
+                kwargs[fabric_param_name] = default_value
+        if with_activation:
+            if self.activation_cmd is not None:
+                cmd = f"{self.activation_cmd} && {cmd}"
         res = self._run(cmd, **kwargs)
         self._check_command_result(res)
         return res
@@ -113,7 +120,7 @@ class RemoteNodeExecutor(NodeExecutor):
     def check(self) -> bool:
         try:
             with self.connection:
-                res: Result = self.run(f"{self.get_activation_cmd()} tasdmc --version")
+                res: Result = self.run("tasdmc --version")
                 remote_node_version_match = re.match(r"tasdmc, version (?P<version>.*)", str(res.stdout))
                 assert remote_node_version_match is not None, f"Can't parse tasdmc version from output '{res.stdout}'"
                 remote_node_version = remote_node_version_match.groupdict()['version']
@@ -125,11 +132,17 @@ class RemoteNodeExecutor(NodeExecutor):
             click.echo(f"{self}: {e}")
             return False
 
-    def get_node_run_name(self) -> str:
+    @property
+    def node_run_name(self) -> str:
         return f"{config.run_name()}:node-from-{socket.gethostname()}"
 
-    def get_activation_cmd(self) -> str:
+    @property
+    def activation_cmd(self) -> str:
         return f"conda activate {self.node_entry.conda_env} &&"
+
+    @property
+    def allows_disown(self) -> bool:
+        return False  # for some reason remote nodes do not run after disown
 
     def save_to_node(self, contents: TextIO) -> Path:
         remote_tmp = Path(f'/tmp/tasdmc-remote-node-artifact-{abs(hash(self.connection))}')
@@ -144,11 +157,17 @@ class LocalNodeExecutor(NodeExecutor):
     def check(self) -> bool:
         return True
 
-    def get_node_run_name(self) -> str:
+    @property
+    def node_run_name(self) -> str:
         return f"{config.run_name()}:node-local"
 
-    def get_activation_cmd(self) -> str:
-        return ""
+    @property
+    def activation_cmd(self):
+        return None
+
+    @property
+    def allows_disown(self) -> bool:
+        return True
 
     def save_to_node(self, contents: TextIO) -> Path:
         remote_tmp = Path(f'/tmp/tasdmc-remote-self-node-artifact')

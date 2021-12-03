@@ -44,3 +44,22 @@ def run_all():
     for ex in node_executors_from_config():
         click.echo(ex)
         ex.run_simulation()
+
+
+def continue_all():
+    click.echo(f"Continuing nodes...")
+    failed_nodes = []
+    for ex in node_executors_from_config():
+        click.echo(ex)
+        try:
+            ex.continue_simulation()
+            _echo_ok()
+        except Exception as e:
+            _echo_fail()
+            click.echo(f"{ex}: {e}")
+            failed_nodes.append(ex)
+    if len(failed_nodes) > 0:
+        raise RuntimeError(
+            f"Continuing nodes failed: "
+            + ", ".join([str(ex) for ex in failed_nodes])
+        )

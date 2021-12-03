@@ -1,4 +1,4 @@
-from os import pipe
+import sys
 import click
 from time import sleep
 from pathlib import Path
@@ -74,11 +74,12 @@ def continue_run_cmd():
     if config.is_local_run():
         if system.process_alive(pid=fileio.get_saved_main_pid()):
             click.secho(f"Run already alive")
-            return
+            sys.exit(1)
         fileio.prepare_run_dir(continuing=True)
         run_standard_pipeline_in_background()
     else:
-        pass
+        nodes.check_all()
+        nodes.continue_all()
 
 
 @cli.command("abort", help="Abort execution of run NAME")
