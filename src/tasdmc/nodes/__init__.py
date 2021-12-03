@@ -13,7 +13,7 @@ def _echo_fail():
 
 def check_all():
     msg = "Checking nodes connectivity... "
-    click.echo(f"{msg}\r")
+    click.echo(f"{msg}\r", nl=False)
     failed_nodes = []
     for ex in node_executors_from_config():
         if not ex.check():
