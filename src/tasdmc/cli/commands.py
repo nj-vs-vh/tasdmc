@@ -105,19 +105,26 @@ def abort_run_cmd(confirm: bool):
 @click.option(
     "--validate-only", is_flag=True, default=False, help="Flag to only check updated config and report if it's valid"
 )
-@run_config_option('new_run_config_filename')
+@run_config_option('new_run_config_filename', optional=True)
 @nodes_config_option('new_nodes_config_filename', optional=True)
 @loading_run_by_name
 @error_catching
 def update_config_cmd(new_run_config_filename: str, new_nodes_config_filename: str, hard: bool, validate_only: bool):
     if config.is_local_run():
+        if new_run_config_filename is None:
+            raise ValueError("-r (new run config) option must be specified")
         update_run_config(new_run_config_filename, hard, validate_only)
     else:
+        if new_run_config_filename is None and new_nodes_config_filename is None:
+            raise ValueError("At least one of -r (new run config) and -n (new nodes config) options must be specified")
         nodes.check_all()
-        config.RunConfig.load(new_run_config_filename)
-        if new_nodes_config_filename:
+        if new_run_config_filename is not None:
+            config.RunConfig.load(new_run_config_filename)
+        if new_nodes_config_filename is not None:
             config.NodesConfig.load(new_nodes_config_filename)
         nodes.update_configs()
+        config.RunConfig.dump(fileio.saved_run_config_file())
+        config.NodesConfig.dump(fileio.saved_nodes_config_file())
 
 
 # monitoring commands
