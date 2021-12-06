@@ -85,8 +85,9 @@ def get_dot_notation(d: Dict, key: str, default: Optional[Any] = NO_DEFAULT) -> 
         if not isinstance(current_value, dict):
             if default is not NO_DEFAULT:
                 return default
+            keyspec = ('"' + '.'.join(traversed_level_keys) + '"') if len(traversed_level_keys) else 'root'
             raise KeyError(
-                f"Expected {'.'.join(traversed_level_keys)} to be dict with {level_key} key, "
+                f"Expected {keyspec} to be dict with {level_key} key, but "
                 + f"found {current_value.__class__.__name__}",
             )
         current_value = current_value.get(level_key, NO_SUCH_KEY)
