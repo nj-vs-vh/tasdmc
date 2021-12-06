@@ -104,7 +104,7 @@ class NodeExecutor(ABC):
             if stdout:
                 click.echo(stdout)
             stderr = _postprocess_stream(res.stdout)
-            if stderr:
+            if not kwargs['pty'] and stderr:  # when using pty=True, stderr mirrors stdout!
                 click.secho('stderr:\n' + stderr, fg='red')
         return res
 

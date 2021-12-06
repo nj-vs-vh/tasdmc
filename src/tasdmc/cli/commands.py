@@ -89,7 +89,8 @@ def continue_run_cmd():
 def abort_run_cmd(confirm: bool):
     if config.is_distributed_run():
         nodes.check_all()
-    click.secho(f"You are about to kill run '{config.run_name()}'!")
+    if not confirm:
+        click.secho(f"You are about to kill run '{config.run_name()}'!")
     if confirm or user_confirmation_destructive(config.run_name()):
         if config.is_local_run():
             system.abort_run(main_pid=fileio.get_saved_main_pid())
