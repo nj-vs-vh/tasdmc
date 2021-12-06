@@ -126,8 +126,6 @@ def update_config_cmd(new_run_config_filename: str, new_nodes_config_filename: s
             click.echo(f"Updating nodes config with values from {new_nodes_config_filename}")
             config.NodesConfig.load(new_nodes_config_filename)
         nodes.update_configs()
-        config.RunConfig.dump(fileio.saved_run_config_file())
-        config.NodesConfig.dump(fileio.saved_nodes_config_file())
 
 
 # monitoring commands

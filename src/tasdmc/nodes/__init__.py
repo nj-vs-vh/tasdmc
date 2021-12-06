@@ -1,7 +1,8 @@
 import click
 
-from .node_executor import node_executors_from_config
+from tasdmc import config, fileio
 from tasdmc.utils import user_confirmation
+from .node_executor import node_executors_from_config
 
 
 def _echo_ok():
@@ -85,3 +86,5 @@ def update_configs():
     if user_confirmation("Apply?", yes="yes", default=False):
         for ex in node_executors_from_config():
             ex.update_config()
+        config.RunConfig.dump(fileio.saved_run_config_file())
+        config.NodesConfig.dump(fileio.saved_nodes_config_file())
