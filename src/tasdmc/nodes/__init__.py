@@ -1,6 +1,7 @@
 import click
 
 from .node_executor import node_executors_from_config
+from tasdmc.utils import user_confirmation
 
 
 def _echo_ok():
@@ -81,5 +82,6 @@ def update_configs():
             failed.append(ex)
     if len(failed) > 0:
         raise RuntimeError("Some nodes refused to update configs: " + ", ".join([str(ex) for ex in failed]))
-    for ex in node_executors_from_config():
-        ex.update_config()
+    if user_confirmation("Apply?", yes="yes", default=False):
+        for ex in node_executors_from_config():
+            ex.update_config()
