@@ -120,7 +120,7 @@ class NodesConfig(ConfigContainer):
 
     @classmethod
     def all_weights(cls) -> List[Number]:
-        node_entries: List[NodeEntry] = cls.get()
+        node_entries: List[NodeEntry] = cls.loaded().contents
         return [ne.weight for ne in node_entries]
 
     def dump_instance(self, filename: StrOrPath):
