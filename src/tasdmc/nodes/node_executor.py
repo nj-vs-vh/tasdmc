@@ -32,8 +32,8 @@ class NodeExecutor(ABC):
         )
 
     def save_run_config_to_node(self) -> Path:
-        base_run_config = RunConfig.get()
-        node_run_config = copy.deepcopy(base_run_config)
+        base_run_config: RunConfig = RunConfig.loaded()
+        node_run_config = copy.deepcopy(base_run_config.contents)
 
         override = self.node_entry.config_override
         if override is not None:
@@ -225,8 +225,7 @@ def node_executors_from_config() -> List[NodeExecutor]:
 
 
 def _node_entries_from_config() -> List[NodeEntry]:
-    node_entries: List[NodeEntry] = NodesConfig.get()
-    return node_entries
+    return NodesConfig.loaded().contents
 
 
 def _postprocess_stream(stream: str) -> str:
