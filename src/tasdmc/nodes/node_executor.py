@@ -39,12 +39,12 @@ class NodeExecutor(ABC):
         override = self.node_entry.config_override
         if override is not None:
             for fqk, override_value in items_dot_notation(override):
-                base_value = get_dot_notation(base_run_config, fqk)
+                base_value = get_dot_notation(base_run_config, fqk, default=None)
                 if base_value == override_value:
                     continue
                 set_dot_notation(node_run_config, fqk, override_value)
-                # saving original values under dedicated key
-                set_dot_notation(node_run_config, "before_override." + fqk, base_value)
+                if base_value is not None:  # saving original values under dedicated key
+                    set_dot_notation(node_run_config, "before_override." + fqk, base_value)
 
         set_dot_notation(node_run_config, "input_files.subset.all_weights", NodesConfig.all_weights())
         set_dot_notation(node_run_config, "input_files.subset.this_idx", self.index)
