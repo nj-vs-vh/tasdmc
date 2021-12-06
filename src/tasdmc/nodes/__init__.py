@@ -68,4 +68,4 @@ def abort_all():
     click.echo(f"Aborting nodes...")
     for ex in node_executors_from_config():
         click.secho(f"\n{ex}\n", bold=True)
-        ex.run(f"tasdmc abort {ex.node_run_name} --confirm", hide=False, check_result=False, echo_streams=True)
+        ex.run(f"tasdmc abort {ex.node_run_name} --confirm", check_result=False, echo_streams=True)
