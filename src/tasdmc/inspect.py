@@ -114,7 +114,7 @@ def inspect_and_fix_failed(failed_pipeline_ids: List[str]):
 
 
 def inspect_pipelines(pipeline_ids: List[str], page_size: int, verbose: bool, fix: bool = False):
-    rc: RunConfig = RunConfig.loaded_instance()
+    rc: RunConfig = RunConfig.loaded()
     rc.reset_debug_key()
     if page_size <= 0:
         page_size = len(pipeline_ids)

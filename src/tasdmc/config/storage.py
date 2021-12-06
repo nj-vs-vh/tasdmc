@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, Union, Dict, Any, List, TypeVar, ClassVar
 from numbers import Number
 
-from .exceptions import ConfigNotReadError, BadConfigError
+from .exceptions import BadConfigError
 
 
 ConfigContentsType = TypeVar("ConfigContentsType")
@@ -23,16 +23,12 @@ class ConfigContainer:
     _loaded_instance: ClassVar[Optional[ConfigContainer]] = None
 
     @classmethod
-    def loaded_instance(cls):
+    def loaded(cls) -> ConfigContainer:
         if cls._loaded_instance is None:
-            raise ConfigNotReadError(
+            raise RuntimeError(
                 f"Attempt to read config before it is loaded, run {cls.__name__}.load('smth.yaml') first."
             )
         return cls._loaded_instance
-
-    @classmethod
-    def get(cls) -> ConfigContentsType:
-        return cls.loaded_instance().contents
 
     @classmethod
     def is_loaded(cls) -> bool:
@@ -51,7 +47,7 @@ class ConfigContainer:
     @classmethod
     def dump(cls, filename: Path):
         """Used to dump singleton instance"""
-        cls.loaded_instance().dump_instance(filename)
+        cls.loaded().dump_instance(filename)
 
     @abstractmethod
     def dump_instance(self, filename: StrOrPath):
@@ -70,7 +66,10 @@ class RunConfig(ConfigContainer):
         contents = _read_yaml(filename)
         if not isinstance(contents, dict):
             raise BadConfigError(f"Run config must contain a mapping, got {contents.__class__.__name__}")
-        return RunConfig(contents)
+        rc = RunConfig(contents)
+        if rc.name is None:
+            raise BadConfigError("Run config must include name key!")
+        return rc
 
     def dump_instance(self, filename: StrOrPath):
         _dump_yaml(self.contents, filename)
@@ -78,6 +77,10 @@ class RunConfig(ConfigContainer):
     def reset_debug_key(self):
         if self.contents is not None:
             self.contents.pop('debug', '')
+
+    @property
+    def name(self):
+        return self.contents.get("name")
 
 
 @dataclass
@@ -93,6 +96,7 @@ class NodeEntry(ABC):
             assert self.conda_env is not None, "conda_env key must be specified for all remote nodes!"
 
 
+@dataclass
 class NodesConfig(ConfigContainer):
     contents: List[NodeEntry]  # contents of hosts.yaml's list wrapped in dataclasses
 

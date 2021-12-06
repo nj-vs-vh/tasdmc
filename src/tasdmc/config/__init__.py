@@ -55,15 +55,16 @@ def validate(step_classes: Optional[List[Type['PipelineStep']]] = None):  # type
 
 def get_key(key: str, default: Optional[Any] = NO_DEFAULT) -> Any:
     """Main function to access config"""
-    return get_dot_notation(RunConfig.get(), key, default=default)
+    return get_dot_notation(RunConfig.loaded().contents, key, default=default)
 
 
 def run_name() -> str:
-    return get_key('name')
+    rc: RunConfig = RunConfig.loaded()
+    return rc.name
 
 
 def is_distributed_run() -> bool:
-    RunConfig.get()  # asserting that at least run config is loaded
+    assert RunConfig.is_loaded()
     return NodesConfig.is_loaded()
 
 

@@ -57,13 +57,13 @@ class RunConfigChange:
         # here fqk = fully-qualified key
         old_dict_flat = {fqk: v for fqk, v in items_dot_notation(old_dict)}
         new_dict_flat = {fqk: v for fqk, v in items_dot_notation(new_dict)}
-        
+
         old_fqk = set(old_dict_flat.keys())
         new_fqk = set(new_dict_flat.keys())
 
         for fqk in old_fqk - new_fqk:
             yield fqk, (old_dict_flat[fqk], None)
-        
+
         for fqk in new_fqk - old_fqk:
             yield fqk, (None, new_dict_flat[fqk])
 
@@ -72,21 +72,20 @@ class RunConfigChange:
                 yield fqk, (old_dict_flat[fqk], new_dict_flat[fqk])
 
     @classmethod
-    def from_configs(cls, old_config: Dict, new_config: Dict) -> List[RunConfigChange]:
+    def from_configs(cls, old_config: RunConfig, new_config: RunConfig) -> List[RunConfigChange]:
         return [
             RunConfigChange(key, from_value, to_value)
-            for key, (from_value, to_value) in cls.dict_diff_plain(old_config, new_config)
+            for key, (from_value, to_value) in cls.dict_diff_plain(old_config.contents, new_config.contents)
         ]
 
 
 def update_run_config(new_config_path: str, hard: bool):
-    with open(new_config_path, 'r') as f:
-        new_config = yaml.safe_load(f)
-    old_config = RunConfig.get()
-    if new_config['name'] != old_config['name']:
+    new_config = RunConfig.load_instance(new_config_path)
+    old_config: RunConfig = RunConfig.loaded()
+    if new_config.name != old_config.name:
         click.echo("Attempt to update run's name, aborting")
         return
-    
+
     if not hard:
         try:
             config_changes = RunConfigChange.from_configs(old_config, new_config)
@@ -103,7 +102,7 @@ def update_run_config(new_config_path: str, hard: bool):
         for cc in config_changes:
             click.echo(f"\t{cc}")
 
-    config.RunConfig.load(new_config_path)
+    RunConfig.load(new_config_path)
     try:
         config.validate()
     except config.BadConfigValue as e:

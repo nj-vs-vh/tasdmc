@@ -1,7 +1,3 @@
-class ConfigNotReadError(Exception):
-    pass
-
-
 class BadConfigError(Exception):
     pass
 
