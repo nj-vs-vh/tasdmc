@@ -31,7 +31,7 @@ class NodeExecutor(ABC):
             else self.node_entry.host
         )
 
-    def run_simulation(self, dry: bool = False):
+    def save_run_config_to_node(self) -> Path:
         base_run_config = RunConfig.get()
         node_run_config = copy.deepcopy(base_run_config)
 
@@ -49,12 +49,31 @@ class NodeExecutor(ABC):
         set_dot_notation(node_run_config, "input_files.subset.this_idx", self.index)
         node_run_config["name"] = self.node_run_name
 
-        node_run_config_path = self.save_to_node(StringIO(yaml.dump(node_run_config, sort_keys=False)))
+        return self.save_to_node(StringIO(yaml.dump(node_run_config, sort_keys=False)))
+
+    def remove_from_node(self, file: Path):
+        self.run(f"rm {file}", with_activation=False)
+
+    def run_simulation(self, dry: bool = False):
+        node_run_config_path = self.save_run_config_to_node()
         try:
             tasdmc_cmd = 'run-local' if not dry else 'run-local-dry'
             self.run(f"tasdmc {tasdmc_cmd} -r {node_run_config_path}", disown=(not dry and self.allows_disown))
         finally:
-            self.run(f"rm {node_run_config_path}", with_activation=False)
+            self.remove_from_node(node_run_config_path)
+
+    def update_config(self, dry: bool = False) -> bool:
+        new_node_run_config = self.save_run_config_to_node()
+        try:
+            opt = "--validate-only" if dry else "--hard"
+            res = self.run(
+                f"tasdmc update-config {self.node_run_name} -r {new_node_run_config} {opt}",
+                check_result=(not dry),
+                echo_streams=(dry),
+            )
+            return res is not None and res.return_code == 0
+        finally:
+            self.remove_from_node(new_node_run_config)
 
     def continue_simulation(self):
         self.run(f"tasdmc continue {self.node_run_name}", disown=self.allows_disown)

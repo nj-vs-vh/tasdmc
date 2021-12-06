@@ -29,7 +29,7 @@ def check_all():
 def run_all_dry():
     click.echo(f"Checking if nodes are ready to run their parts of the simulation...")
     for ex in node_executors_from_config():
-        click.echo(f"\t{ex}: ", nl=False)
+        click.echo(f"{ex}: ", nl=False)
         try:
             ex.run_simulation(dry=True)
             _echo_ok()
@@ -69,3 +69,17 @@ def abort_all():
     for ex in node_executors_from_config():
         click.secho(f"\n{ex}", bold=True)
         ex.run(f"tasdmc abort {ex.node_run_name} --confirm", check_result=False, echo_streams=True)
+
+
+
+def update_configs():
+    click.echo(f"Checking node configs...")
+    failed = []
+    for ex in node_executors_from_config():
+        click.secho(f"\n{ex}", bold=True)
+        if not ex.update_config(dry=True):
+            failed.append(ex)
+    if len(failed) > 0:
+        raise RuntimeError("Some nodes refused to update configs: " + ", ".join([str(ex) for ex in failed]))
+    for ex in node_executors_from_config():
+        ex.update_config()

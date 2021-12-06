@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 from dataclasses import dataclass
-import yaml
 import click
+import sys
 
 from typing import Any, Optional, List, Dict, Tuple, Generator
 
@@ -32,8 +32,9 @@ class RunConfigChange:
         def value2str(v) -> str:
             return str(v) if v is not None else 'default'
 
+        key_name = f"[{('safe' if self.is_safe else 'unsafe')}] {self.key}"
         return (
-            click.style(self.key, fg='green' if self.is_safe else 'red')
+            click.style(key_name, fg='green' if self.is_safe else 'red')
             + ': '
             + value2str(self.from_value)
             + ' => '
@@ -79,37 +80,30 @@ class RunConfigChange:
         ]
 
 
-def update_run_config(new_config_path: str, hard: bool):
+def update_run_config(new_config_path: str, hard: bool, validate_only: bool):
     new_config = RunConfig.load_instance(new_config_path)
     old_config: RunConfig = RunConfig.loaded()
     if new_config.name != old_config.name:
         click.echo("Attempt to update run's name, aborting")
-        return
+        sys.exit(1)
 
-    if not hard:
-        try:
-            config_changes = RunConfigChange.from_configs(old_config, new_config)
-        except Exception:
-            click.echo("Can't parse config diffs. If you are sure you want to proceed, pass --hard flag.")
+    try:
+        config_changes = RunConfigChange.from_configs(old_config, new_config)
         if not config_changes:
             click.echo("Nothing to update")
-            return
-        click.echo(
-            "Following config keys will be updated (marked whether is is "
-            + f"{click.style('safe', fg='green')} or {click.style('unsafe', fg='red')} "
-            + "to change between aborting-continuing run):"
-        )
+            sys.exit(0)
+        click.echo("Following config keys will be updated:")
         for cc in config_changes:
             click.echo(f"\t{cc}")
+    except Exception:
+        click.echo("Can't construct config diffs :(")
 
     RunConfig.load(new_config_path)
-    try:
-        config.validate()
-    except config.BadConfigValue as e:
-        click.echo(str(e))
-        return
-    if hard or user_confirmation("New config seems valid, apply?", yes="yes", default=False):
-        config.RunConfig.dump(fileio.saved_run_config_file())
-        click.echo(f"You will need to abort-continue run {config.run_name()} for changes to take effect")
-    else:
-        click.echo("Aborted")
+    config.validate()
+    click.echo("New config seems valid")
+    if not validate_only:
+        if hard or user_confirmation("Apply?", yes="yes", default=False):
+            config.RunConfig.dump(fileio.saved_run_config_file())
+            click.echo(f"You will need to abort-continue run {config.run_name()} for changes to take effect")
+        else:
+            click.echo("Aborted")

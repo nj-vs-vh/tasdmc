@@ -100,15 +100,24 @@ def abort_run_cmd(confirm: bool):
         click.echo("Not this time...")
 
 
-@cli.command("config-update", help="Update configuration of run NAME")
+@cli.command("update-config", help="Update configuration of run NAME")
 @click.option("--hard", is_flag=True, default=False, help="Flag to update config without detailed inspection")
-@run_config_option('new_config_filename')
+@click.option(
+    "--validate-only", is_flag=True, default=False, help="Flag to only check updated config and report if it's valid"
+)
+@run_config_option('new_run_config_filename')
+@nodes_config_option('new_nodes_config_filename', optional=True)
 @loading_run_by_name
 @error_catching
-def update_config_cmd(new_config_filename: str, hard: bool):
+def update_config_cmd(new_run_config_filename: str, new_nodes_config_filename: str, hard: bool, validate_only: bool):
     if config.is_local_run():
-        update_run_config(new_config_filename, hard)
-        
+        update_run_config(new_run_config_filename, hard, validate_only)
+    else:
+        nodes.check_all()
+        config.RunConfig.load(new_run_config_filename)
+        if new_nodes_config_filename:
+            config.NodesConfig.load(new_nodes_config_filename)
+        nodes.update_configs()
 
 
 # monitoring commands

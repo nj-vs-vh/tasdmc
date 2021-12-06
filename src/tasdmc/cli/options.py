@@ -12,12 +12,13 @@ def run_config_option(param_name: str):
     )
 
 
-def nodes_config_option(param_name: str):
+def nodes_config_option(param_name: str, optional: bool = False):
     return click.option(
         '-n',
         '--nodes',
         param_name,
-        required=True,
+        required=(not optional),
+        default=("" if optional else None),
         type=click.Path(exists=True, resolve_path=True),
         help='nodes config file, see examples/nodes.yaml',
     )
