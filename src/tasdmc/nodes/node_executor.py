@@ -151,6 +151,9 @@ class NodeExecutor(ABC):
 class RemoteNodeExecutor(NodeExecutor):
     connection: Connection
 
+    def __del__(self):
+        self.connection.close()
+
     def check(self) -> bool:
         try:
             with self.connection:
@@ -214,7 +217,6 @@ class LocalNodeExecutor(NodeExecutor):
         return invoke.run(cmd, **kwargs)
 
 
-@lru_cache(1)
 def node_executors_from_config() -> List[NodeExecutor]:
     executors = []
     for i, ne in enumerate(_node_entries_from_config()):
