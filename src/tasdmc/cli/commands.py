@@ -106,7 +106,9 @@ def abort_run_cmd(confirm: bool):
 @loading_run_by_name
 @error_catching
 def update_config_cmd(new_config_filename: str, hard: bool):
-    update_run_config(new_config_filename, hard)
+    if config.is_local_run():
+        update_run_config(new_config_filename, hard)
+        
 
 
 # monitoring commands
