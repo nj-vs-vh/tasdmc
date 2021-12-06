@@ -83,15 +83,29 @@ class NodeExecutor(ABC):
         """Returns path to file on the node"""
         pass
 
-    def run(self, cmd: str, with_activation: bool = True, **kwargs) -> Optional[Result]:
-        for fabric_param_name, default_value in [('hide', 'both'), ('warn', True), ('pty', True)]:
+    def run(
+        self, cmd: str, with_activation: bool = True, check_result: bool = True, echo_streams: bool = False, **kwargs
+    ) -> Optional[Result]:
+        for fabric_param_name, default_value in [
+            ('hide', 'both'),
+            ('warn', True),
+            ('pty', True),
+        ]:
             if fabric_param_name not in kwargs:
                 kwargs[fabric_param_name] = default_value
         if with_activation:
             if self.activation_cmd is not None:
                 cmd = f"{self.activation_cmd} && {cmd}"
         res = self._run(cmd, **kwargs)
-        self._check_command_result(res)
+        if check_result:
+            self._check_command_result(res)
+        if echo_streams:
+            stdout = _postprocess_stream(res.stdout)
+            if stdout:
+                click.echo(stdout)
+            stderr = _postprocess_stream(res.stdout)
+            if stderr:
+                click.secho('stderr:\n' + stderr, fg='red')
         return res
 
     @abstractmethod
