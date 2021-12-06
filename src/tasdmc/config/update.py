@@ -14,9 +14,11 @@ from .storage import RunConfig
 
 # safe to change means that no work would be lost
 SAFE_TO_CHANGE = [
+    'description',
     'resources',
     'corsika.default_executable_name',
     'input_files.event_number_multiplier',
+    'input_files.subset',
     'debug',
     'spectral_sampling.aux_log10E_min',
 ]
@@ -32,7 +34,7 @@ class RunConfigChange:
         def value2str(v) -> str:
             return str(v) if v is not None else 'default'
 
-        key_name = f"[{('safe' if self.is_safe else 'unsafe')}] {self.key}"
+        key_name = f"{('  [safe]' if self.is_safe else '[unsafe]')} {self.key}"
         return (
             click.style(key_name, fg='green' if self.is_safe else 'red')
             + ': '
