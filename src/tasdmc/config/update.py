@@ -21,7 +21,6 @@ SAFE_TO_CHANGE = [
     'input_files.subset',
     'spectral_sampling.aux_log10E_min',
     'debug',
-    'before_override',
 ]
 
 
@@ -97,6 +96,8 @@ def update_run_config(new_config_path: str, hard: bool, validate_only: bool):
             sys.exit(0)
         click.echo("Following config keys will be updated:")
         for cc in config_changes:
+            if cc.key.startswith('before_override'):  # no need to log these, they are just for history
+                continue
             click.echo(f"\t{cc}")
     except Exception:
         click.echo("Can't construct config diffs :(")
