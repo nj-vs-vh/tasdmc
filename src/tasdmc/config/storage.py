@@ -10,6 +10,7 @@ from typing import Optional, Union, Dict, Any, List, TypeVar, ClassVar
 from numbers import Number
 
 from .exceptions import BadConfigError
+from tasdmc.utils import items_dot_notation
 
 
 ConfigContentsType = TypeVar("ConfigContentsType")
@@ -66,6 +67,9 @@ class RunConfig(ConfigContainer):
         contents = _read_yaml(filename)
         if not isinstance(contents, dict):
             raise BadConfigError(f"Run config must contain a mapping, got {contents.__class__.__name__}")
+        for fqk, value in items_dot_notation(contents):
+            if value is None:
+                raise BadConfigError(f"Null (None) values are not permitted in config: {fqk}")
         rc = RunConfig(contents)
         if rc.name is None:
             raise BadConfigError("Run config must include name key!")
