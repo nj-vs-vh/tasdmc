@@ -31,7 +31,7 @@ def check_all():
 def run_all_dry():
     click.echo(f"Checking if nodes are ready to run their parts of the simulation...")
     for ex in node_executors_from_config():
-        click.echo(f"{ex}: ", nl=False)
+        click.secho(f"{ex}: ", nl=False, bold=True)
         try:
             ex.run_simulation(dry=True)
             _echo_ok()
@@ -43,7 +43,7 @@ def run_all_dry():
 def run_all():
     click.echo(f"Running...")
     for ex in node_executors_from_config():
-        click.echo(ex)
+        click.secho(ex, bold=True)
         ex.run_simulation()
 
 
@@ -51,7 +51,7 @@ def continue_all():
     click.echo(f"Continuing nodes...")
     failed_nodes = []
     for ex in node_executors_from_config():
-        click.echo(f"\t{ex}: ", nl=False)
+        click.secho(f"{ex}: ", nl=False, bold=True)
         try:
             ex.continue_simulation()
             _echo_ok()
