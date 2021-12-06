@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from functools import lru_cache
 from io import StringIO
 import click
 import copy
 import yaml
 import re
+from uuid import uuid4
 
 import invoke
 import socket
@@ -182,7 +182,7 @@ class RemoteNodeExecutor(NodeExecutor):
         return False  # for some reason remote nodes do not run after disown
 
     def save_to_node(self, contents: TextIO) -> Path:
-        remote_tmp = Path(f'/tmp/tasdmc-remote-node-artifact-{abs(hash(self.connection))}')
+        remote_tmp = Path(f'/tmp/tasdmc-remote-node-artifact-{uuid4().hex[:8]}')
         self.connection.put(contents, str(remote_tmp))
         return remote_tmp
 
@@ -207,7 +207,7 @@ class LocalNodeExecutor(NodeExecutor):
         return True
 
     def save_to_node(self, contents: TextIO) -> Path:
-        remote_tmp = Path(f'/tmp/tasdmc-remote-self-node-artifact')
+        remote_tmp = Path(f'/tmp/tasdmc-self-node-artifact-{uuid4().hex[:8]}')
         with open(remote_tmp, "w") as f:
             f.write(contents.read())
         return remote_tmp
