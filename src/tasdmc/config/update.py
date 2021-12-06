@@ -19,8 +19,9 @@ SAFE_TO_CHANGE = [
     'corsika.default_executable_name',
     'input_files.event_number_multiplier',
     'input_files.subset',
-    'debug',
     'spectral_sampling.aux_log10E_min',
+    'debug',
+    'before_override',
 ]
 
 
