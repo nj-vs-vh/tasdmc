@@ -32,8 +32,9 @@ class NodeExecutor(ABC):
         )
 
     def save_run_config_to_node(self) -> Path:
-        base_run_config: RunConfig = RunConfig.loaded()
-        node_run_config = copy.deepcopy(base_run_config.contents)
+        rc: RunConfig = RunConfig.loaded()
+        base_run_config = rc.contents
+        node_run_config = copy.deepcopy(base_run_config)
 
         override = self.node_entry.config_override
         if override is not None:
