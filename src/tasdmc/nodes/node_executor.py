@@ -166,7 +166,7 @@ class RemoteNodeExecutor(NodeExecutor):
                 ), f"Mismatching version '{remote_node_version}', expected '{__version__}'"
             return True
         except Exception as e:
-            click.echo(f"{self}: {e}")
+            click.echo(f"\n{e}")
             return False
 
     @property

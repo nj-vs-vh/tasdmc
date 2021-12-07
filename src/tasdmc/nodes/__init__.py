@@ -17,12 +17,13 @@ def _echo_fail():
 
 
 def check_all():
-    click.echo("Checking nodes connectivity... ")
+    click.echo("Checking nodes connectivity... ", nl=False)
     failed_nodes = []
     for ex in node_executors_from_config():
         if not ex.check():
             failed_nodes.append(ex)
     if len(failed_nodes) > 0:
+        _echo_fail()
         raise RuntimeError(f"Nodes check failed: " + ", ".join([str(ex) for ex in failed_nodes]))
     else:
         _echo_ok()
