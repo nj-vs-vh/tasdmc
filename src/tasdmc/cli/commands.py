@@ -219,9 +219,8 @@ def process_status_cmd(n_last_messages: int, display_processes: bool):
 @loading_run_by_name
 @error_catching
 def system_resources_cmd(include_previous_runs: bool, absolute_datetime: bool):
-    display_logs.print_system_monitoring(
-        include_previous_runs=include_previous_runs, evaluation_time_as_x=(not absolute_datetime)
-    )
+    srt = display_logs.SystemResourcesTimeline.parse_from_logs(include_previous_runs)
+    srt.display(absolute_x_axis=absolute_datetime)
 
 
 @cli.command("inputs", help="Display inputs for run NAME")
