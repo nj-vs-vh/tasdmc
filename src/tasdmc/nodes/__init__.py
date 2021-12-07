@@ -97,9 +97,10 @@ def collect_progress_data() -> List[PipelineProgress]:
     click.echo(f"Collecting progress data from nodes...")
     plps: List[PipelineProgress] = []
     for ex in node_executors_from_config():
-        click.secho(f"\n{ex}", bold=True)
+        click.secho(f"{ex}: ", bold=True, nl=False)
         res = ex.run(f"tasdmc progress {ex.node_run_name} --dump-json")
+        _echo_ok()
         plp = PipelineProgress.load(res.stdout)
-        plp.node_name = ex.node_entry.name
+        plp.node_name = str(ex)
         plps.append(plp)
     return plps

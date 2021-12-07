@@ -176,7 +176,12 @@ def progress_cmd(follow: bool, dump_json: bool, per_node: bool):
             for plp in plps:
                 plp.print(with_node_name=True)
         else:
-            aggregated_plp = sum(plps)
+            aggregated_plp = None
+            for plp in plps:
+                if aggregated_plp is None:
+                    aggregated_plp = plp
+                else:
+                    aggregated_plp += plp
             aggregated_plp.print()
 
 
