@@ -23,10 +23,7 @@ def check_all():
         if not ex.check():
             failed_nodes.append(ex)
     if len(failed_nodes) > 0:
-        raise RuntimeError(
-            f"Nodes check failed: "
-            + ", ".join([str(ex) for ex in failed_nodes])
-        )
+        raise RuntimeError(f"Nodes check failed: " + ", ".join([str(ex) for ex in failed_nodes]))
     else:
         _echo_ok()
 
@@ -63,10 +60,7 @@ def continue_all():
             click.echo(e)
             failed_nodes.append(ex)
     if len(failed_nodes) > 0:
-        raise RuntimeError(
-            f"Continuing nodes failed: "
-            + ", ".join([str(ex) for ex in failed_nodes])
-        )
+        raise RuntimeError(f"Continuing nodes failed: " + ", ".join([str(ex) for ex in failed_nodes]))
 
 
 def abort_all():
@@ -74,7 +68,6 @@ def abort_all():
     for ex in node_executors_from_config():
         click.secho(f"\n{ex}", bold=True)
         ex.run(f"tasdmc abort {ex.node_run_name} --confirm", check_result=False, echo_streams=True)
-
 
 
 def update_configs(hard: bool, validate_only: bool):
@@ -104,3 +97,13 @@ def collect_progress_data() -> List[PipelineProgress]:
         plp.node_name = str(ex)
         plps.append(plp)
     return plps
+
+
+def print_statuses(n_last_messages: int, display_processes: bool):
+    click.echo(f"Checking node runs statuses...")
+    for ex in node_executors_from_config():
+        click.secho(f"\n{ex}", bold=True)
+        ex.run(
+            f"tasdmc status {ex.node_run_name} -n {n_last_messages} {'-p' if display_processes else ''}",
+            echo_streams=True,
+        )

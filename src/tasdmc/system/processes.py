@@ -48,12 +48,14 @@ def get_run_processes(main_pid: int) -> Optional[List[psutil.Process]]:
         return None
 
 
-def print_process_status(main_pid: int):
+def print_process_status(main_pid: int, display_processes: bool):
     try:
         main_process = psutil.Process(main_pid)
         click.echo("Run is alive!")
     except psutil.NoSuchProcess:
-        click.echo("Run is not active")
+        click.echo("Run is dead!")
+        return
+    if not display_processes:
         return
     worker_process_ids = set()
     click.secho("tasdmc processes:", bold=True)

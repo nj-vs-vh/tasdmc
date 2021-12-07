@@ -185,14 +185,18 @@ def progress_cmd(follow: bool, dump_json: bool, per_node: bool):
             aggregated_plp.print()
 
 
-@cli.command("ps", help="Display processes status and last debug messages from worker processes for run NAME")
-@click.option("-n", "n_last_messages", default=1, help="Number of messages from worker processes to print")
+@cli.command("status", help="Check status for run NAME")
+@click.option("-n", "n_last_messages", default=0, help="Number of messages from worker processes to print")
+@click.option("-p", "display_processes", is_flag=True, default=False, help="List worker processes")
 @loading_run_by_name
 @error_catching
-def process_status_cmd(n_last_messages: int):
-    system.print_process_status(fileio.get_saved_main_pid())
-    if n_last_messages:
-        display_logs.print_multiprocessing_log(n_last_messages)
+def process_status_cmd(n_last_messages: int, display_processes: bool):
+    if config.is_local_run():
+        system.print_process_status(fileio.get_saved_main_pid(), display_processes=display_processes)
+        if n_last_messages:
+            display_logs.print_multiprocessing_log(n_last_messages)
+    else:
+        nodes.print_statuses(n_last_messages, display_processes)
 
 
 @cli.command("resources", help="Display system resources utilization for run NAME")
