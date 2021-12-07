@@ -142,13 +142,14 @@ def update_config_cmd(new_run_config_filename: str, new_nodes_config_filename: s
 @loading_run_by_name
 @error_catching
 def progress_cmd(follow: bool):
-    if not follow:
-        display_logs.print_pipelines_progress()
-    else:
-        while True:
-            click.clear()
+    if config.is_local_run():
+        if not follow:
             display_logs.print_pipelines_progress()
-            sleep(3)
+        else:
+            while True:
+                click.clear()
+                display_logs.print_pipelines_progress()
+                sleep(3)
 
 
 @cli.command("ps", help="Display processes status and last debug messages from worker processes for run NAME")

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import click
 import re
 import os
@@ -5,6 +7,9 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 import plotext as plt
 import shutil
+from dataclasses import dataclass, asdict
+from math import ceil
+import json
 
 from typing import List
 
@@ -43,43 +48,66 @@ def print_multiprocessing_log(n_messages: int):
                 click.secho(line.strip(), dim=True)
 
 
-def print_pipelines_progress():
-    pipeline_stack_by_id = defaultdict(set)
-    for pipeline_step_progress in PipelineStepProgress.load():
-        pipeline_id = pipeline_step_progress.pipeline_id
-        if pipeline_stack_by_id[pipeline_id] is None:  # pipeline has failed
-            continue
-        if pipeline_step_progress.event_type is EventType.STARTED:
-            pipeline_stack_by_id[pipeline_id].add(pipeline_step_progress.step_input_hash)
-        elif pipeline_step_progress.event_type is EventType.COMPLETED:
-            pipeline_stack_by_id[pipeline_id].discard(pipeline_step_progress.step_input_hash)
-        elif pipeline_step_progress.event_type is EventType.FAILED:
-            pipeline_stack_by_id[pipeline_id] = None
+@dataclass
+class PipelineProgress:
+    total: int
+    completed: int
+    running: int
+    pending: int
+    failed: int
 
-    pipelines_total = sum(1 for _ in fileio.corsika_input_files_dir().iterdir())
-    pipelines_failed = 0
-    pipelines_completed = 0
-    pipelines_running = 0
-    for pipeline_id, stack in pipeline_stack_by_id.items():
-        if pipeline_progress.is_failed(pipeline_id) or stack is None:
-            pipelines_failed += 1
-        elif len(stack) == 0:
-            pipelines_completed += 1
-        else:
-            pipelines_running += 1
-    pipelines_pending = pipelines_total - (pipelines_failed + pipelines_completed + pipelines_running)
-    display_data = [
-        ('completed', 'green', pipelines_completed),
-        ('running', 'yellow', pipelines_running),
-        ('pending', 'white', pipelines_pending),
-        ('failed', 'red', pipelines_failed),
-    ]
-    progress_bar_width = os.get_terminal_size().columns
-    for _, color, such_pipelines in display_data:
-        click.secho("█" * int(progress_bar_width * such_pipelines / pipelines_total), nl=False, fg=color)
-    click.echo('')
-    for name, color, such_pipelines in display_data:
-        click.echo(click.style("■", fg=color) + f" {name} ({such_pipelines} / {pipelines_total})")
+    @classmethod
+    def parse_from_log(cls) -> PipelineProgress:
+        pipeline_stack_by_id = defaultdict(set)
+        for pipeline_step_progress in PipelineStepProgress.load():
+            pipeline_id = pipeline_step_progress.pipeline_id
+            if pipeline_stack_by_id[pipeline_id] is None:  # pipeline has failed
+                continue
+            if pipeline_step_progress.event_type is EventType.STARTED:
+                pipeline_stack_by_id[pipeline_id].add(pipeline_step_progress.step_input_hash)
+            elif pipeline_step_progress.event_type is EventType.COMPLETED:
+                pipeline_stack_by_id[pipeline_id].discard(pipeline_step_progress.step_input_hash)
+            elif pipeline_step_progress.event_type is EventType.FAILED:
+                pipeline_stack_by_id[pipeline_id] = None
+
+        total = sum(1 for _ in fileio.corsika_input_files_dir().iterdir())
+        failed = 0
+        completed = 0
+        running = 0
+        for pipeline_id, stack in pipeline_stack_by_id.items():
+            if pipeline_progress.is_failed(pipeline_id) or stack is None:
+                failed += 1
+            elif len(stack) == 0:
+                completed += 1
+            else:
+                running += 1
+        pending = total - (failed + completed + running)
+        return PipelineProgress(total, completed, running, pending, failed)
+
+    def dump(self) -> str:
+        return json.dumps(asdict(self))
+
+    @classmethod
+    def load(cls, dump: str) -> PipelineProgress:
+        return PipelineProgress(**json.loads(dump))
+
+    def print(self):
+        display_data = [
+            ('completed', 'green', self.completed),
+            ('running', 'yellow', self.running),
+            ('pending', 'white', self.pending),
+            ('failed', 'red', self.pending),
+        ]
+        progress_bar_width = os.get_terminal_size().columns
+        for _, color, such_pipelines in display_data:
+            click.secho("█" * ceil(progress_bar_width * such_pipelines / self.total), nl=False, fg=color)
+        click.echo('')
+        for name, color, such_pipelines in display_data:
+            click.echo(click.style(" ■", fg=color) + f" {name} ({such_pipelines} / {self.total})")
+
+
+def print_pipelines_progress():
+    PipelineProgress.parse_from_log().print()
 
 
 def print_system_monitoring(include_previous_runs: bool = False, evaluation_time_as_x: bool = True):
