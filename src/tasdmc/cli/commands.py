@@ -144,7 +144,9 @@ def update_config_cmd(new_run_config_filename: str, new_nodes_config_filename: s
     default=False,
     help="Update the progress bar every few seconds. Warning: clears terminal!",
 )
-@click.option("--dump-json", is_flag=True, default=False, help="Dump progress data as json, without progress bar")
+@click.option(
+    "--dump-json", is_flag=True, default=False, help="Dump progress data as json without displaying progress bar"
+)
 @click.option(
     "--per-node",
     is_flag=True,
@@ -201,26 +203,28 @@ def process_status_cmd(n_last_messages: int, display_processes: bool):
 
 @cli.command("resources", help="Display system resources utilization for run NAME")
 @click.option(
-    "-t",
-    "--absolute-datetime",
-    "absolute_datetime",
+    "--abstime",
     default=False,
     is_flag=True,
-    help="If set to True, X axis on plots represent absolute datetimes in UTC; otherwise Run Evaluation Time is used",
+    help="Use absolute datetime as X axis; by default Run Evaluation Time is used",
 )
 @click.option(
-    "-p",
-    "--include-previous",
-    "include_previous_runs",
+    "--latest",
     default=False,
     is_flag=True,
-    help="If set to True, all previous run execution logs will be merged into one timeline",
+    help="Include only latest run invokation; by default all are merged into one timeline",
+)
+@click.option(
+    "--dump-base64",
+    default=False,
+    is_flag=True,
+    help="Dump system resources data as base64-encoded pickle without displaying plots",
 )
 @loading_run_by_name
 @error_catching
-def system_resources_cmd(include_previous_runs: bool, absolute_datetime: bool):
-    srt = display_logs.SystemResourcesTimeline.parse_from_logs(include_previous_runs)
-    srt.display(absolute_x_axis=absolute_datetime)
+def system_resources_cmd(latest: bool, abstime: bool):
+    srt = display_logs.SystemResourcesTimeline.parse_from_logs(include_previous_runs=(not latest))
+    srt.display(absolute_x_axis=abstime)
 
 
 @cli.command("inputs", help="Display inputs for run NAME")
