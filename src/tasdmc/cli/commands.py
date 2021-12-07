@@ -114,18 +114,23 @@ def update_config_cmd(new_run_config_filename: str, new_nodes_config_filename: s
         if new_run_config_filename is None:
             raise ValueError("-r (new run config) option must be specified")
         click.echo(f"Updating run config with values from {new_run_config_filename}")
+        if new_nodes_config_filename is not None:
+            click.echo("-n option ignored for local run")
+
         update_run_config(new_run_config_filename, hard, validate_only)
     else:
         if new_run_config_filename is None and new_nodes_config_filename is None:
             raise ValueError("At least one of -r (new run config) and -n (new nodes config) options must be specified")
         nodes.check_all()
+
         if new_run_config_filename is not None:
             click.echo(f"Updating run config with values from {new_run_config_filename}")
             config.RunConfig.load(new_run_config_filename)
         if new_nodes_config_filename is not None:
             click.echo(f"Updating nodes config with values from {new_nodes_config_filename}")
             config.NodesConfig.load(new_nodes_config_filename)
-        nodes.update_configs()
+
+        nodes.update_configs(hard, validate_only)
 
 
 # monitoring commands

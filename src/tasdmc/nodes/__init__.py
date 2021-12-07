@@ -74,7 +74,7 @@ def abort_all():
 
 
 
-def update_configs():
+def update_configs(hard: bool, validate_only: bool):
     click.echo(f"Checking node configs...")
     failed = []
     for ex in node_executors_from_config():
@@ -83,7 +83,7 @@ def update_configs():
             failed.append(ex)
     if len(failed) > 0:
         raise RuntimeError("Some nodes refused to update configs: " + ", ".join([str(ex) for ex in failed]))
-    if user_confirmation("Apply?", yes="yes", default=False):
+    if not validate_only and (hard or user_confirmation("Apply?", yes="yes", default=False)):
         for ex in node_executors_from_config():
             ex.update_config()
         config.RunConfig.dump(fileio.saved_run_config_file())
