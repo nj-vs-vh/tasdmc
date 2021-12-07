@@ -142,19 +142,42 @@ def update_config_cmd(new_run_config_filename: str, new_nodes_config_filename: s
     "--follow",
     is_flag=True,
     default=False,
-    help="Update progress bar each few seconds. Warning: clears terminal!",
+    help="Update the progress bar every few seconds. Warning: clears terminal!",
+)
+@click.option("--dump-json", is_flag=True, default=False, help="Dump progress data as json, without progress bar")
+@click.option(
+    "--per-node",
+    is_flag=True,
+    default=False,
+    help="Print progress bar independently for each node of the distributed run",
 )
 @loading_run_by_name
 @error_catching
-def progress_cmd(follow: bool):
+def progress_cmd(follow: bool, dump_json: bool, per_node: bool):
     if config.is_local_run():
-        if not follow:
-            display_logs.print_pipelines_progress()
-        else:
+        if per_node:
+            click.echo("-per-node option ignored for local run")
+        if dump_json:
+            click.echo(display_logs.PipelineProgress.parse_from_log().dump())
+            return
+        display_logs.PipelineProgress.parse_from_log().print()
+        if follow:
             while True:
-                click.clear()
-                display_logs.print_pipelines_progress()
                 sleep(3)
+                click.echo("Updating...")
+                plp = display_logs.PipelineProgress.parse_from_log()
+                click.clear()
+                plp.print()
+    else:
+        if follow:
+            click.echo("--follow option ignored for distributed run")
+        plps = nodes.collect_progress_data()
+        if per_node:
+            for plp in plps:
+                plp.print(with_node_name=True)
+        else:
+            aggregated_plp = sum(plps)
+            aggregated_plp.print()
 
 
 @cli.command("ps", help="Display processes status and last debug messages from worker processes for run NAME")

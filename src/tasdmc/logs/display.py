@@ -11,7 +11,7 @@ from dataclasses import dataclass, asdict
 from math import ceil
 import json
 
-from typing import List
+from typing import List, Optional
 
 from tasdmc import fileio
 from tasdmc.logs.step_progress import EventType, PipelineStepProgress
@@ -56,6 +56,20 @@ class PipelineProgress:
     pending: int
     failed: int
 
+    node_name: Optional[str] = None
+
+    def __add__(self, other: PipelineProgress) -> PipelineProgress:
+        if not isinstance(other, PipelineProgress):
+            return NotImplemented
+        return PipelineProgress(
+            total=self.total + other.total,
+            completed=self.completed + other.completed,
+            running=self.running + other.running,
+            pending=self.pending + other.pending,
+            failed=self.failed + other.failed,
+            node_name=(f"{self.node_name} + {other.node_name}") if self.node_name and other.node_name else None,
+        )
+
     @classmethod
     def parse_from_log(cls) -> PipelineProgress:
         pipeline_stack_by_id = defaultdict(set)
@@ -91,7 +105,9 @@ class PipelineProgress:
     def load(cls, dump: str) -> PipelineProgress:
         return PipelineProgress(**json.loads(dump))
 
-    def print(self):
+    def print(self, with_node_name: bool = False):
+        if with_node_name and self.node_name is not None:
+            click.secho(self.node_name, bold=True)
         display_data = [
             ('completed', 'green', self.completed),
             ('running', 'yellow', self.running),

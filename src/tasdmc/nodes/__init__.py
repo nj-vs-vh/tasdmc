@@ -1,7 +1,10 @@
 import click
 
+from typing import List
+
 from tasdmc import config, fileio
 from tasdmc.utils import user_confirmation
+from tasdmc.logs.display import PipelineProgress
 from .node_executor import node_executors_from_config
 
 
@@ -88,3 +91,15 @@ def update_configs(hard: bool, validate_only: bool):
             ex.update_config()
         config.RunConfig.dump(fileio.saved_run_config_file())
         config.NodesConfig.dump(fileio.saved_nodes_config_file())
+
+
+def collect_progress_data() -> List[PipelineProgress]:
+    click.echo(f"Collecting progress data from nodes...")
+    plps: List[PipelineProgress] = []
+    for ex in node_executors_from_config():
+        click.secho(f"\n{ex}", bold=True)
+        res = ex.run(f"tasdmc progress {ex.node_run_name} --dump-json")
+        plp = PipelineProgress.load(res.stdout)
+        plp.node_name = ex.node_entry.name
+        plps.append(plp)
+    return plps
