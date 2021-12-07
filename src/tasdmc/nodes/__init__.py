@@ -107,3 +107,10 @@ def print_statuses(n_last_messages: int, display_processes: bool):
             f"tasdmc status {ex.node_run_name} -n {n_last_messages} {'-p' if display_processes else ''}",
             echo_streams=True,
         )
+
+
+def print_inputs():
+    click.echo(f"Checking node runs statuses...")
+    for ex in node_executors_from_config():
+        click.secho(f"\n{ex}", bold=True)
+        ex.run(f"tasdmc inputs {ex.node_run_name}", echo_streams=True)

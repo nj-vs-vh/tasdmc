@@ -228,7 +228,10 @@ def system_resources_cmd(include_previous_runs: bool, absolute_datetime: bool):
 @loading_run_by_name
 @error_catching
 def inputs_cmd():
-    click.echo(fileio.cards_gen_info_log().read_text())
+    if config.is_local_run():
+        click.echo(fileio.cards_gen_info_log().read_text())
+    else:
+        nodes.print_inputs()
 
 
 # deep inspection commands
