@@ -232,10 +232,12 @@ class SystemResourcesTimeline:
             xs = [dt.timestamp() for dt in self.timestamps]
             tick_label_from_value = lambda x: datetime2str(datetime.fromtimestamp(x))
             x_axis_label = "Datetime, UTC"
+            plot_fn = plt.scatter
         else:
             xs = [td.total_seconds() for td in self.ret]
             tick_label_from_value = lambda x: timedelta2str(timedelta(seconds=x))
             x_axis_label = "Run evaluation time"
+            plot_fn = plt.plot
 
         x_n = len(xs)
         x_tick_indices = [0, int(0.33 * x_n), int(0.66 * x_n), x_n - 1]
@@ -252,9 +254,9 @@ class SystemResourcesTimeline:
         plt.subplot(1, 1)
         # plotting available disk space only whan we're running out of it (< 3 Gb left)
         disk_avl_plot_data = [(t, da + du) for t, da, du in zip(xs, self.disk_avl, self.disk_used) if da < 3]
-        plt.plot(xs, self.disk_used, color='blue', label="Run directory" if disk_avl_plot_data else "")
+        plot_fn(xs, self.disk_used, color='blue', label="Run directory" if disk_avl_plot_data else "")
         if disk_avl_plot_data:
-            plt.plot(
+            plot_fn(
                 [td[0] for td in disk_avl_plot_data],
                 [td[1] for td in disk_avl_plot_data],
                 color='red',
@@ -267,7 +269,7 @@ class SystemResourcesTimeline:
         plt.xticks(x_ticks, x_tick_labels)
 
         plt.subplot(2, 1)
-        plt.plot(xs, self.cpu, color='green')
+        plot_fn(xs, self.cpu, color='green')
         plt.title("CPU utilization")
         plt.ylabel("CPU, 100% per core")
         plt.xlabel(x_axis_label)
@@ -275,7 +277,7 @@ class SystemResourcesTimeline:
         plt.xticks(x_ticks, x_tick_labels)
 
         plt.subplot(3, 1)
-        plt.plot(xs, self.mem, color='teal')
+        plot_fn(xs, self.mem, color='teal')
         plt.title("Memory usage")
         plt.ylabel("RAM used, Gb")
         plt.xlabel(x_axis_label)
