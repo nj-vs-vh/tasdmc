@@ -66,7 +66,7 @@ class LogData:
 
     def echo_node_name(self):
         if self.node_name is not None:
-            click.echo(self.node_name, bold=True)
+            click.secho(self.node_name, bold=True)
 
 
 @dataclass
