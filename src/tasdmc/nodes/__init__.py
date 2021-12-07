@@ -100,7 +100,7 @@ def collect_progress_data() -> List[PipelineProgress]:
 
 
 def print_statuses(n_last_messages: int, display_processes: bool):
-    click.echo(f"Checking node runs statuses...")
+    click.echo(f"Checking nodes' statuses...")
     for ex in node_executors_from_config():
         click.secho(f"\n{ex}", bold=True)
         ex.run(
@@ -110,7 +110,7 @@ def print_statuses(n_last_messages: int, display_processes: bool):
 
 
 def print_inputs():
-    click.echo(f"Checking node runs statuses...")
+    click.echo(f"Printing nodes' inputs...")
     for ex in node_executors_from_config():
         click.secho(f"\n{ex}", bold=True)
         ex.run(f"tasdmc inputs {ex.node_run_name}", echo_streams=True)

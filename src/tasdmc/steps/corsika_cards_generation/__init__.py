@@ -81,20 +81,22 @@ def generate_corsika_cards() -> List[Path]:
             with open(card_file, "w") as f:
                 f.write(cd.buf + "\n")
 
-        skipped_msg = (
-            ''
-            if skipped_cards_count == 0
-            else (
-                ' (already found in the run dir)'
-                if skipped_cards_count == cards_count
-                else f' ({skipped_cards_count}/{cards_count} of cards already found in the run dir)'
-            )
-        )
         card_index_range = list(card_index_range_from_config(cards_count))
         if is_subset_configured():
             cards_count_msg = f"{len(card_index_range)}/{cards_count} cards, starting at {card_index_range[0]}"
         else:
             cards_count_msg = f"{cards_count:d} cards"
+        
+        cards_count_in_subset = len(card_index_range)
+        skipped_msg = (
+            ''
+            if skipped_cards_count == 0
+            else (
+                ' (already found in the run dir)'
+                if skipped_cards_count == cards_count_in_subset
+                else f' ({skipped_cards_count}/{cards_count_in_subset} of cards already found in the run dir)'
+            )
+        )
 
         logs.cards_generation_info(
             f"PRIMARY {particle_id:d} ENERGY {log10E:.1f} ({energy_id:02d}) - "
