@@ -4,7 +4,7 @@ from typing import List
 
 from tasdmc import config, fileio
 from tasdmc.utils import user_confirmation
-from tasdmc.logs.display import PipelineProgress
+from tasdmc.logs.display import PipelineProgress, SystemResourcesTimeline
 from .node_executor import node_executors_from_config
 
 
@@ -114,3 +114,16 @@ def print_inputs():
     for ex in node_executors_from_config():
         click.secho(f"\n{ex}", bold=True)
         ex.run(f"tasdmc inputs {ex.node_run_name}", echo_streams=True)
+
+
+def collect_system_resources_timelines(latest: bool):
+    click.echo(f"Collecting system monitoring data from nodes...")
+    srts: List[SystemResourcesTimeline] = []
+    for ex in node_executors_from_config():
+        click.secho(f"{ex}: ", bold=True, nl=False)
+        res = ex.run(f"tasdmc resources {ex.node_run_name} --dump-json {'--latest' if latest else ''}")
+        _echo_ok()
+        srt = SystemResourcesTimeline.load(res.stdout)
+        srt.node_name = str(ex)
+        srts.append(srt)
+    return srts

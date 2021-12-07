@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 from functools import partial
 
-from typing import List, Optional
+from typing import List, Optional, TypeVar, Type
 
 from tasdmc import fileio
 from tasdmc.logs.step_progress import EventType, PipelineStepProgress
@@ -50,15 +50,32 @@ def print_multiprocessing_log(n_messages: int):
                 click.secho(line.strip(), dim=True)
 
 
+_T = TypeVar("_T")
+
+
 @dataclass
-class PipelineProgress:
+class LogData:
+    node_name: Optional[str]
+
+    def dump(self) -> str:
+        return json.dumps(asdict(self))
+
+    @classmethod
+    def load(cls: Type[_T], dump: str) -> _T:
+        return cls(**json.loads(dump))
+
+    def echo_node_name(self):
+        if self.node_name is not None:
+            click.echo(self.node_name, bold=True)
+
+
+@dataclass
+class PipelineProgress(LogData):
     total: int
     completed: int
     running: int
     pending: int
     failed: int
-
-    node_name: Optional[str] = None
 
     def __add__(self, other: PipelineProgress) -> PipelineProgress:
         if not isinstance(other, PipelineProgress):
@@ -98,18 +115,13 @@ class PipelineProgress:
             else:
                 running += 1
         pending = total - (failed + completed + running)
-        return PipelineProgress(total, completed, running, pending, failed)
-
-    def dump(self) -> str:
-        return json.dumps(asdict(self))
-
-    @classmethod
-    def load(cls, dump: str) -> PipelineProgress:
-        return PipelineProgress(**json.loads(dump))
+        return PipelineProgress(
+            total=total, completed=completed, running=running, pending=pending, failed=failed, node_name=None
+        )
 
     def print(self, with_node_name: bool = False):
-        if with_node_name and self.node_name is not None:
-            click.secho(self.node_name, bold=True)
+        if with_node_name:
+            self.echo_node_name()
         display_data = [
             ('completed', 'green', self.completed),
             ('running', 'yellow', self.running),
@@ -125,7 +137,7 @@ class PipelineProgress:
 
 
 @dataclass
-class SystemResourcesTimeline:
+class SystemResourcesTimeline(LogData):
     timestamps: List[datetime]
     ret: List[timedelta]
     cpu: List[float]
@@ -136,7 +148,9 @@ class SystemResourcesTimeline:
     def __post_init__(self):
         assert len(self.timestamps) > 0, f"{self.__class__.__name__} must contain at least one measurement"
         for timeseries in (self.ret, self.cpu, self.mem, self.disk_used, self.disk_avl):
-            assert len(timeseries) == len(self.timestamps), f"{self.__class__.__name__} must contain length-aligned lists"
+            assert len(timeseries) == len(
+                self.timestamps
+            ), f"{self.__class__.__name__} must contain length-aligned lists"
 
     @property
     def start_timestamp(self) -> datetime:
@@ -155,6 +169,7 @@ class SystemResourcesTimeline:
             mem=self.mem + other.mem,
             disk_used=self.disk_used + other.disk_used,
             disk_avl=self.disk_avl + other.disk_avl,
+            node_name=self.node_name,
         )
 
     @classmethod
@@ -217,10 +232,18 @@ class SystemResourcesTimeline:
             return None
         run_eval_times = [t - timestamps[0] for t in timestamps]
         return SystemResourcesTimeline(
-            timestamps=timestamps, ret=run_eval_times, cpu=cpu, mem=mem, disk_used=disk_used, disk_avl=disk_avl
+            timestamps=timestamps,
+            ret=run_eval_times,
+            cpu=cpu,
+            mem=mem,
+            disk_used=disk_used,
+            disk_avl=disk_avl,
+            node_name=None,
         )
 
-    def display(self, absolute_x_axis: bool):
+    def display(self, absolute_x_axis: bool, with_node_name: bool = False):
+        if with_node_name:
+            self.echo_node_name()
         click.echo(f"System resources (as last monitored at {datetime2str(self.timestamps[-1])}):")
         click.echo(f"Total CPU utilization (100% is 1 fully utilized core): {self.cpu[-1]:.2f}%")
         click.echo(f"Total memory consumed: {self.mem[-1]:.2f} Gb")

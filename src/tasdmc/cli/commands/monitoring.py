@@ -87,16 +87,24 @@ def process_status_cmd(n_last_messages: int, display_processes: bool):
     help="Include only latest run invokation; by default all are merged into one timeline",
 )
 @click.option(
-    "--dump-base64",
+    "--dump-json",
     default=False,
     is_flag=True,
-    help="Dump system resources data as base64-encoded pickle without displaying plots",
+    help="Dump system resources data as json without displaying plots",
 )
 @loading_run_by_name
 @error_catching
-def system_resources_cmd(latest: bool, abstime: bool):
-    srt = display_logs.SystemResourcesTimeline.parse_from_logs(include_previous_runs=(not latest))
-    srt.display(absolute_x_axis=abstime)
+def system_resources_cmd(latest: bool, abstime: bool, dump_json: bool):
+    if config.is_local_run():
+        srt = display_logs.SystemResourcesTimeline.parse_from_logs(include_previous_runs=(not latest))
+        if dump_json:
+            click.echo(srt.dump())
+        else:
+            srt.display(absolute_x_axis=abstime)
+    else:
+        srts = nodes.collect_system_resources_timelines(latest)
+        for srt in srts:
+            srt.display(absolute_x_axis=abstime, with_node_name=True)
 
 
 @cli.command("inputs", help="Display inputs for run NAME")
