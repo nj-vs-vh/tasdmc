@@ -152,6 +152,19 @@ class SystemResourcesTimeline(LogData):
                 self.timestamps
             ), f"{self.__class__.__name__} must contain length-aligned lists"
 
+    def dump(self) -> str:
+        d = asdict(self)
+        d['timestamps'] = [dt.timestamp() for dt in self.timestamps]
+        d['ret'] = [td.total_seconds() for td in self.ret]
+        return json.dumps(d)
+
+    @classmethod
+    def load(cls, dump: str) -> SystemResourcesTimeline:
+        data = json.loads(dump)
+        data['timestamps'] = [datetime.fromtimestamp(dt_ts) for dt_ts in data['timestamps']]
+        data['ret'] = [timedelta(seconds=td_ts) for td_ts in data['ret']]
+        return SystemResourcesTimeline(**data)
+
     @property
     def start_timestamp(self) -> datetime:
         return self.timestamps[0]
