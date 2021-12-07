@@ -3,8 +3,8 @@
 try:
     from tasdmc.cli.group import cli
     import tasdmc.cli.commands  # noqa
-except ModuleNotFoundError:
-    print("'tasdmc' was not installed properly: some dependencies are missing")
+except ModuleNotFoundError as e:
+    print(f"'tasdmc' was not installed properly: some dependencies are missing: {e}")
     import sys
 
     sys.exit(1)
