@@ -326,21 +326,28 @@ class SystemResourcesTimeline(LogData):
 
     @staticmethod
     def display_multiple(timelines: List[SystemResourcesTimeline]):
-        all_timestamps = chain.from_iterable([tl.timestamps for tl in timelines])
-        all_timestamps_epoch = set(ts.timestamp() for ts in all_timestamps)
-        min_global_epoch = int(min(all_timestamps_epoch))
-        max_global_epoch = int(max(all_timestamps_epoch)) + 1
+        all_timestamps_epoch = set(
+            int(ts.timestamp()) for ts in chain.from_iterable([tl.timestamps for tl in timelines])
+        )
+        min_global_epoch = min(all_timestamps_epoch)
+        max_global_epoch = max(all_timestamps_epoch)
         global_epoch_step = 60  # quantizing global timeline to minutes
+
         global_timestamps_epoch = list(range(min_global_epoch, max_global_epoch, global_epoch_step))
-        global_cpu = [0.0] * len(global_timestamps_epoch)
-        global_mem = [0.0] * len(global_timestamps_epoch)
-        global_disk_used = [0.0] * len(global_timestamps_epoch)
-        global_disk_avl = [0.0] * len(global_timestamps_epoch)
+        global_timeline_len = len(global_timestamps_epoch)
+
+        global_cpu = [0.0] * global_timeline_len
+        global_mem = [0.0] * global_timeline_len
+        global_disk_used = [0.0] * global_timeline_len
+        global_disk_avl = [0.0] * global_timeline_len
+        is_running = {timeline.node_name: [False] * global_timeline_len for timeline in timelines}
+
         for timeline in timelines:
             last_seen_global_idx = 0
             for local_idx, timestamp in enumerate(timeline.timestamps):
                 epoch = timestamp.timestamp()
                 global_idx = int((epoch - min_global_epoch) / global_epoch_step)
+                is_running[timeline.node_name][global_idx] = True
                 global_cpu[global_idx] += timeline.cpu[local_idx]
                 global_mem[global_idx] += timeline.mem[local_idx]
                 # cumulative data
@@ -351,13 +358,22 @@ class SystemResourcesTimeline(LogData):
 
         # cumulative data have to go until the end!
         for global_idx_between_points in range(last_seen_global_idx, len(global_timestamps_epoch)):
-            global_disk_used[global_idx_between_points] += global_disk_used[last_seen_global_idx-1]
-            global_disk_avl[global_idx_between_points] += global_disk_avl[last_seen_global_idx-1]
+            global_disk_used[global_idx_between_points] += global_disk_used[last_seen_global_idx - 1]
+            global_disk_avl[global_idx_between_points] += global_disk_avl[last_seen_global_idx - 1]
 
+        global_timestamps = [datetime.fromtimestamp(ts) for ts in global_timestamps_epoch],
+
+        # uptime plot
+        nodes_n = len(timelines)
+        for node_i, (node_name, uptime_mask) in enumerate(is_running.items()):
+            xs = [dt for i, dt in enumerate(global_timestamps) if uptime_mask[i]]
+            ys = [nodes_n - node_i] * len(xs)  # nodes from top to bottom
+            plt.scatter(xs, ys)
+        plt.show()
 
         global_timeline = SystemResourcesTimeline(
             node_name="All nodes data",
-            timestamps=[datetime.fromtimestamp(ts) for ts in global_timestamps_epoch],
+            timestamps=global_timestamps,
             ret=[timedelta(seconds=ts - min_global_epoch) for ts in global_timestamps_epoch],
             cpu=global_cpu,
             mem=global_mem,

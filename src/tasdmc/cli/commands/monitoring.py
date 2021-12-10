@@ -45,6 +45,8 @@ def progress_cmd(follow: bool, dump_json: bool, per_node: bool):
     else:
         if follow:
             click.echo("--follow option ignored for distributed run")
+        if dump_json:
+            click.echo("--dump-json option ignored for distributed run")
         plps = nodes.collect_progress_data()
         if per_node:
             for plp in plps:
@@ -108,6 +110,8 @@ def system_resources_cmd(latest: bool, abstime: bool, dump_json: bool, per_node:
         else:
             timeline.display(absolute_x_axis=abstime)
     else:
+        if dump_json:
+            click.echo("--dump-json option ignored for distributed run")
         timelines = nodes.collect_system_resources_timelines(latest)
         if per_node:
             for timeline in timelines:
