@@ -350,8 +350,9 @@ class SystemResourcesTimeline(LogData):
                 last_seen_global_idx = global_idx
 
         # cumulative data have to go until the end!
-        print(last_seen_global_idx)
+        print(f"last seen idx = {last_seen_global_idx}, length = {len(global_disk_used)}")
         for global_idx_between_points in range(last_seen_global_idx, max_global_epoch):
+            print(global_idx_between_points)
             global_disk_used[global_idx_between_points] += global_disk_used[last_seen_global_idx-1]
             global_disk_avl[global_idx_between_points] += global_disk_avl[last_seen_global_idx-1]
 
