@@ -255,6 +255,11 @@ class SystemResourcesTimeline(LogData):
             node_name=None,
         )
 
+    @staticmethod
+    def _get_plot_width_height():
+        terminal_width, terminal_height = shutil.get_terminal_size()
+        return min(100, terminal_width), min(30, terminal_height)
+
     def display(self, absolute_x_axis: bool, with_node_name: bool = False):
         if with_node_name:
             self.echo_node_name()
@@ -282,8 +287,7 @@ class SystemResourcesTimeline(LogData):
         x_ticks = [xs[idx] for idx in x_tick_indices]
         x_tick_labels = [tick_label_from_value(xs[idx]) for idx in x_tick_indices]
 
-        terminal_width, terminal_height = shutil.get_terminal_size()
-        plot_width, plot_height = min(100, terminal_width), min(30, terminal_height)
+        plot_width, plot_height = self._get_plot_width_height()
 
         plt.clear_figure()
         plt.subplots(3, 1)
@@ -324,8 +328,8 @@ class SystemResourcesTimeline(LogData):
 
         plt.show(allow_scrolling=True)
 
-    @staticmethod
-    def display_multiple(timelines: List[SystemResourcesTimeline]):
+    @classmethod
+    def display_multiple(cls, timelines: List[SystemResourcesTimeline]):
         all_timestamps_epoch = set(
             int(ts.timestamp()) for ts in chain.from_iterable([tl.timestamps for tl in timelines])
         )
@@ -369,6 +373,8 @@ class SystemResourcesTimeline(LogData):
             xs = [dt for i, dt in enumerate(global_timestamps) if uptime_mask[i]]
             ys = [nodes_n - node_i] * len(xs)  # nodes from top to bottom
             plt.scatter(xs, ys)
+        plot_width, _ = cls._get_plot_width_height()
+        plt.plotsize(plot_width, None)
         plt.show()
 
         global_timeline = SystemResourcesTimeline(
