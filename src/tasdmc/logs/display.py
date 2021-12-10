@@ -332,36 +332,36 @@ class SystemResourcesTimeline(LogData):
         max_global_epoch = int(max(all_timestamps_epoch))
         global_epoch_step = 60  # quantizing global timeline to minutes
         global_timestamps_epoch = list(range(min_global_epoch, max_global_epoch, global_epoch_step))
-        # cpu, mem
-        global_data_sets = [[0.0] * len(global_timestamps_epoch) for _ in range(4)]
+        global_cpu = [0.0] * len(global_timestamps_epoch)
+        global_mem = [0.0] * len(global_timestamps_epoch)
+        global_disk_used = [0.0] * len(global_timestamps_epoch)
+        global_disk_avl = [0.0] * len(global_timestamps_epoch)
         for timeline in timelines:
             last_seen_global_idx = 0
             for local_idx, timestamp in enumerate(timeline.timestamps):
                 epoch = timestamp.timestamp()
                 global_idx = int((epoch - min_global_epoch) / global_epoch_step)
-                for data_set_idx, local_data_set in enumerate(
-                    (timeline.cpu, timeline.mem)
-                ):
-                    global_data_sets[data_set_idx][global_idx] += local_data_set[local_idx]
+                global_cpu[global_idx] += timeline.cpu[local_idx]
+                global_mem[global_idx] += timeline.mem[local_idx]
                 # cumulative data
                 for global_idx_between_points in range(last_seen_global_idx, global_idx):
-                    global_data_sets[2][global_idx_between_points] += timeline.disk_used[local_idx]
-                    global_data_sets[3][global_idx_between_points] += timeline.disk_avl[local_idx]
+                    global_disk_used[global_idx_between_points] += timeline.disk_used[local_idx]
+                    global_disk_avl[global_idx_between_points] += timeline.disk_avl[local_idx]
                 last_seen_global_idx = global_idx
 
         # cumulative data have to go until the end!
         for global_idx_between_points in range(last_seen_global_idx, max_global_epoch):
-            global_data_sets[2][global_idx_between_points] += global_data_sets[2][last_seen_global_idx-1]
-            global_data_sets[3][global_idx_between_points] += global_data_sets[3][last_seen_global_idx-1]
+            global_disk_used[global_idx_between_points] += global_disk_used[last_seen_global_idx-1]
+            global_disk_avl[global_idx_between_points] += global_disk_avl[last_seen_global_idx-1]
                 
 
         global_timeline = SystemResourcesTimeline(
             node_name="All nodes data",
             timestamps=[datetime.fromtimestamp(ts) for ts in global_timestamps_epoch],
             ret=[timedelta(seconds=ts - min_global_epoch) for ts in global_timestamps_epoch],
-            cpu=global_data_sets[0],
-            mem=global_data_sets[1],
-            disk_used=global_data_sets[2],
-            disk_avl=global_data_sets[3],
+            cpu=global_cpu,
+            mem=global_mem,
+            disk_used=global_disk_used,
+            disk_avl=global_disk_avl,
         )
         global_timeline.display(absolute_x_axis=False, with_node_name=True)
