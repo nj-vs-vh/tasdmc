@@ -259,7 +259,7 @@ class SystemResourcesTimeline(LogData):
         if with_node_name:
             self.echo_node_name()
         click.echo(f"System resources (as last monitored at {datetime2str(self.timestamps[-1])}):")
-        click.echo(f"Total CPU utilization (100% is 1 fully utilized core): {self.cpu[-1]:.2f}%")
+        click.echo(f"Total CPU utilization (100% is 1 core): {self.cpu[-1]:.2f}%")
         click.echo(f"Total memory consumed: {self.mem[-1]:.2f} Gb")
         click.echo(f"Disk used: {self.disk_used[-1]:.2f} Gb")
         if len(self.timestamps) < 5:
@@ -344,7 +344,7 @@ class SystemResourcesTimeline(LogData):
                     global_data_sets[data_set_idx][global_idx] += local_data_set[local_idx]
 
         global_timeline = SystemResourcesTimeline(
-            node_name="Nodes merged",
+            node_name="All nodes data",
             timestamps=[datetime.fromtimestamp(ts) for ts in global_timestamps_epoch],
             ret=[timedelta(seconds=ts - min_global_epoch) for ts in global_timestamps_epoch],
             cpu=global_data_sets[0],
@@ -352,4 +352,4 @@ class SystemResourcesTimeline(LogData):
             disk_used=global_data_sets[2],
             disk_avl=global_data_sets[3],
         )
-        global_timeline.display(absolute_x_axis=True, with_node_name=True)
+        global_timeline.display(absolute_x_axis=False, with_node_name=True)
