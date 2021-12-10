@@ -329,7 +329,7 @@ class SystemResourcesTimeline(LogData):
         all_timestamps = chain.from_iterable([tl.timestamps for tl in timelines])
         all_timestamps_epoch = set(ts.timestamp() for ts in all_timestamps)
         min_global_epoch = int(min(all_timestamps_epoch))
-        max_global_epoch = int(max(all_timestamps_epoch))
+        max_global_epoch = int(max(all_timestamps_epoch)) + 1
         global_epoch_step = 60  # quantizing global timeline to minutes
         global_timestamps_epoch = list(range(min_global_epoch, max_global_epoch, global_epoch_step))
         global_cpu = [0.0] * len(global_timestamps_epoch)
@@ -353,7 +353,7 @@ class SystemResourcesTimeline(LogData):
         for global_idx_between_points in range(last_seen_global_idx, max_global_epoch):
             global_disk_used[global_idx_between_points] += global_disk_used[last_seen_global_idx-1]
             global_disk_avl[global_idx_between_points] += global_disk_avl[last_seen_global_idx-1]
-                
+
 
         global_timeline = SystemResourcesTimeline(
             node_name="All nodes data",
