@@ -258,7 +258,7 @@ class SystemResourcesTimeline(LogData):
     @staticmethod
     def _get_plot_width_height():
         terminal_width, terminal_height = shutil.get_terminal_size()
-        return min(100, terminal_width), min(30, terminal_height)
+        return min(90, terminal_width), min(40, terminal_height)
 
     def display(self, absolute_x_axis: bool, with_node_name: bool = False):
         if with_node_name:
@@ -380,14 +380,15 @@ class SystemResourcesTimeline(LogData):
         x_tick_indices = [0, int(0.33 * x_n), int(0.66 * x_n), x_n - 1]
         x_ticks = [xs[idx] for idx in x_tick_indices]
         x_tick_labels = [datetime2str(datetime.fromtimestamp(xs[idx])) for idx in x_tick_indices]
-        plt.plotsize(plot_width, nodes_n + 5)
+        plt.plotsize(plot_width, nodes_n + (nodes_n - 1) + 3)
         plt.yticks(y_ticks, y_tick_labels)
         plt.xticks(x_ticks, x_tick_labels)
-        click.secho("Uptimes", bold=True)
+        click.secho("\nUptimes", bold=True)
+        click.echo("Note: small apparent downtimes can be caused by temporary errors of system resources monitor")
         plt.show()
 
         global_timeline = SystemResourcesTimeline(
-            node_name="All nodes data",
+            node_name="Merged nodes data",
             timestamps=[datetime.fromtimestamp(ts) for ts in global_timestamps_epoch],
             ret=[timedelta(seconds=ts - min_global_epoch) for ts in global_timestamps_epoch],
             cpu=global_cpu,
