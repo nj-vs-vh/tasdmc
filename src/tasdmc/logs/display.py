@@ -344,9 +344,9 @@ class SystemResourcesTimeline(LogData):
                 ):
                     global_data_sets[data_set_idx][global_idx] += local_data_set[local_idx]
                 # cumulative data
-                for global_idx_from_last in range(last_seen_global_idx + 1, global_idx + 1):
-                    global_data_sets[2][global_idx_from_last] = timeline.disk_used[local_idx]
-                    global_data_sets[3][global_idx_from_last] = timeline.disk_avl[local_idx]
+                for global_idx_from_last in range(last_seen_global_idx, global_idx):
+                    global_data_sets[2][global_idx_from_last] += timeline.disk_used[local_idx]
+                    global_data_sets[3][global_idx_from_last] += timeline.disk_avl[local_idx]
                 last_seen_global_idx = global_idx
                 
 
