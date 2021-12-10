@@ -291,12 +291,12 @@ class SystemResourcesTimeline(LogData):
         # disk usage plot
         plt.subplot(1, 1)
         # plotting available disk space only whan we're running out of it (< 3 Gb left)
-        disk_avl_plot_data = [(t, da + du) for t, da, du in zip(xs, self.disk_avl, self.disk_used) if da < 3]
-        plot_fn(xs, self.disk_used, color='blue', label="Run directory" if disk_avl_plot_data else "")
-        if disk_avl_plot_data:
+        max_disk_used_plot_data = [(t, da + du) for t, da, du in zip(xs, self.disk_avl, self.disk_used) if da < 3]
+        plot_fn(xs, self.disk_used, color='blue', label="Run directory" if max_disk_used_plot_data else "")
+        if max_disk_used_plot_data:
             plot_fn(
-                [td[0] for td in disk_avl_plot_data],
-                [td[1] for td in disk_avl_plot_data],
+                [td[0] for td in max_disk_used_plot_data],
+                [td[1] for td in max_disk_used_plot_data],
                 color='red',
                 label="Max for run directory",
             )
@@ -332,16 +332,23 @@ class SystemResourcesTimeline(LogData):
         max_global_epoch = int(max(all_timestamps_epoch))
         global_epoch_step = 60  # quantizing global timeline to minutes
         global_timestamps_epoch = list(range(min_global_epoch, max_global_epoch, global_epoch_step))
-        # cpu, mem, disk_used, disk_avl
+        # cpu, mem
         global_data_sets = [[0.0] * len(global_timestamps_epoch) for _ in range(4)]
         for timeline in timelines:
+            last_seen_global_idx = 0
             for local_idx, timestamp in enumerate(timeline.timestamps):
                 epoch = timestamp.timestamp()
                 global_idx = int((epoch - min_global_epoch) / global_epoch_step)
                 for data_set_idx, local_data_set in enumerate(
-                    (timeline.cpu, timeline.mem, timeline.disk_used, timeline.disk_avl)
+                    (timeline.cpu, timeline.mem)
                 ):
                     global_data_sets[data_set_idx][global_idx] += local_data_set[local_idx]
+                # cumulative data
+                for global_idx_from_last in range(last_seen_global_idx + 1, global_idx + 1):
+                    global_data_sets[2][global_idx_from_last] = timeline.disk_used[local_idx]
+                    global_data_sets[3][global_idx_from_last] = timeline.disk_avl[local_idx]
+                last_seen_global_idx = global_idx
+                
 
         global_timeline = SystemResourcesTimeline(
             node_name="All nodes data",
