@@ -365,12 +365,10 @@ class SystemResourcesTimeline(LogData):
             global_disk_used[global_idx_between_points] += global_disk_used[last_seen_global_idx - 1]
             global_disk_avl[global_idx_between_points] += global_disk_avl[last_seen_global_idx - 1]
 
-        global_timestamps = [datetime.fromtimestamp(ts) for ts in global_timestamps_epoch],
-
         # uptime plot
         nodes_n = len(timelines)
         for node_i, (node_name, uptime_mask) in enumerate(is_running.items()):
-            xs = [dt for i, dt in enumerate(global_timestamps) if uptime_mask[i]]
+            xs = [dt_e for i, dt_e in enumerate(global_timestamps_epoch) if uptime_mask[i]]
             ys = [nodes_n - node_i] * len(xs)  # nodes from top to bottom
             plt.scatter(xs, ys)
         plot_width, _ = cls._get_plot_width_height()
@@ -379,7 +377,7 @@ class SystemResourcesTimeline(LogData):
 
         global_timeline = SystemResourcesTimeline(
             node_name="All nodes data",
-            timestamps=global_timestamps,
+            timestamps=[datetime.fromtimestamp(ts) for ts in global_timestamps_epoch],
             ret=[timedelta(seconds=ts - min_global_epoch) for ts in global_timestamps_epoch],
             cpu=global_cpu,
             mem=global_mem,
