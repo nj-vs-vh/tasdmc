@@ -258,7 +258,7 @@ class SystemResourcesTimeline(LogData):
     @staticmethod
     def _get_plot_width_height():
         terminal_width, terminal_height = shutil.get_terminal_size()
-        return min(90, terminal_width), min(40, terminal_height)
+        return min(120, terminal_width), min(25, terminal_height)
 
     def display(self, absolute_x_axis: bool, with_node_name: bool = False):
         if with_node_name:
