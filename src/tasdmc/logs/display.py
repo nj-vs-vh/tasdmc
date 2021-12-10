@@ -12,6 +12,7 @@ from math import ceil
 import json
 from pathlib import Path
 from functools import partial
+from itertools import chain
 
 from typing import List, Optional, TypeVar, Type
 
@@ -322,3 +323,33 @@ class SystemResourcesTimeline(LogData):
         plt.xticks(x_ticks, x_tick_labels)
 
         plt.show(allow_scrolling=True)
+
+    @staticmethod
+    def display_multiple(timelines: List[SystemResourcesTimeline]):
+        all_timestamps = chain.from_iterable([tl.timestamps for tl in timelines])
+        all_timestamps_epoch = set(ts.timestamp() for ts in all_timestamps)
+        min_global_epoch = int(min(all_timestamps_epoch))
+        max_global_epoch = int(max(all_timestamps_epoch))
+        global_epoch_step = 60  # quantizing global timeline to minutes
+        global_timestamps_epoch = list(range(min_global_epoch, max_global_epoch, global_epoch_step))
+        # cpu, mem, disk_used, disk_avl
+        global_data_sets = [[0.0] * len(global_timestamps_epoch) for _ in range(4)]
+        for timeline in timelines:
+            for local_idx, timestamp in enumerate(timeline.timestamps):
+                epoch = timestamp.timestamp()
+                global_idx = int((epoch - min_global_epoch) / global_epoch_step)
+                for data_set_idx, local_data_set in enumerate(
+                    (timeline.cpu, timeline.mem, timeline.disk_used, timeline.disk_avl)
+                ):
+                    global_data_sets[data_set_idx][global_idx] += local_data_set[local_idx]
+
+        global_timeline = SystemResourcesTimeline(
+            node_name="Nodes merged",
+            timestamps=[datetime.fromtimestamp(ts) for ts in global_timestamps_epoch],
+            ret=[timedelta(seconds=ts - min_global_epoch) for ts in global_timestamps_epoch],
+            cpu=global_data_sets[0],
+            mem=global_data_sets[1],
+            disk_used=global_data_sets[2],
+            disk_avl=global_data_sets[3],
+        )
+        global_timeline.display(absolute_x_axis=True, with_node_name=True)

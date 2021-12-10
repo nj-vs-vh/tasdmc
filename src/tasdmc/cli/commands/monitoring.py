@@ -92,19 +92,29 @@ def process_status_cmd(n_last_messages: int, display_processes: bool):
     is_flag=True,
     help="Dump system resources data as json without displaying plots",
 )
+@click.option(
+    "--per-node",
+    default=False,
+    is_flag=True,
+    help="Display resource plots independently for each node of the distributed run",
+)
 @loading_run_by_name
 @error_catching
-def system_resources_cmd(latest: bool, abstime: bool, dump_json: bool):
+def system_resources_cmd(latest: bool, abstime: bool, dump_json: bool, per_node: bool):
     if config.is_local_run():
-        srt = display_logs.SystemResourcesTimeline.parse_from_logs(include_previous_runs=(not latest))
+        timeline = display_logs.SystemResourcesTimeline.parse_from_logs(include_previous_runs=(not latest))
         if dump_json:
-            click.echo(srt.dump())
+            click.echo(timeline.dump())
         else:
-            srt.display(absolute_x_axis=abstime)
+            timeline.display(absolute_x_axis=abstime)
     else:
-        srts = nodes.collect_system_resources_timelines(latest)
-        for srt in srts:
-            srt.display(absolute_x_axis=abstime, with_node_name=True)
+        timelines = nodes.collect_system_resources_timelines(latest)
+        if per_node:
+            for timeline in timelines:
+                print()
+                timeline.display(absolute_x_axis=abstime, with_node_name=True)
+        else:
+            display_logs.SystemResourcesTimeline.display_multiple(timelines)
 
 
 @cli.command("inputs", help="Display inputs for run NAME")
