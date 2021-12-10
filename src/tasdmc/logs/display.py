@@ -275,7 +275,7 @@ class SystemResourcesTimeline(LogData):
             xs = [dt.timestamp() for dt in self.timestamps]
             tick_label_from_value = lambda x: datetime2str(datetime.fromtimestamp(x))
             x_axis_label = "Datetime, UTC"
-            plot_fn = partial(plt.scatter, marker='x')
+            plot_fn = partial(plt.scatter, marker='big')
         else:
             xs = [td.total_seconds() for td in self.ret]
             tick_label_from_value = lambda x: timedelta2str(timedelta(seconds=x))
@@ -367,12 +367,23 @@ class SystemResourcesTimeline(LogData):
 
         # uptime plot
         nodes_n = len(timelines)
+        y_ticks = []
+        y_tick_labels = []
         for node_i, (node_name, uptime_mask) in enumerate(is_running.items()):
             xs = [dt_e for i, dt_e in enumerate(global_timestamps_epoch) if uptime_mask[i]]
+            y_ticks.append(nodes_n - node_i)
+            y_tick_labels.append(node_name)
             ys = [nodes_n - node_i] * len(xs)  # nodes from top to bottom
-            plt.scatter(xs, ys)
+            plt.scatter(xs, ys, marker="big")
         plot_width, _ = cls._get_plot_width_height()
-        plt.plotsize(plot_width, None)
+        x_n = len(xs)
+        x_tick_indices = [0, int(0.33 * x_n), int(0.66 * x_n), x_n - 1]
+        x_ticks = [xs[idx] for idx in x_tick_indices]
+        x_tick_labels = [datetime2str(datetime.fromtimestamp(xs[idx])) for idx in x_tick_indices]
+        plt.plotsize(plot_width, nodes_n + 5)
+        plt.yticks(y_ticks, y_tick_labels)
+        plt.xticks(x_ticks, x_tick_labels)
+        click.secho("Uptimes", bold=True)
         plt.show()
 
         global_timeline = SystemResourcesTimeline(
