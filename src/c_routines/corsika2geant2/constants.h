@@ -30,13 +30,14 @@ static const float pmass[26] = {0., 0., 0.511e-3, .511e-3, 0., 105.7e-3, 105.7e-
                                 938.e-3, 498.e-3, 549.e-3, 1116.e-3, 1189.e-3, 1193.e-3,
                                 1197.e-3, 1315.e-3, 1321.e-3, 1672e-3, 940.e-3};
 
+const float observationLevel = 1430.e2; // cm, above sea level
+
 // CORSIKA stuff
 
-#define NSENTENCE 39
-#define NPART 7
+#define NSENTENCE 39  // particles in one data sub-block
+#define NPART 7  // floats in particle record 
 #define NWORD NPART *NSENTENCE
-#define NSUBBLOCK 21
-#define PARTSIZE 7
+#define NSUBBLOCK 21  // data sub-blocks per block
 
 #define EXIT_FAILURE_DOUBLE -1.0 // replacement for EXIT_FAILURE for double-returning func
 

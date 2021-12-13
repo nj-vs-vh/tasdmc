@@ -122,24 +122,17 @@ double corsika_vem_init(const char *particleFilesList, const char *tmpfile, int 
                         fread(buf3, sizeof(float), NPART, fpart);
                         if (fabsf(buf3[4]) < (float)(100 * DISTMAX) &&
                             fabsf(buf3[5]) < (float)(100 * DISTMAX) &&
-                            //			  hypotf(buf3[4],buf3[5]) < (float)(100*DISTMAX) &&
                             buf3[0] >= 1000. && buf3[0] < 26000. &&
                             buf3[6] > 1.e4)
                         {
                             m = (int)((buf3[4] + (float)(100 * DISTMAX)) / 600.);
                             n = (int)((buf3[5] + (float)(100 * DISTMAX)) / 600.);
-                            k = (int)((buf3[6] - time1[m][n] -
-                                       (float)(NT * DT * tcount)) /
-                                      DT);
-                            if (buf3[6] >= time1[m][n] + (float)(NT * DT * tcount) && buf3[6] <
-                                                                                          time1[m][n] + (float)(NT * DT * (tcount + 1)))
+                            k = (int)((buf3[6] - time1[m][n] - (float)(NT * DT * tcount)) / DT);
+                            if (buf3[6] >= time1[m][n] + (float)(NT * DT * tcount) && buf3[6] < time1[m][n] + (float)(NT * DT * (tcount + 1)))
                             {
-                                energy = hypotf(buf3[3],
-                                                hypotf(buf3[1], buf3[2]));
+                                energy = hypotf(buf3[3], hypotf(buf3[1], buf3[2]));
                                 sectheta = energy / buf3[3];
-                                energy = hypotf(pmass[(int)(buf3[0] / 1000.)],
-                                                energy) -
-                                         pmass[(int)(buf3[0] / 1000.)];
+                                energy = hypotf(pmass[(int)(buf3[0] / 1000.)], energy) - pmass[(int)(buf3[0] / 1000.)];
                                 k = (int)((buf3[6] - time1[m][n] -
                                            (float)(NT * DT * tcount)) /
                                           (float)DT);
@@ -167,8 +160,7 @@ double corsika_vem_init(const char *particleFilesList, const char *tmpfile, int 
                                         rintf(((float)vem_tmp[1] / VEM * 100.) / sectheta / 2.);
                                 }
                             }
-                            else if (buf3[6] >=
-                                     time1[m][n] + (float)(NT * DT * (tcount + 1)))
+                            else if (buf3[6] >= time1[m][n] + (float)(NT * DT * (tcount + 1)))
                             {
                                 fwrite(buf3, sizeof(float), NPART, fout);
                                 partcount++;
