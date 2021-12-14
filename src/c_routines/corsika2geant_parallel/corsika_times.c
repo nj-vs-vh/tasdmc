@@ -10,10 +10,10 @@
 
 #include "./globals.h"
 #include "./corsika_times.h"
+#include "./iterator.h"
 
 double corsika_times(const char *particleFilesList)
 {
-    const float observationLevel = 1430.e2;  // cm, above sea level
     const off_t RB = sizeof(float);
 
     int i, j, m, n;
@@ -34,6 +34,9 @@ double corsika_times(const char *particleFilesList)
             time1[i][j] = 1.e9;
         }
     }
+
+    // iterateParticleFile()
+
     fprintf(stdout, "Opening %s filelist\n", particleFilesList);
     if ((flist = fopen(particleFilesList, "r")) == NULL)
     {
