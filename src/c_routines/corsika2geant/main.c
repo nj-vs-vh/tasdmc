@@ -80,106 +80,93 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    // TEMP
-    FILE* ftime = fopen("time1_old.dump", "w");
-    for (int m = 0; m < NX; m++)
+    fout = fopen(outputFile, "w");
+    fwrite(eventbuf, sizeof(float), NWORD, fout);
+    printf("%g:%g\t %g Percent\n", count2, count, count2 / count * 100.);
+    fflush(stdout);
+    sprintf(tmpFile[1], "%s.tmp%3.3d", outputFile, 1);
+    count2 += corsika_vem_init(particleFilesListingFile, tmpFile[1], tcount);
+    if (count2 == EXIT_FAILURE_DOUBLE)
     {
-        for (int n = 0; n < NY; n++)
-        {
-            fwrite(&time1[m][n], sizeof(float), 1, ftime);
-            // fprintf(stdout, "%.6f\t", time1[m][n]);
-        }
-        // fprintf(stdout, "\n");
+        fprintf(stderr, "corsika_vem_init(%s, %s, %d) function failed", particleFilesListingFile, tmpFile[1], tcount);
+        exit(EXIT_FAILURE);
     }
-    fclose(ftime);
 
-    // fout = fopen(outputFile, "w");
-    // fwrite(eventbuf, sizeof(float), NWORD, fout);
-    // printf("%g:%g\t %g Percent\n", count2, count, count2 / count * 100.);
-    // fflush(stdout);
-    // sprintf(tmpFile[1], "%s.tmp%3.3d", outputFile, 1);
-    // count2 += corsika_vem_init(particleFilesListingFile, tmpFile[1], tcount);
-    // if (count2 == EXIT_FAILURE_DOUBLE)
-    // {
-    //     fprintf(stderr, "corsika_vem_init(%s, %s, %d) function failed", particleFilesListingFile, tmpFile[1], tcount);
-    //     exit(EXIT_FAILURE);
-    // }
+    printf("%g:%g\t %g Percent\n", count2, count, count2 / count * 100.);
+    fflush(stdout);
+    for (m = 0; m < NX; m++)
+    {
+        for (n = 0; n < NY; n++)
+        {
+            if (time1[m][n] != 1.e9)
+            {
+                buf[0] = (unsigned short)m;
+                buf[1] = (unsigned short)n;
+                for (i = 0; i < NT; i++)
+                {
+                    if (vemcount[m][n][i][0] > 0. ||
+                        vemcount[m][n][i][1] > 0.)
+                    {
+                        buf[2] = vemcount[m][n][i][0];
+                        buf[3] = vemcount[m][n][i][1];
+                        buf[4] = (unsigned short)((time1[m][n] +
+                                                   (float)(tcount * DT * NT) +
+                                                   (float)(i * DT) - tmin) /
+                                                  DT);
+                        buf[5] = pz[m][n][i];
+                        if (buf[5] == 0 || 2 * buf[5] > buf[2] + buf[3])
+                            buf[5] = (unsigned short)(cosf(zenith) * (float)(buf[2] + buf[3]) / 2.);
+                        fwrite(buf, sizeof(short), 6, fout);
+                    }
+                }
+            }
+        }
+    }
+    tcount++;
+    for (j = 1; j < (int)ceilf((float)TMAX / (float)NT); j++)
+    {
+        sprintf(tmpFile[j + 1], "%s.tmp%3.3d", outputFile, j + 1);
+        count2 += corsika_vem(tmpFile[j], tmpFile[j + 1], tcount);
+        if (count2 == EXIT_FAILURE_DOUBLE)
+        {
+            fprintf(stderr, "corsika_vem(%s, %s, %d) function failed", tmpFile[j], tmpFile[j + 1], tcount);
+            exit(EXIT_FAILURE);
+        }
 
-    // printf("%g:%g\t %g Percent\n", count2, count, count2 / count * 100.);
-    // fflush(stdout);
-    // for (m = 0; m < NX; m++)
-    // {
-    //     for (n = 0; n < NY; n++)
-    //     {
-    //         if (time1[m][n] != 1.e9)
-    //         {
-    //             buf[0] = (unsigned short)m;
-    //             buf[1] = (unsigned short)n;
-    //             for (i = 0; i < NT; i++)
-    //             {
-    //                 if (vemcount[m][n][i][0] > 0. ||
-    //                     vemcount[m][n][i][1] > 0.)
-    //                 {
-    //                     buf[2] = vemcount[m][n][i][0];
-    //                     buf[3] = vemcount[m][n][i][1];
-    //                     buf[4] = (unsigned short)((time1[m][n] +
-    //                                                (float)(tcount * DT * NT) +
-    //                                                (float)(i * DT) - tmin) /
-    //                                               DT);
-    //                     buf[5] = pz[m][n][i];
-    //                     if (buf[5] == 0 || 2 * buf[5] > buf[2] + buf[3])
-    //                         buf[5] = (unsigned short)(cosf(zenith) * (float)(buf[2] + buf[3]) / 2.);
-    //                     fwrite(buf, sizeof(short), 6, fout);
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-    // tcount++;
-    // for (j = 1; j < (int)ceilf((float)TMAX / (float)NT); j++)
-    // {
-    //     sprintf(tmpFile[j + 1], "%s.tmp%3.3d", outputFile, j + 1);
-    //     count2 += corsika_vem(tmpFile[j], tmpFile[j + 1], tcount);
-    //     if (count2 == EXIT_FAILURE_DOUBLE)
-    //     {
-    //         fprintf(stderr, "corsika_vem(%s, %s, %d) function failed", tmpFile[j], tmpFile[j + 1], tcount);
-    //         exit(EXIT_FAILURE);
-    //     }
-
-    //     printf("%g:%g\t %g Percent\n", count2, count, count2 / count * 100.);
-    //     fflush(stdout);
-    //     for (m = 0; m < NX; m++)
-    //     {
-    //         for (n = 0; n < NY; n++)
-    //         {
-    //             if (time1[m][n] != 1.e9)
-    //             {
-    //                 buf[0] = (unsigned short)m;
-    //                 buf[1] = (unsigned short)n;
-    //                 for (i = 0; i < NT; i++)
-    //                 {
-    //                     if (vemcount[m][n][i][0] > 0. ||
-    //                         vemcount[m][n][i][1] > 0.)
-    //                     {
-    //                         buf[2] = vemcount[m][n][i][0];
-    //                         buf[3] = vemcount[m][n][i][1];
-    //                         buf[4] = (unsigned short)((time1[m][n] +
-    //                                                    (float)(tcount * DT * NT) +
-    //                                                    (float)(i * DT) - tmin) /
-    //                                                   DT);
-    //                         buf[5] = pz[m][n][i];
-    //                         if (buf[5] == 0 || 2 * buf[5] > buf[2] + buf[3])
-    //                             buf[5] = (unsigned short)(cosf(zenith) *
-    //                                                       (float)(buf[2] + buf[3]) / 2.);
-    //                         fwrite(buf, sizeof(short), 6, fout);
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    //     tcount++;
-    // }
-    // fclose(fout);
-    // fprintf(stdout, "OK");
-    // exit(EXIT_SUCCESS);
+        printf("%g:%g\t %g Percent\n", count2, count, count2 / count * 100.);
+        fflush(stdout);
+        for (m = 0; m < NX; m++)
+        {
+            for (n = 0; n < NY; n++)
+            {
+                if (time1[m][n] != 1.e9)
+                {
+                    buf[0] = (unsigned short)m;
+                    buf[1] = (unsigned short)n;
+                    for (i = 0; i < NT; i++)
+                    {
+                        if (vemcount[m][n][i][0] > 0. ||
+                            vemcount[m][n][i][1] > 0.)
+                        {
+                            buf[2] = vemcount[m][n][i][0];
+                            buf[3] = vemcount[m][n][i][1];
+                            buf[4] = (unsigned short)((time1[m][n] +
+                                                       (float)(tcount * DT * NT) +
+                                                       (float)(i * DT) - tmin) /
+                                                      DT);
+                            buf[5] = pz[m][n][i];
+                            if (buf[5] == 0 || 2 * buf[5] > buf[2] + buf[3])
+                                buf[5] = (unsigned short)(cosf(zenith) *
+                                                          (float)(buf[2] + buf[3]) / 2.);
+                            fwrite(buf, sizeof(short), 6, fout);
+                        }
+                    }
+                }
+            }
+        }
+        tcount++;
+    }
+    fclose(fout);
+    fprintf(stdout, "OK");
+    exit(EXIT_SUCCESS);
 }
