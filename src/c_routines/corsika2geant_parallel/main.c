@@ -15,7 +15,6 @@ Based on runcorsd-old/corsika2geant.c
 #include <libgen.h>
 #include <errno.h>
 
-// #include "./corsika_times.h"
 #include "./corsika_vem_init.h"
 #include "./corsika_vem.h"
 #include "./eloss_sdgeant.h"
@@ -32,11 +31,13 @@ int dm, dn;
 unsigned short vemcount[NX][NY][NT][2];
 unsigned short pz[NX][NY][NT];
 
+
 // utils
 
 int coord2TileIndex(float coord) { return (int)((coord + (float)(100 * DISTMAX)) / (TILE_SIDE * 100.0)); } // input in cm
 
 int tileIndex2Coord(int index) { return ((float)index + 0.5) * TILE_SIDE - (float)DISTMAX; } // output in meters!!!
+
 
 // particle arrival time in each tile
 
