@@ -34,17 +34,20 @@ void readParticleData(ParticleData *pd, FILE *file)
     fread(pd->partbuf, sizeof(float), NPART, file);
     pd->id = (int)pd->partbuf[0] / 1000.0;
     float p = hypotf(pd->partbuf[3], hypotf(pd->partbuf[1], pd->partbuf[2]));
-    float mass = pmass[particle_id(pd)];
+    float mass = pmass[pd->id];
     pd->energy = hypotf(mass, p) - mass;
 }
 
 // Generic iterator over CORSIKA output particle file, executing a callback on each particle
 // returns success flag
 bool iterateParticleFile(
-    const char *particle_filename, void (*processParticle)(ParticleData *), ParticleFileStats *stats, bool verbose)
+    const char *particle_filename,
+    void (*processParticle)(ParticleData *, EventHeaderData *),
+    ParticleFileStats *stats,
+    EventHeaderData *event_header_data,
+    bool verbose)
 {
     initParticleFileStats(stats);
-    EventHeaderData header_data;
     ParticleData particle_data;
 
     const off_t RB = sizeof(float);
@@ -79,7 +82,7 @@ bool iterateParticleFile(
             else if (!strcmp("EVTH", block_name))
             {
                 stats->nEVTH++;
-                readEventHeaderData(&header_data, fparticle);
+                readEventHeaderData(event_header_data, fparticle);
             }
             else if (!strcmp("LONG", block_name))
             {
@@ -102,7 +105,7 @@ bool iterateParticleFile(
                 {
                     stats->nPARTSUB++;
                     readParticleData(&particle_data, fparticle);
-                    processParticle(&particle_data);
+                    processParticle(&particle_data, event_header_data);
                 }
             }
         }

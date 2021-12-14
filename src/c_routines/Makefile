@@ -25,7 +25,7 @@ ${BINDIR}: envcheck
 	${MKDIR_RECIPE}
 
 
-# dethinning (compiled statically from several source files then turned to shared lib)
+# dethinning
 
 DETHIN = dethinning
 
@@ -42,7 +42,7 @@ ${BINDIR}/${DETHIN}.run: ${DETHIN_OBJS} | ${DETHBINDIR}
 	${OBJ_TO_EXECUTABLE_RECIPE}
 
 
-# corsika2geant should be linked with dst2k-ta/include code
+# corsika2geant
 
 C2G = corsika2geant
 
@@ -63,11 +63,32 @@ ${BINDIR}/${C2G}.run: ${C2G_OBJS} | ${C2GBINDIR}
 	${OBJ_TO_EXECUTABLE_RECIPE}
 
 
+# corsika2geant_parallel
+
+C2G_P = corsika2geant_parallel
+
+C2G_PBINDIR = ${BINDIR}/${C2G_P}
+${C2G_PBINDIR}: | ${BINDIR}
+	${MKDIR_RECIPE}
+
+C2G_P_OBJS = $(addsuffix .o, $(addprefix ${C2G_PBINDIR}/, main corsika_vem_init corsika_vem eloss_sdgeant iterator structs))
+
+# calculating 16 * (memory in Gb) with bc & deleting everything after decimal point from output
+NT_VALUE := $(shell echo "16 * ${TASDMC_MEMORY_PER_PROCESS_GB}" | bc | cut -d '.' -f 1)
+WITH_DEFINED_NT = -DNT=${NT_VALUE}
+
+${C2G_PBINDIR}/%.o: ${C2G_P}/%.c
+	${SRC_TO_OBJ_RECIPE} ${WITH_DEFINED_NT}
+
+${BINDIR}/${C2G_P}.run: ${C2G_P_OBJS} | ${C2G_PBINDIR}
+	${OBJ_TO_EXECUTABLE_RECIPE}
+
+
 # lists of targets
 
-DIRS = ${BINDIR} ${DETHBINDIR} ${C2GBINDIR}
+DIRS = ${BINDIR} ${DETHBINDIR} ${C2GBINDIR} ${C2G_PBINDIR}
 
-STEMS = corsika_split_th check_gea_dat_file ${DETHIN} ${C2G}
+STEMS = corsika_split_th check_gea_dat_file ${DETHIN} ${C2G} ${C2G_P}
 
 EXECUTABLES = $(addsuffix .run, ${STEMS})
 

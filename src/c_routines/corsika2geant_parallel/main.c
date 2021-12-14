@@ -1,4 +1,9 @@
-// Based on runcorsd-old/corsika2geant.c
+/*
+A program to produce CORSIKA particle output to tile file, holding information
+about energy deposit in a tile of virtual detectors.
+
+Based on runcorsd-old/corsika2geant.c
+*/
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -10,163 +15,167 @@
 #include <libgen.h>
 #include <errno.h>
 
-#include "./corsika_times.h"
+// #include "./corsika_times.h"
 #include "./corsika_vem_init.h"
 #include "./corsika_vem.h"
 #include "./eloss_sdgeant.h"
 
+#include "./iterator.h";
+#include "./structs.h";
+
 #include "./globals.h"
-// defining global variables
+float time1[NX][NY]; // TODELETE
 float eventbuf[NWORD];
 float origin[3], zenith;
-float time1[NX][NY], tmin, filldist, emin;
+float tmin, filldist, emin;
 int dm, dn;
 unsigned short vemcount[NX][NY][NT][2];
 unsigned short pz[NX][NY][NT];
 
+// utils
+
+int coord2TileIndex(float coord) { return (int)((coord + (float)(100 * DISTMAX)) / (TILE_SIDE * 100.0)); } // input in cm
+
+int tileIndex2Coord(int index) { return ((float)index + 0.5) * TILE_SIDE - (float)DISTMAX; } // output in meters!!!
+
+// particle arrival time in each tile
+
+float minArrivalTimes[NX][NY];
+#define SENTINEL_TIME 1e9
+int particles_count = 0;
+int outlier_particles_count = 0;
+
+void initArrivalTimes()
+{
+    for (int i = 0; i < NX; i++)
+        for (int j = 0; j < NY; j++)
+            minArrivalTimes[i][j] = SENTINEL_TIME;
+}
+
+void saveArrivalTime(ParticleData *pd, EventHeaderData *ed)
+{
+    int m, n;
+    if (particlePhysicalCut(pd) && particleGeometricalCut(pd))
+    {
+        particles_count++;
+        m = coord2TileIndex(pd->partbuf[4]);
+        n = coord2TileIndex(pd->partbuf[5]);
+        if (pd->partbuf[6] < minArrivalTimes[m][n])
+        {
+            if (pd->partbuf[6] < sqrtf(powf(ed->origin[0] - pd->partbuf[4], 2.) +
+                                       powf(ed->origin[1] - pd->partbuf[5], 2.) +
+                                       powf(ed->origin[2] - observationLevel, 2.)) /
+                                     CSPEED)
+            {
+                outlier_particles_count++;
+            }
+            else
+            {
+                minArrivalTimes[m][n] = pd->partbuf[6];
+            }
+        }
+    }
+};
+
+void inetrpolateArrivalTimes()
+{
+    int m_edge = NX / 2;
+    while (minArrivalTimes[m_edge][NY / 2] == SENTINEL_TIME)
+        m_edge++;
+    filldist = tileIndex2Coord(m_edge) + 2.0;
+    int fill_tiles = m_edge - NX / 2 + 5;
+    printf("Annulus Diameter: %g meters\n", filldist);
+
+    int m_closest, m_farthest, n_closest, n_farthest;
+    float x, y, x_ring_closest, y_ring_closest;
+    float rad_fraction;
+    for (int m = NX / 2 - fill_tiles; m < NX / 2 + fill_tiles; m++)
+        for (int n = NY / 2 - fill_tiles; n < NY / 2 + fill_tiles; n++)
+        {
+            x = tileIndex2Coord(m);
+            y = tileIndex2Coord(n);
+            if (hypotf(x, y) < filldist)
+            {
+                rad_fraction = (filldist + 7.5) / hypotf(x, y);
+                x_ring_closest = 100 * x * rad_fraction; // m -> cm
+                y_ring_closest = 100 * y * rad_fraction; // m -> cm
+                m_closest = coord2TileIndex(x_ring_closest);
+                n_closest = coord2TileIndex(y_ring_closest);
+                m_farthest = coord2TileIndex(-x_ring_closest);
+                n_farthest = coord2TileIndex(-y_ring_closest);
+                minArrivalTimes[m][n] = 0.5 * (minArrivalTimes[m_closest][n_closest] + minArrivalTimes[m_farthest][n_farthest]);
+                minArrivalTimes[m][n] += (minArrivalTimes[m_closest][n_closest] - minArrivalTimes[m_farthest][n_farthest]) /
+                                         rad_fraction /
+                                         2.0;
+            }
+        }
+}
+
+void quantizeArrivalTimes(float t_start) {
+    for (int i = 0; i < NX; i++)
+        for (int j = 0; j < NY; j++)
+            minArrivalTimes[i][j] = t_start + (float)DT * floorf((minArrivalTimes[i][j] - t_start) / (float)DT);
+}
+
 int main(int argc, char *argv[])
 {
     // command line arguments parsing
-	if (argc != 4)
-	{
-		fprintf(
-			stderr,
-			"corsika2geant accepts exactly 3 command-line arguments:\n"
-			"\tlist of CORSIKA particle file paths to process\n"
-			"\tsdgeant.dst file path\n"
-			"\toutput file path\n");
-		exit(EXIT_FAILURE);
-	}
-	const char *particleFilesListingFile = argv[1];
-	const char *geantFile = argv[2];
-	const char *outputFile = argv[3];
+    if (argc != 4)
+    {
+        fprintf(
+            stderr,
+            "corsika2geant (parallel) is a rewrite of corsika2geant that processes a single dethinned file and produces a 'partial' tile file\n"
+            "partial tile files should then be merged together by a tile_file_merger.run\n\n"
+            "accepts exactly 3 command-line arguments:\n"
+            "\tdethinned CORSIKA particle file path\n"
+            "\tsdgeant.dst file path\n"
+            "\toutput file path\n");
+        exit(EXIT_FAILURE);
+    }
+    const char *particle_file = argv[1];
+    const char *geantFile = argv[2];
+    const char *outputFile = argv[3];
 
     FILE *fout;
-
-    char tmpFile[1000][256];
-    unsigned short buf[6];
-    int i, j, m, n, tcount;
-    double count, count2;
-    srand48(314159265);
-    tcount = 0;
-    count = count2 = 0.;
-
-    // ??????????????????????????????????????????????????????????????????
-    // what does it mean
-    // geant file name should also specify minimum energy?
-    // ??????????????????????????????????????????????????????????????????
-
-    // if (geantFile != NULL)
-    //     sscanf(geantFile, "%f", &emin);
-    // else
-    //     emin = 0.;
-
-    // let's just ignore that and hope nothing breaks
+    // srand48(314159265);
     emin = 0.;
 
-    printf("Energy threshold: %f keV\n", emin);
-    fflush(stdout);
-    strcpy(tmpFile[0], particleFilesListingFile);
-
-    if (load_elosses(geantFile) == -1)
+    ParticleFileStats stats;
+    EventHeaderData event_data;
+    initArrivalTimes();
+    if (!iterateParticleFile(particle_file, &saveArrivalTime, &stats, &event_data, true))
     {
-        fprintf(stderr, "Cannot open %s file\n", geantFile);
+        fprintf(stderr, "minimal arrival time failed", particle_file);
         exit(EXIT_FAILURE);
     }
-    count = corsika_times(particleFilesListingFile);
-    if (count == EXIT_FAILURE_DOUBLE)
-    {
-        fprintf(stderr, "corsika_times(%s) function failed", particleFilesListingFile);
-        exit(EXIT_FAILURE);
-    }
+    fprintf(stdout, "Number of Outliers: %d\nTime of Core Impact: %g\n", outlier_particles_count, event_data.tmin);
+    inetrpolateArrivalTimes();
+    quantizeArrivalTimes(event_data.tmin);
 
-    fout = fopen(outputFile, "w");
-    fwrite(eventbuf, sizeof(float), NWORD, fout);
-    printf("%g:%g\t %g Percent\n", count2, count, count2 / count * 100.);
-    fflush(stdout);
-    sprintf(tmpFile[1], "%s.tmp%3.3d", outputFile, 1);
-    count2 += corsika_vem_init(particleFilesListingFile, tmpFile[1], tcount);
-    if (count2 == EXIT_FAILURE_DOUBLE)
+    // TEMP
+    FILE* ftime = fopen("time1_new.dump", "w");
+    for (int m = 0; m < NX; m++)
     {
-        fprintf(stderr, "corsika_vem_init(%s, %s, %d) function failed", particleFilesListingFile, tmpFile[1], tcount);
-        exit(EXIT_FAILURE);
-    }
-
-    printf("%g:%g\t %g Percent\n", count2, count, count2 / count * 100.);
-    fflush(stdout);
-    for (m = 0; m < NX; m++)
-    {
-        for (n = 0; n < NY; n++)
+        for (int n = 0; n < NY; n++)
         {
-            if (time1[m][n] != 1.e9)
-            {
-                buf[0] = (unsigned short)m;
-                buf[1] = (unsigned short)n;
-                for (i = 0; i < NT; i++)
-                {
-                    if (vemcount[m][n][i][0] > 0. ||
-                        vemcount[m][n][i][1] > 0.)
-                    {
-                        buf[2] = vemcount[m][n][i][0];
-                        buf[3] = vemcount[m][n][i][1];
-                        buf[4] = (unsigned short)((time1[m][n] +
-                                                   (float)(tcount * DT * NT) +
-                                                   (float)(i * DT) - tmin) /
-                                                  DT);
-                        buf[5] = pz[m][n][i];
-                        if (buf[5] == 0 || 2 * buf[5] > buf[2] + buf[3])
-                            buf[5] = (unsigned short)(cosf(zenith) * (float)(buf[2] + buf[3]) / 2.);
-                        fwrite(buf, sizeof(short), 6, fout);
-                    }
-                }
-            }
+            fwrite(&minArrivalTimes[m][n], sizeof(float), 1, ftime);
         }
     }
-    tcount++;
-    for (j = 1; j < (int)ceilf((float)TMAX / (float)NT); j++)
-    {
-        sprintf(tmpFile[j + 1], "%s.tmp%3.3d", outputFile, j + 1);
-        count2 += corsika_vem(tmpFile[j], tmpFile[j + 1], tcount);
-        if (count2 == EXIT_FAILURE_DOUBLE)
-        {
-            fprintf(stderr, "corsika_vem(%s, %s, %d) function failed", tmpFile[j], tmpFile[j + 1], tcount);
-            exit(EXIT_FAILURE);
-        }
+    fclose(ftime);
 
-        printf("%g:%g\t %g Percent\n", count2, count, count2 / count * 100.);
-        fflush(stdout);
-        for (m = 0; m < NX; m++)
-        {
-            for (n = 0; n < NY; n++)
-            {
-                if (time1[m][n] != 1.e9)
-                {
-                    buf[0] = (unsigned short)m;
-                    buf[1] = (unsigned short)n;
-                    for (i = 0; i < NT; i++)
-                    {
-                        if (vemcount[m][n][i][0] > 0. ||
-                            vemcount[m][n][i][1] > 0.)
-                        {
-                            buf[2] = vemcount[m][n][i][0];
-                            buf[3] = vemcount[m][n][i][1];
-                            buf[4] = (unsigned short)((time1[m][n] +
-                                                       (float)(tcount * DT * NT) +
-                                                       (float)(i * DT) - tmin) /
-                                                      DT);
-                            buf[5] = pz[m][n][i];
-                            if (buf[5] == 0 || 2 * buf[5] > buf[2] + buf[3])
-                                buf[5] = (unsigned short)(cosf(zenith) *
-                                                          (float)(buf[2] + buf[3]) / 2.);
-                            fwrite(buf, sizeof(short), 6, fout);
-                        }
-                    }
-                }
-            }
-        }
-        tcount++;
-    }
-    fclose(fout);
+    // printf("Energy threshold: %f keV\n", emin);
+    // fflush(stdout);
+
+    // if (load_elosses(geantFile) == -1)
+    // {
+    //     fprintf(stderr, "Cannot open %s file\n", geantFile);
+    //     exit(EXIT_FAILURE);
+    // }
+    // count = corsika_times(particle_file);
+    // if (count == EXIT_FAILURE_DOUBLE)
+    // {
+
+    // }
     fprintf(stdout, "OK");
     exit(EXIT_SUCCESS);
 }

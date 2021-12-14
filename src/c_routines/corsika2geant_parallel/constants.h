@@ -11,14 +11,18 @@
 #error Array size variable 'NT' has not been defined. Use -DNT=16, 32, 64, etc compilation option
 #endif
 
-// physical constants
+// physical constants and detector's tile configuration
 
-#define DISTMAX 8400 /* Meters / 10.0 */
-#define NX DISTMAX / 3
-#define NY DISTMAX / 3
+#define SINSITIVE_SQUARE_SIDE 16800  // meters/10 (??? probably just meters???)
+#define TILE_SIDE 6  // meters
+#define DISTMAX SINSITIVE_SQUARE_SIDE / 2 
+#define NX SINSITIVE_SQUARE_SIDE / TILE_SIDE
+#define NY SINSITIVE_SQUARE_SIDE / TILE_SIDE
+
 #define DT 20
 #define FRAC 0.99
 #define EMIN 0.003
+
 #define VEM 2.05 /* MeV */
 #define SRL 0.06
 #define CSPEED 29.97925 /* cm/nsec */
@@ -30,7 +34,7 @@ static const float pmass[26] = {0., 0., 0.511e-3, .511e-3, 0., 105.7e-3, 105.7e-
                                 938.e-3, 498.e-3, 549.e-3, 1116.e-3, 1189.e-3, 1193.e-3,
                                 1197.e-3, 1315.e-3, 1321.e-3, 1672e-3, 940.e-3};
 
-const float observationLevel = 1430.e2; // cm, above sea level
+static const float observationLevel = 1430.e2; // cm, above sea level
 
 // CORSIKA stuff
 
