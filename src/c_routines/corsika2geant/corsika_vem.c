@@ -305,6 +305,7 @@ void fill_vem()
     }
 }
 
+// Box-Muller method
 void gauss(double pair[])
 {
     double r, phi;
