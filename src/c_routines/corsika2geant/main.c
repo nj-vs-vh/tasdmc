@@ -156,8 +156,7 @@ int main(int argc, char *argv[])
                                                       DT);
                             buf[5] = pz[m][n][i];
                             if (buf[5] == 0 || 2 * buf[5] > buf[2] + buf[3])
-                                buf[5] = (unsigned short)(cosf(zenith) *
-                                                          (float)(buf[2] + buf[3]) / 2.);
+                                buf[5] = (unsigned short)(cosf(zenith) * (float)(buf[2] + buf[3]) / 2.);
                             fwrite(buf, sizeof(short), 6, fout);
                         }
                     }

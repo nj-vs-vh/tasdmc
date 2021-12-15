@@ -167,8 +167,7 @@ double corsika_vem_init(const char *particleFilesList, const char *tmpfile, int 
                                         rintf(((float)vem_tmp[1] / VEM * 100.) / sectheta / 2.);
                                 }
                             }
-                            else if (buf3[6] >=
-                                     time1[m][n] + (float)(NT * DT * (tcount + 1)))
+                            else if (buf3[6] >= time1[m][n] + (float)(NT * DT * (tcount + 1)))
                             {
                                 fwrite(buf3, sizeof(float), NPART, fout);
                                 partcount++;
