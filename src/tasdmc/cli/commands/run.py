@@ -33,11 +33,11 @@ def local_run_cmd(run_config_filename: str, dry: bool, foreground: bool):
             pipeline.run_simulation(dry=True)
         finally:
             fileio.remove_run_dir()
-        return
-    if foreground:
-        pipeline.run_simulation()
     else:
-        run_standard_pipeline_in_background()
+        if foreground:
+            pipeline.run_simulation()
+        else:
+            run_standard_pipeline_in_background()
 
 
 @cli.command("run-distributed", help="Run simulation distributed across several machines (nodes)")

@@ -54,7 +54,7 @@ def continue_all():
     for ex in node_executors_from_config():
         click.secho(f"{ex}: ", nl=False, bold=True)
         try:
-            ex.continue_simulation()
+            ex.run(f"tasdmc continue --foreground {ex.node_run_name}", disown=True)
             _echo_ok()
         except Exception as e:
             _echo_fail()

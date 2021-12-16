@@ -58,8 +58,8 @@ class NodeExecutor(ABC):
     def run_simulation(self, dry: bool = False):
         node_run_config_path = self.save_run_config_to_node()
         try:
-            tasdmc_cmd = 'run-local' if not dry else 'run-local-dry'
-            self.run(f"tasdmc {tasdmc_cmd} -r {node_run_config_path}", disown=(not dry and self.allows_disown))
+            dry_opt = '--dry' if dry else ''
+            self.run(f"tasdmc run-local {dry_opt} --foreground -r {node_run_config_path}", disown=(not dry))
         finally:
             self.remove_from_node(node_run_config_path)
 
@@ -76,9 +76,6 @@ class NodeExecutor(ABC):
         finally:
             self.remove_from_node(new_node_run_config)
 
-    def continue_simulation(self):
-        self.run(f"tasdmc continue {self.node_run_name}", disown=self.allows_disown)
-
     @abstractmethod
     def check(self) -> bool:
         pass
@@ -91,11 +88,6 @@ class NodeExecutor(ABC):
     @property
     @abstractmethod
     def activation_cmd(self) -> Optional[str]:
-        pass
-
-    @property
-    @abstractmethod
-    def allows_disown(self) -> bool:
         pass
 
     @abstractmethod
@@ -177,10 +169,6 @@ class RemoteNodeExecutor(NodeExecutor):
     def activation_cmd(self) -> str:
         return f"conda activate {self.node_entry.conda_env}"
 
-    @property
-    def allows_disown(self) -> bool:
-        return False  # for some reason remote nodes do not run after disown
-
     def save_to_node(self, contents: TextIO) -> Path:
         remote_tmp = Path(f'/tmp/tasdmc-remote-node-artifact-{uuid4().hex[:8]}')
         self.connection.put(contents, str(remote_tmp))
@@ -201,10 +189,6 @@ class LocalNodeExecutor(NodeExecutor):
     @property
     def activation_cmd(self):
         return None
-
-    @property
-    def allows_disown(self) -> bool:
-        return True
 
     def save_to_node(self, contents: TextIO) -> Path:
         remote_tmp = Path(f'/tmp/tasdmc-self-node-artifact-{uuid4().hex[:8]}')
