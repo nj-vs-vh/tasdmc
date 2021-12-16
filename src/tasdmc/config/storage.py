@@ -6,13 +6,14 @@ from pathlib import Path
 from dataclasses import dataclass, fields, asdict
 from abc import ABC, abstractmethod
 
-from typing import Optional, Union, Dict, Any, List, TypeVar, ClassVar
+from typing import Optional, Union, Dict, Any, List, TypeVar, ClassVar, Type
 from numbers import Number
 
 from .exceptions import BadConfigError
 from tasdmc.utils import items_dot_notation
 
 
+ConfigContainerType = TypeVar("ConfigContainerType")
 ConfigContentsType = TypeVar("ConfigContentsType")
 StrOrPath = Union[str, Path]
 
@@ -24,7 +25,7 @@ class ConfigContainer:
     _loaded_instance: ClassVar[Optional[ConfigContainer]] = None
 
     @classmethod
-    def loaded(cls) -> ConfigContainer:
+    def loaded(cls: Type[ConfigContainerType]) -> ConfigContainerType:
         if cls._loaded_instance is None:
             raise RuntimeError(
                 f"Attempt to read config before it is loaded, run {cls.__name__}.load('smth.yaml') first."

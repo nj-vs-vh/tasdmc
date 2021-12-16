@@ -16,6 +16,8 @@ from tasdmc.steps import (
     SpectralSamplingStep,
     PipelineStep,
     ReconstructionStep,
+    TawikiDumpStep,
+    TawikiDumpsMergeStep,
 )
 from tasdmc.steps.corsika_cards_generation import generate_corsika_cards
 from tasdmc.system.monitor import run_system_monitor
@@ -23,11 +25,13 @@ from tasdmc.steps.base.step_status_shared import set_step_statuses_array
 from tasdmc.utils import batches
 
 
-def standard_simulation_steps(corsika_card_paths: List[Path]) -> List[PipelineStep]:
+def get_steps(corsika_card_paths: List[Path]) -> List[PipelineStep]:
     """List of pipeline steps *in order of optimal execution*"""
+    add_tawiki_steps = bool(config.get_key("pipeline.produce_tawiki_dumps", default=False))
+    tawiki_dump_steps = []
+
     steps: List[PipelineStep] = []
     corsika_steps = CorsikaStep.from_corsika_cards(corsika_card_paths)
-
     # TODO: make batch size configurable here?
     for corsika_steps_batch in batches(corsika_steps, config.used_processes()):
         steps.extend(corsika_steps_batch)
@@ -46,6 +50,12 @@ def standard_simulation_steps(corsika_card_paths: List[Path]) -> List[PipelineSt
                 steps.append(spectral_sampling)
                 reconstruction = ReconstructionStep.from_spectral_sampling(spectral_sampling)
                 steps.append(reconstruction)
+                if add_tawiki_steps:
+                    tawiki_dump = TawikiDumpStep.from_reconstruction_step(reconstruction)
+                    tawiki_dump_steps.append(tawiki_dump)
+                    steps.append(tawiki_dump)
+        if add_tawiki_steps:
+            steps.append(TawikiDumpsMergeStep.from_tawiki_dump_steps(tawiki_dump_steps))
     return steps
 
 
@@ -57,10 +67,10 @@ def with_pipelines_mask(steps: List[PipelineStep]) -> List[PipelineStep]:
         return [s for s in steps if s.pipeline_id in pipelines_mask]
 
 
-def run_standard_pipeline(dry: bool = False):
+def run_simulation(dry: bool = False):
     system.set_process_title("tasdmc main")
     fileio.save_main_process_pid()
-    steps = standard_simulation_steps(corsika_card_paths=generate_corsika_cards())
+    steps = get_steps(corsika_card_paths=generate_corsika_cards())
     steps = with_pipelines_mask(steps)
     config.validate(set(step.__class__ for step in steps))
 

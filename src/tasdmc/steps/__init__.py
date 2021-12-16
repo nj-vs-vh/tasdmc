@@ -10,6 +10,7 @@ from .processing.tothrow_generation import TothrowGenerationStep
 from .processing.event_generation import EventsGenerationStep
 from .processing.spectral_sampling import SpectralSamplingStep
 from .processing.reconstruction import ReconstructionStep
+from .processing.tawiki_dump import TawikiDumpStep, TawikiDumpsMergeStep
 
 
 all_steps: List[Type[PipelineStep]] = [
@@ -21,6 +22,8 @@ all_steps: List[Type[PipelineStep]] = [
     EventsGenerationStep,
     SpectralSamplingStep,
     ReconstructionStep,
+    TawikiDumpStep,
+    TawikiDumpsMergeStep,
 ]
 
 

@@ -30,7 +30,7 @@ def local_run_cmd(run_config_filename: str):
     config.RunConfig.load(run_config_filename)
     fileio.prepare_run_dir()
     try:
-        pipeline.run_standard_pipeline(dry=True)
+        pipeline.run_simulation(dry=True)
     finally:
         fileio.remove_run_dir()
 
