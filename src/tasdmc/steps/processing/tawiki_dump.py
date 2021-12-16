@@ -140,4 +140,6 @@ class TawikiDumpsMergeStep(PipelineStep):
                     continue
                 with open(tdf.dump, "r") as in_:
                     for line in in_:
-                        out.write(line + '\n')
+                        line = line.strip()
+                        if line:
+                            out.write(line + '\n')

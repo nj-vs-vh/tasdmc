@@ -122,7 +122,7 @@ class PipelineStep(ABC):
                     raise StepFailedException()
 
             # actual step run
-            logs.multiprocessing_info(f"Entering '{self.description}'")
+            logs.multiprocessing_info(f"{self.description}")
             try:
                 if self.output.files_were_produced() and self.input_.same_hash_as_stored():
                     step_progress.skipped(self)
