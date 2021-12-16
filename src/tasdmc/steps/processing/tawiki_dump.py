@@ -106,6 +106,14 @@ class TawikiDumpFileSet(OptionalFiles):
 class MergedTawikiDump(OptionalFiles):
     merged_dump: Path
 
+    @property
+    def must_exist(self) -> List[Path]:
+        return []
+
+    @property
+    def optional(self) -> List[Path]:
+        return [self.merged_dump]
+
     @classmethod
     def new(cls) -> MergedTawikiDump:
         return MergedTawikiDump(fileio.final_dir() / "tawiki_dump.sdascii")
