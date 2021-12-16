@@ -25,7 +25,7 @@ from tasdmc.steps.base.step_status_shared import set_step_statuses_array
 from tasdmc.utils import batches
 
 
-def get_steps(corsika_card_paths: List[Path]) -> List[PipelineStep]:
+def get_steps(corsika_card_paths: List[Path], include_global: bool = True) -> List[PipelineStep]:
     """List of pipeline steps *in order of optimal execution*"""
     add_tawiki_steps = bool(config.get_key("pipeline.produce_tawiki_dumps", default=False))
     tawiki_dump_steps = []
@@ -54,7 +54,7 @@ def get_steps(corsika_card_paths: List[Path]) -> List[PipelineStep]:
                     tawiki_dump = TawikiDumpStep.from_reconstruction_step(reconstruction)
                     tawiki_dump_steps.append(tawiki_dump)
                     steps.append(tawiki_dump)
-        if add_tawiki_steps:
+        if add_tawiki_steps and include_global:
             steps.append(TawikiDumpsMergeStep.from_tawiki_dump_steps(tawiki_dump_steps))
     return steps
 

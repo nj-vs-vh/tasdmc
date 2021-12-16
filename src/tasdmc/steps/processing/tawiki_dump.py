@@ -66,7 +66,7 @@ class TawikiDumpStep(PipelineStep):
     def _run(self):
         if not self.input_.is_realized:
             with open(self.output.log, "w") as log:
-                log.write("Not running TA Wiki dump because no events were reconstructed")
+                log.write("Not running TA Wiki dump because no events were reconstructed\n\nDone")
             return
 
         E_min = 10 ** (self.input_.log10E_min - 18)  # log10E -> EeV
