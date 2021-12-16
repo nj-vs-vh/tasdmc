@@ -48,6 +48,13 @@ class TawikiDumpStep(PipelineStep):
     input_: ReconstructedEvents
     output: TawikiDumpFiles
 
+    @property
+    def description(self) -> str:
+        return (
+            "Dumping reconstruction result in TA Wiki format "
+            + f"from {self.input_.rufldf_dst.relative_to(fileio.run_dir())}"
+        )
+
     @classmethod
     def from_reconstruction_step(cls, reconstruction: ReconstructionStep) -> TawikiDumpStep:
         return TawikiDumpStep(
@@ -108,6 +115,10 @@ class MergedTawikiDump(OptionalFiles):
 class TawikiDumpsMergeStep(PipelineStep):
     input_: TawikiDumpFileSet
     output: MergedTawikiDump
+
+    @property
+    def description(self) -> str:
+        return f"Merging all TA Wiki dumps into one file {self.output.merged_dump.relative_to(fileio.run_dir())}"
 
     @classmethod
     def from_tawiki_dump_steps(cls, steps: List[TawikiDumpStep]) -> TawikiDumpsMergeStep:
