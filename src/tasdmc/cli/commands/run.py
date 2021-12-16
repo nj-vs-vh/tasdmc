@@ -57,5 +57,7 @@ def distributed_run_cmd(run_config_filename: str, nodes_config_filename: str, dr
     nodes.run_all_dry()
     if dry:
         return
+    click.echo("Launching distributed run is broken for now, please do it manually")
+    return
     fileio.prepare_run_dir()
     nodes.run_all()

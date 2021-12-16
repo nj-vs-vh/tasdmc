@@ -30,6 +30,8 @@ def continue_run_cmd(foreground: bool):
         else:
             run_standard_pipeline_in_background()
     else:
+        click.echo("Continuing distributed run is broken for now, please do it manually")
+        return
         nodes.check_all()
         nodes.continue_all()
 
