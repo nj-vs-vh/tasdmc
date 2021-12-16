@@ -107,7 +107,7 @@ class MergedTawikiDump(OptionalFiles):
     merged_dump: Path
 
     @classmethod
-    def new() -> MergedTawikiDump:
+    def new(cls) -> MergedTawikiDump:
         return MergedTawikiDump(fileio.final_dir() / "tawiki_dump.sdascii")
 
 
