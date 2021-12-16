@@ -11,13 +11,13 @@ from ..utils import run_standard_pipeline_in_background, loading_run_by_name, er
 
 
 @cli.command("continue", help="Continue execution of aborted run NAME")
-@loading_run_by_name
 @click.option(
     "--foreground",
     is_flag=True,
     default=False,
     help="Assume that you will background & disown the program yourself",
 )
+@loading_run_by_name
 @error_catching
 def continue_run_cmd(foreground: bool):
     if config.is_local_run():
