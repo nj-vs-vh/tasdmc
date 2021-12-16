@@ -54,8 +54,8 @@ def get_steps(corsika_card_paths: List[Path], include_global: bool = True) -> Li
                     tawiki_dump = TawikiDumpStep.from_reconstruction_step(reconstruction)
                     tawiki_dump_steps.append(tawiki_dump)
                     steps.append(tawiki_dump)
-        if add_tawiki_steps and include_global:
-            steps.append(TawikiDumpsMergeStep.from_tawiki_dump_steps(tawiki_dump_steps))
+    if add_tawiki_steps and include_global:
+        steps.append(TawikiDumpsMergeStep.from_tawiki_dump_steps(tawiki_dump_steps))
     return steps
 
 
