@@ -4,6 +4,10 @@ name: your-run-name
 description:
   Optional detailed description of run's purpose and other info.
 
+pipeline:
+  produce_tawiki_dumps: True  # convert reconstructed .dst.gz files to ASCII tables
+                              # in TA Wiki format; defaults to False
+
 input_files:
   particle: proton
   log10E_min: 17.5
@@ -20,7 +24,7 @@ corsika:
 
 dethinning:
   n_parallel: 6 # determines how many dethinning steps are run in parallel;
-                # defaults to number of processes on the machine
+                # defaults to the number of CPU on the machine
   _try_to_skip: True  # manual skip of dethinning step if corsika2geant output is ready;
                       # may be used if n_parallel is changed after run was aborted
                       # most of the times is not needed; defaults to False

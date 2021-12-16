@@ -71,6 +71,11 @@ def reconstruction_dir() -> Path:
     return run_dir() / 'reconstruction'
 
 
+@internal_local_run_dir
+def final_dir() -> Path:
+    return run_dir() / 'final'
+
+
 # service directories
 
 

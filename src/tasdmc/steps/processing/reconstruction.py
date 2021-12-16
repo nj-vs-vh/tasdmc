@@ -26,6 +26,8 @@ class ReconstructedEvents(OptionalFiles):
     rufldf_dst: Path
     rufldf_log: Path
 
+    log10E_min: float
+
     @property
     def id_paths(self) -> List[Path]:
         return [self.log]
@@ -52,6 +54,7 @@ class ReconstructedEvents(OptionalFiles):
             sdtrgbk_log=dir / (base_name + ".sdtrgbk.log"),
             rufldf_dst=dir / (base_name + ".rufldf.dst.gz"),
             rufldf_log=dir / (base_name + ".rufldf.log"),
+            log10E_min=sse.log10E_min,
         )
 
     def _check_mandatory_files_contents(self):

@@ -3,7 +3,7 @@ from pathlib import Path
 from dataclasses import fields, is_dataclass
 from functools import lru_cache
 
-from typing import Optional, List, Any, Literal, get_args, get_origin
+from typing import Optional, List, Any, Literal, get_args, get_origin, TypeVar
 
 from tasdmc import fileio, config
 from tasdmc.logs import input_hashes_debug, file_checks_debug
@@ -188,7 +188,7 @@ class Files(ABC):
 
 
 class _AllowedToBeMissingFiles(Files):
-    """Files assume that all files in must_exist must actually exist but this may not be the case"""
+    """Base Files class assumes that all files in must_exist must actually exist but this may not always be required"""
 
     @abstractmethod
     def _get_missing_file_contents_hash(self, file: Path) -> str:
@@ -305,7 +305,7 @@ class OptionalFiles(Files):
 
     def __post_init__(self):
         if set(self.optional).intersection(self.must_exist):
-            raise ValueError(f"All not retained files must also be marked as must_exist")
+            raise ValueError(f"Optional files can't be also marked as must_exist")
 
     @property
     def is_realized(self) -> bool:
@@ -321,7 +321,7 @@ class OptionalFiles(Files):
 
     def _check_optional_files_contents(self):
         """May be overriden in the same way as _check_contents for other Files"""
-        pass            
+        pass
 
 
 @lru_cache(1)
