@@ -1,7 +1,7 @@
 import sys
 import click
 
-from tasdmc import config, system, fileio, nodes
+from tasdmc import config, system, fileio, nodes, pipeline
 from tasdmc.config.update import update_run_config
 from tasdmc.utils import user_confirmation_destructive
 
@@ -10,17 +10,25 @@ from ..options import run_config_option, nodes_config_option
 from ..utils import run_standard_pipeline_in_background, loading_run_by_name, error_catching
 
 
-
 @cli.command("continue", help="Continue execution of aborted run NAME")
 @loading_run_by_name
+@click.option(
+    "--foreground",
+    is_flag=True,
+    default=False,
+    help="Assume that you will background & disown the program yourself",
+)
 @error_catching
-def continue_run_cmd():
+def continue_run_cmd(foreground: bool):
     if config.is_local_run():
         if system.process_alive(pid=fileio.get_saved_main_pid()):
             click.secho(f"Run already alive")
             sys.exit(1)
         fileio.prepare_run_dir(continuing=True)
-        run_standard_pipeline_in_background()
+        if foreground:
+            pipeline.run_simulation()
+        else:
+            run_standard_pipeline_in_background()
     else:
         nodes.check_all()
         nodes.continue_all()
@@ -75,4 +83,3 @@ def update_config_cmd(new_run_config_filename: str, new_nodes_config_filename: s
             config.NodesConfig.load(new_nodes_config_filename)
 
         nodes.update_configs(hard, validate_only)
-

@@ -10,29 +10,34 @@ from ..utils import run_standard_pipeline_in_background, error_catching
 # new run commands
 
 
-@cli.command("run-local", help="Run simulation locally on this machine")
+@cli.command("run-local", help="Run simulation on this machine")
 @run_config_option('run_config_filename')
-@error_catching
-def local_run_cmd(run_config_filename: str):
-    config.RunConfig.load(run_config_filename)
-    fileio.prepare_run_dir()
-    run_standard_pipeline_in_background()
-
-
-@cli.command(
-    "run-local-dry",
-    help="Dry run: create simulation directory, validate config, "
-    + "generate input files and then cleanup as if nothing happened",
+@click.option(
+    "--dry",
+    is_flag=True,
+    default=False,
+    help="Check that simulation is runnable but do not run it",
 )
-@run_config_option('run_config_filename')
+@click.option(
+    "--foreground",
+    is_flag=True,
+    default=False,
+    help="Assume that you will background & disown the program yourself",
+)
 @error_catching
-def local_run_cmd(run_config_filename: str):
+def local_run_cmd(run_config_filename: str, dry: bool, foreground: bool):
     config.RunConfig.load(run_config_filename)
     fileio.prepare_run_dir()
-    try:
-        pipeline.run_simulation(dry=True)
-    finally:
-        fileio.remove_run_dir()
+    if dry:
+        try:
+            pipeline.run_simulation(dry=True)
+        finally:
+            fileio.remove_run_dir()
+        return
+    if foreground:
+        pipeline.run_simulation()
+    else:
+        run_standard_pipeline_in_background()
 
 
 @cli.command("run-distributed", help="Run simulation distributed across several machines (nodes)")
