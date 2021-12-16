@@ -131,7 +131,7 @@ class PipelineProgress(LogData):
         ]
         progress_bar_width = os.get_terminal_size().columns
         for _, color, such_pipelines in display_data:
-            click.secho("█" * ceil(progress_bar_width * such_pipelines / self.total), nl=False, fg=color)
+            click.secho("█" * ceil(float(progress_bar_width) * such_pipelines / self.total), nl=False, fg=color)
         click.echo('')
         for name, color, such_pipelines in display_data:
             click.echo(click.style(" ■", fg=color) + f" {name} ({such_pipelines} / {self.total})")
