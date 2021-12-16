@@ -127,7 +127,7 @@ class PipelineProgress(LogData):
             ('completed', 'green', self.completed),
             ('running', 'yellow', self.running),
             ('pending', 'white', self.pending),
-            ('failed', 'red', self.pending),
+            ('failed', 'red', self.failed),
         ]
         progress_bar_width = os.get_terminal_size().columns
         for _, color, such_pipelines in display_data:
