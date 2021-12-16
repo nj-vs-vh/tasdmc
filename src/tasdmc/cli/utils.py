@@ -7,7 +7,7 @@ from tasdmc.utils import user_confirmation
 
 def run_standard_pipeline_in_background():
     system.run_in_background(pipeline.run_simulation)
-    click.echo(f"Running in the background. Use 'tasdmc ps {config.run_name()}' to check run status")
+    click.echo(f"Running in the background. Use 'tasdmc status {config.run_name()}' to check run status")
 
 
 def load_config_by_run_name(name: str) -> bool:
