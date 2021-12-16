@@ -40,7 +40,7 @@ class TawikiDumpFiles(OptionalFiles):
         )
 
     def _check_mandatory_files_contents(self):
-        check_last_line_contains(self.log, "OK")
+        check_last_line_contains(self.log, "Done")
 
 
 @dataclass
@@ -64,22 +64,19 @@ class TawikiDumpStep(PipelineStep):
         )
 
     def _run(self):
-        with open(self.output.log, 'w') as log:
-            if not self.input_.is_realized:
-                log.write("Not running TA Wiki dump, no reconstructed events found\n\nOK")
-                return
+        if not self.input_.is_realized:
+            with open(self.output.log, "w") as log:
+                log.write("Not running TA Wiki dump because no events were reconstructed")
+            return
 
-            log.write("Running sdascii\n")
-            log.flush()
-            E_min = 10 ** (self.input_.log10E_min - 18)  # log10E -> EeV
-            with Pipes(self.output.log, self.output.log) as pipes:
-                execute_routine(
-                    'sdascii.run',
-                    [self.input_.rufldf_dst, "-no_bw", "-o", self.output.dump, "-emin", E_min],
-                    *pipes,
-                    global_=True,
-                )
-            log.write("\n\nOK\n")
+        E_min = 10 ** (self.input_.log10E_min - 18)  # log10E -> EeV
+        with Pipes(self.output.log, self.output.log) as pipes:
+            execute_routine(
+                'sdascii.run',
+                [self.input_.rufldf_dst, "-no_bw", "-o", self.output.dump, "-emin", E_min],
+                *pipes,
+                global_=True,
+            )
 
 
 # merging
