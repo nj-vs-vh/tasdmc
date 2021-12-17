@@ -49,6 +49,10 @@ class NodeExecutor(ABC):
         set_dot_notation(node_run_config, "input_files.subset.all_weights", NodesConfig.all_weights())
         set_dot_notation(node_run_config, "input_files.subset.this_idx", self.index)
         node_run_config["name"] = self.node_run_name
+        node_run_config["parent_distributed_run"] = {
+            "name": config.run_name(),
+            "host": socket.gethostname(),
+        }
 
         return self.save_to_node(StringIO(yaml.dump(node_run_config, sort_keys=False)))
 

@@ -1,11 +1,34 @@
 import click
 from time import sleep
+from tempfile import NamedTemporaryFile
 
 from tasdmc import config, system, fileio, nodes
 from tasdmc.logs import display as display_logs
 
 from ..group import cli
 from ..utils import loading_run_by_name, error_catching
+
+
+@cli.command("info", help="Display general info for run NAME")
+@loading_run_by_name
+@error_catching
+def info_cmd():
+    click.secho(config.run_name(), bold=True)
+    click.echo(str(config.get_key("description", default="(no description)")) + "\n")
+    if config.is_local_run():
+        click.echo("Local run", nl=False)
+        parent_dict = config.get_key("parent_distributed_run", default=None)
+        if parent_dict is None:
+            click.echo()
+        else:
+            click.echo(f", spawned by distributed run {parent_dict['name']} running on {parent_dict['host']}")
+    else:
+        click.echo(f"Distributed across {len(config.NodesConfig.loaded().contents)} nodes:")
+        config.NodesConfig.dump(stdout=True)
+    click.echo("\n" + "=" * 30 + "\n")
+    click.echo("Run config:\n")
+    config.RunConfig.dump(stdout=True)
+
 
 
 @cli.command("progress", help="Display progress for run NAME")

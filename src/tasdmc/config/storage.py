@@ -5,6 +5,7 @@ import yaml
 from pathlib import Path
 from dataclasses import dataclass, fields, asdict
 from abc import ABC, abstractmethod
+import click
 
 from typing import Optional, Union, Dict, Any, List, TypeVar, ClassVar, Type
 from numbers import Number
@@ -47,9 +48,18 @@ class ConfigContainer:
         pass
 
     @classmethod
-    def dump(cls, filename: Path):
+    def dump(cls, filename: Optional[Path] = None, stdout: bool = False):
         """Used to dump singleton instance"""
-        cls.loaded().dump_instance(filename)
+        if not stdout and filename is None:
+            raise ValueError("Pass stdout=True or filename to dump to")
+        if stdout:
+            filename = Path("/tmp/tasdmc-dumped-config")
+        try:
+            cls.loaded().dump_instance(filename)
+            if stdout:
+                click.echo(filename.read_text())
+        finally:
+            filename.unlink(missing_ok=True)
 
     @abstractmethod
     def dump_instance(self, filename: StrOrPath):
