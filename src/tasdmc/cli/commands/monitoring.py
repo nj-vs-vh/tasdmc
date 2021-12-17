@@ -13,15 +13,20 @@ from ..utils import loading_run_by_name, error_catching
 @loading_run_by_name
 @error_catching
 def info_cmd():
+    click.secho("Run: ", dim=True, nl=False)
     click.secho(config.run_name(), bold=True)
-    click.echo(str(config.get_key("description", default="(no description)")) + "\n")
+    click.secho("Description: ", dim=True, nl=False)
+    click.echo(str(config.get_key("description", default="(none)")))
     if config.is_local_run():
-        click.echo("Local run", nl=False)
+        click.echo("Local", nl=False)
         parent_dict = config.get_key("parent_distributed_run", default=None)
         if parent_dict is None:
             click.echo()
         else:
-            click.echo(f", spawned by distributed run {parent_dict['name']} running on {parent_dict['host']}")
+            click.echo(
+                f", spawned by distributed run {click.style(parent_dict['name'], bold=True)} "
+                + f"running on {click.style(parent_dict['host'], bold=True)}"
+            )
     else:
         click.echo(f"Distributed across {len(config.NodesConfig.loaded().contents)} nodes:")
         config.NodesConfig.dump(stdout=True)
