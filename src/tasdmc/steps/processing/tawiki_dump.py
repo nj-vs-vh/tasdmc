@@ -9,8 +9,8 @@ from typing import List
 from tasdmc import fileio
 from tasdmc.c_routines_wrapper import execute_routine, Pipes
 from tasdmc.steps.utils import check_last_line_contains
-from ..base import OptionalFiles, PipelineStep
-from ..base.files import OptionalFiles
+from ..base.step import PipelineStep
+from ..base.files import OptionalFiles, Files
 from .reconstruction import ReconstructedEvents, ReconstructionStep
 
 
@@ -79,7 +79,7 @@ class TawikiDumpStep(PipelineStep):
             )
 
 
-# merging
+# merging dumps (a bit hacky, TODO: create a normal aggregation step abstraction)
 
 
 @dataclass
@@ -100,15 +100,11 @@ class TawikiDumpFileSet(OptionalFiles):
 
 
 @dataclass
-class MergedTawikiDump(OptionalFiles):
+class MergedTawikiDump(Files):
     merged_dump: Path
 
     @property
     def must_exist(self) -> List[Path]:
-        return []
-
-    @property
-    def optional(self) -> List[Path]:
         return [self.merged_dump]
 
     @classmethod
