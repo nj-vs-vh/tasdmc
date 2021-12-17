@@ -59,7 +59,8 @@ class ConfigContainer:
             if stdout:
                 click.echo(filename.read_text())
         finally:
-            filename.unlink(missing_ok=True)
+            if stdout:
+                filename.unlink(missing_ok=True)
 
     @abstractmethod
     def dump_instance(self, filename: StrOrPath):
