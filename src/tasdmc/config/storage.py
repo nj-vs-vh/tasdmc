@@ -52,15 +52,14 @@ class ConfigContainer:
         """Used to dump singleton instance"""
         if not stdout and filename is None:
             raise ValueError("Pass stdout=True or filename to dump to")
-        if stdout:
-            filename = Path("/tmp/tasdmc-dumped-config")
+        if filename is None:
+            temp_file = Path("/tmp/tasdmc-dumped-config")
         try:
-            cls.loaded().dump_instance(filename)
+            cls.loaded().dump_instance(filename or temp_file)
             if stdout:
-                click.echo(filename.read_text())
+                click.echo(temp_file.read_text())
         finally:
-            if stdout:
-                filename.unlink(missing_ok=True)
+            temp_file.unlink(missing_ok=True)
 
     @abstractmethod
     def dump_instance(self, filename: StrOrPath):
