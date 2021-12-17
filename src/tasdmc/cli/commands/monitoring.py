@@ -28,7 +28,7 @@ def info_cmd():
                 + f"running on {click.style(parent_dict['host'], bold=True)}"
             )
     else:
-        click.echo(f"Distributed across {len(config.NodesConfig.loaded().contents)} nodes:")
+        click.echo(f"Distributed across {len(config.NodesConfig.loaded().contents)} nodes:\n")
         config.NodesConfig.dump(stdout=True)
     click.echo("\n" + "=" * 30 + "\n")
     click.echo("Run config:\n")
