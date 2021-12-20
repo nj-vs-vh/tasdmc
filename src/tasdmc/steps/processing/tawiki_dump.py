@@ -15,21 +15,13 @@ from .reconstruction import ReconstructedEvents, ReconstructionStep
 
 
 @dataclass
-class TawikiDumpFiles(OptionalFiles):
+class TawikiDumpFiles(Files):
     dump: Path
     log: Path
 
     @property
-    def id_paths(self) -> List[Path]:
-        return [self.log]
-
-    @property
     def must_exist(self) -> List[Path]:
         return self.id_paths
-
-    @property
-    def optional(self) -> List[Path]:
-        return [self.dump]
 
     @classmethod
     def from_reconstructed_events(cls, re: ReconstructedEvents) -> TawikiDumpFiles:
@@ -39,7 +31,7 @@ class TawikiDumpFiles(OptionalFiles):
             log=fileio.reconstruction_dir() / (base_name + '.sdascii.log'),
         )
 
-    def _check_mandatory_files_contents(self):
+    def _check_contents(self):
         check_last_line_contains(self.log, "Done")
 
 
@@ -64,12 +56,16 @@ class TawikiDumpStep(PipelineStep):
         )
 
     def _run(self):
+        self.output.dump.touch()  # empty text file for dump is OK even if no event will be written there
         if not self.input_.is_realized:
-            with open(self.output.log, "w") as log:
-                log.write("Not running TA Wiki dump because no events were reconstructed\n\nDone")
+            self.output.log.write_text("Not running TA Wiki dump because no events were reconstructed\n\nDone")
             return
 
-        E_min = 10 ** (self.input_.log10E_min - 18)  # log10E -> EeV
+        # E_min = 10 ** (self.input_.log10E_min - 18)  # log10E -> EeV
+        
+        # using constant default energy cutoff of 1 EeV
+        # TODO: create a config field for all the cuts and use it throughout
+        E_min = 1.0
         with Pipes(self.output.log, self.output.log) as pipes:
             execute_routine(
                 'sdascii.run',
@@ -79,24 +75,22 @@ class TawikiDumpStep(PipelineStep):
             )
 
 
-# merging dumps (a bit hacky, TODO: create a normal aggregation step abstraction)
+# merging dumps 
+# it's a bit hacky
+# TODO: create an aggregation step abstraction
 
 
 @dataclass
-class TawikiDumpFileSet(OptionalFiles):
+class TawikiDumpFileSet(Files):
     tdfs: List[TawikiDumpFiles]
 
     @property
     def id_paths(self) -> List[Path]:
-        return [tdf.log for tdf in self.tdfs]
+        return chain.from_iterable((tdf.log, tdf.dump) for tdf in self.tdfs)
 
     @property
     def must_exist(self) -> List[Path]:
         return self.id_paths
-
-    @property
-    def optional(self) -> List[Path]:
-        return []
 
 
 @dataclass
@@ -119,7 +113,7 @@ class TawikiDumpsMergeStep(PipelineStep):
 
     @property
     def description(self) -> str:
-        return f"Merging all TA Wiki dumps into one file {self.output.merged_dump.relative_to(fileio.run_dir())}"
+        return f"Merging all TA Wiki dumps into {self.output.merged_dump.relative_to(fileio.run_dir())}"
 
     @classmethod
     def from_tawiki_dump_steps(cls, steps: List[TawikiDumpStep]) -> TawikiDumpsMergeStep:
@@ -132,8 +126,6 @@ class TawikiDumpsMergeStep(PipelineStep):
     def _run(self):
         with open(self.output.merged_dump, "w") as out:
             for tdf in self.input_.tdfs:
-                if not tdf.is_realized:
-                    continue
                 with open(tdf.dump, "r") as in_:
                     for line in in_:
                         line = line.strip()
