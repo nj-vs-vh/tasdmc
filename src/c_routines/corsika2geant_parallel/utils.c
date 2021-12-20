@@ -10,8 +10,14 @@ int tileIndex2Coord(int index) // output in meters!
     return ((float)index + 0.5) * TILE_SIDE - (float)DISTMAX;
 }
 
-int time2batchIdx(float time, float startTime) {
-    return (int)(time - startTime) / T_BATCH;
+int time2BatchIdx(float time, float start_time)
+{
+    return (int)(time - start_time) / T_BATCH;
+}
+
+float eloss2VemCount(double eloss)
+{
+    return 100 * (float)eloss / VEM;
 }
 
 void standardNormalPairBM(double pair[2]) // Box-Muller method

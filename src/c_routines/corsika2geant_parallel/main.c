@@ -25,13 +25,13 @@ Based on runcorsd-old/corsika2geant.c
 
 
 // defining global variables
-float minArrivalTimes[NX][NY];
-float interpolationRadius; // radius of area near the core that requires interpolation of values
+float min_arrival_times[NX][NY];
+float interpolation_radius; // radius of area near the core that requires interpolation of values
 
 float emin = 0.0;
-int particleCount = 0;
-int outlierParticleCount = 0;
-int currentBatchIdx = 0;
+int particle_count = 0;
+int outlier_particle_count = 0;
+int current_batch_idx = 0;
 
 
 int main(int argc, char *argv[])
@@ -64,11 +64,9 @@ int main(int argc, char *argv[])
         fprintf(stderr, "minimal arrival time search failed for %s", particle_file);
         exit(EXIT_FAILURE);
     }
-    fprintf(stdout, "Number of Outliers: %d\nTime of Core Impact: %g\n", outlierParticleCount, event_data.tmin);
+    fprintf(stdout, "Number of Outliers: %d\nTime of Core Impact: %g\n", outlier_particle_count, event_data.tmin);
     inetrpolateArrivalTimes();
     quantizeArrivalTimes(event_data.tmin);
-
-
 
     fprintf(stdout, "OK");
     exit(EXIT_SUCCESS);
