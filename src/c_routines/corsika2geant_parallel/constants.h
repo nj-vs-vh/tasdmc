@@ -13,18 +13,18 @@
 
 // physical constants and detector's tile configuration
 
-#define SINSITIVE_SQUARE_SIDE 16800  // meters/10 (??? probably just meters???)
+#define MAP_SIDE 16800  // meters
 #define TILE_SIDE 6  // meters
-#define DISTMAX SINSITIVE_SQUARE_SIDE / 2 
-#define NX SINSITIVE_SQUARE_SIDE / TILE_SIDE
-#define NY SINSITIVE_SQUARE_SIDE / TILE_SIDE
+#define DISTMAX MAP_SIDE / 2 
+#define NX MAP_SIDE / TILE_SIDE
+#define NY MAP_SIDE / TILE_SIDE
 
-#define DT 20
-#define FRAC 0.99
-#define EMIN 0.003
+#define SENTINEL_TIME 1e9
+
+
+#define DT 20  // nanosecons
 
 #define VEM 2.05 /* MeV */
-#define SRL 0.06
 #define CSPEED 29.97925 /* cm/nsec */
 #define TMAX 1280
 #define PI 3.14159265359
@@ -42,7 +42,5 @@ static const float observationLevel = 1430.e2; // cm, above sea level
 #define NPART 7  // floats in particle record 
 #define NWORD NPART *NSENTENCE
 #define NSUBBLOCK 21  // data sub-blocks per block
-
-#define EXIT_FAILURE_DOUBLE -1.0 // replacement for EXIT_FAILURE for double-returning func
 
 #endif

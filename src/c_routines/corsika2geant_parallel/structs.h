@@ -21,9 +21,9 @@ typedef struct ParticleFileStats
 
 typedef struct EventHeaderData
 {
-    float eventbuf[NWORD]; // event header buffer verbatim, see GUIDE p. 127
-    float origin[3];       // first interaction point
-    float tmin;            // from origin to the observation level
+    float eventbuf[NWORD]; // event header buffer verbatim, see CORSIKA GUIDE p. 127
+    float origin[3];       // first interaction point (?)
+    float tmin;            // from origin to the observation level along shower axis with the speed of light
     float zenith;
 } EventHeaderData;
 
