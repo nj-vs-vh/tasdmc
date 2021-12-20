@@ -189,11 +189,10 @@ double corsika_vem(char *filename, char *tmpfile, int tcount)
                     {
                         m = (int)((buf3[4] + (float)(100 * DISTMAX)) / 600.);
                         n = (int)((buf3[5] + (float)(100 * DISTMAX)) / 600.);
-                        k = (int)((buf3[6] - time1[m][n] -
-                                   (float)(NT * DT * tcount)) /
-                                  DT);
-                        if (buf3[6] >= time1[m][n] + (float)(NT * DT * tcount) && buf3[6] <
-                                                                                      time1[m][n] + (float)(NT * DT * (tcount + 1)))
+                        k = (int)((buf3[6] - time1[m][n] - (float)(NT * DT * tcount)) / DT);
+                        if (
+                            buf3[6] >= time1[m][n] + (float)(NT * DT * tcount) &&
+                            buf3[6] < time1[m][n] + (float)(NT * DT * (tcount + 1)))
                         {
                             energy = hypotf(buf3[3],
                                             hypotf(buf3[1], buf3[2]));
@@ -201,9 +200,7 @@ double corsika_vem(char *filename, char *tmpfile, int tcount)
                             energy = hypotf(pmass[(int)(buf3[0] / 1000.)],
                                             energy) -
                                      pmass[(int)(buf3[0] / 1000.)];
-                            k = (int)((buf3[6] - time1[m][n] -
-                                       (float)(NT * DT * tcount)) /
-                                      (float)DT);
+                            k = (int)((buf3[6] - time1[m][n] - (float)(NT * DT * tcount)) / (float)DT);
                             if (energy > emin / 1.e6)
                             {
                                 count2++;

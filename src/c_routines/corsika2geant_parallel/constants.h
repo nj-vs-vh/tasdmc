@@ -22,7 +22,8 @@
 #define SENTINEL_TIME 1e9
 
 
-#define DT 20  // nanosecons
+#define DT 20  // nanoseconds, a bin length for time quantization
+#define T_BATCH DT * NT // length of time bins' batch; NT gives a number of time bins in a batch
 
 #define VEM 2.05 /* MeV */
 #define CSPEED 29.97925 /* cm/nsec */
