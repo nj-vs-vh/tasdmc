@@ -8,9 +8,9 @@ from typing import List
 
 from tasdmc import fileio
 from tasdmc.c_routines_wrapper import execute_routine, Pipes
-from tasdmc.steps.utils import check_last_line_contains
+from tasdmc.steps.utils import check_last_line_contains, log10E2str
 from ..base.step import PipelineStep
-from ..base.files import OptionalFiles, Files
+from ..base.files import Files
 from .reconstruction import ReconstructedEvents, ReconstructionStep
 
 
@@ -18,6 +18,8 @@ from .reconstruction import ReconstructedEvents, ReconstructionStep
 class TawikiDumpFiles(Files):
     dump: Path
     log: Path
+
+    log10E_min: float
 
     @property
     def must_exist(self) -> List[Path]:
@@ -29,6 +31,7 @@ class TawikiDumpFiles(Files):
         return TawikiDumpFiles(
             dump=fileio.reconstruction_dir() / (base_name + '.sdascii'),
             log=fileio.reconstruction_dir() / (base_name + '.sdascii.log'),
+            log10E_min=re.log10E_min,
         )
 
     def _check_contents(self):
@@ -103,8 +106,8 @@ class MergedTawikiDump(Files):
         return self.all_files
 
     @classmethod
-    def new(cls) -> MergedTawikiDump:
-        dump = fileio.final_dir() / "tawiki_dump.sdascii"
+    def new(cls, log10E_min: float) -> MergedTawikiDump:
+        dump = fileio.final_dir() / f"tawiki_dump.{log10E2str(log10E_min)}.sdascii"
         return MergedTawikiDump(
             merged_dump=dump,
             log=Path(str(dump) + ".log"),
@@ -121,10 +124,10 @@ class TawikiDumpsMergeStep(PipelineStep):
         return f"Merging all TA Wiki dumps into {self.output.merged_dump.relative_to(fileio.run_dir())}"
 
     @classmethod
-    def from_tawiki_dump_steps(cls, steps: List[TawikiDumpStep]) -> TawikiDumpsMergeStep:
+    def from_tawiki_dump_steps(cls, steps: List[TawikiDumpStep], log10E_min: float) -> TawikiDumpsMergeStep:
         return TawikiDumpsMergeStep(
             input_=TawikiDumpFileSet([s.output for s in steps]),
-            output=MergedTawikiDump.new(),
+            output=MergedTawikiDump.new(log10E_min),
             previous_steps=steps,
         )
 

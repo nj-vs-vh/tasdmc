@@ -130,3 +130,7 @@ def passed(check_fn: Callable[[CheckFnArgs], None]) -> Callable[[CheckFnArgs], b
             return False
 
     return wrapped
+
+
+def log10E2str(log10E: float) -> str:
+    return str(round(log10E, ndigits=2)).replace('.', '').ljust(4, '0')

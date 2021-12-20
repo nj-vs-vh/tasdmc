@@ -15,7 +15,7 @@ from tasdmc.c_routines_wrapper import execute_routine, Pipes
 from tasdmc.steps.corsika_cards_generation import log10E_bounds_from_config
 from tasdmc.steps.processing.tothrow_generation import dnde_exponent_from_config
 
-from tasdmc.steps.utils import check_file_is_empty, check_last_line_contains, check_dst_file_not_empty
+from tasdmc.steps.utils import check_file_is_empty, check_last_line_contains, check_dst_file_not_empty, log10E2str
 
 
 @dataclass
@@ -38,7 +38,7 @@ class SpectralSampledEvents(OptionalFiles):
     def from_events_file(cls, events_file: EventFiles, log10E_min: float) -> SpectralSampledEvents:
         dir = fileio.spectral_sampled_events_dir()
         datname = events_file.merged_events_file.name.split('.')[0]
-        log10E_min_str = str(log10E_min).replace('.', '').ljust(4, '0')
+        log10E_min_str = log10E2str(log10E_min)
         return SpectralSampledEvents(
             events=dir / f"{datname}.spctr.{log10E_min_str}.dst.gz",
             stdout=dir / f"{datname}.spctr.{log10E_min_str}.stdout",

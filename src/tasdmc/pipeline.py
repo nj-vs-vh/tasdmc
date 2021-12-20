@@ -2,6 +2,7 @@ from concurrent.futures import ProcessPoolExecutor, Future, wait
 import multiprocessing as mp
 from pathlib import Path
 from ctypes import c_int8
+from collections import defaultdict
 
 from typing import List
 
@@ -28,7 +29,7 @@ from tasdmc.utils import batches
 def get_steps(corsika_card_paths: List[Path], include_global: bool = True) -> List[PipelineStep]:
     """List of pipeline steps *in order of optimal execution*"""
     add_tawiki_steps = bool(config.get_key("pipeline.produce_tawiki_dumps", default=False))
-    tawiki_dump_steps = []
+    tawiki_dump_steps_by_log10Emin = defaultdict(list)
 
     steps: List[PipelineStep] = []
     corsika_steps = CorsikaStep.from_corsika_cards(corsika_card_paths)
@@ -52,10 +53,11 @@ def get_steps(corsika_card_paths: List[Path], include_global: bool = True) -> Li
                 steps.append(reconstruction)
                 if add_tawiki_steps:
                     tawiki_dump = TawikiDumpStep.from_reconstruction_step(reconstruction)
-                    tawiki_dump_steps.append(tawiki_dump)
+                    tawiki_dump_steps_by_log10Emin[reconstruction.input_.log10E_min].append(tawiki_dump)
                     steps.append(tawiki_dump)
     if add_tawiki_steps and include_global:
-        steps.append(TawikiDumpsMergeStep.from_tawiki_dump_steps(tawiki_dump_steps))
+        for log10E_min, tawiki_dump_steps in tawiki_dump_steps_by_log10Emin.items():
+            steps.append(TawikiDumpsMergeStep.from_tawiki_dump_steps(tawiki_dump_steps, log10E_min))
     return steps
 
 
