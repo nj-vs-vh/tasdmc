@@ -6,11 +6,10 @@ from concurrent.futures import ProcessPoolExecutor
 from time import sleep
 from concurrent.futures import Future
 import traceback
-from random import random
 
 from typing import Optional, List
 
-from tasdmc import logs
+from tasdmc import logs, config
 from tasdmc.logs import step_progress, pipeline_progress
 from .files import Files
 from .step_status_shared import StepRuntimeStatus
@@ -124,7 +123,8 @@ class PipelineStep(ABC):
             # actual step run
             logs.multiprocessing_info(f"{self.description}")
             try:
-                if self.output.files_were_produced() and self.input_.same_hash_as_stored():
+                force_rerun = self.__class__.__name__ in config.get_key("debug.force_rerun_steps", default=[])
+                if not force_rerun and self.output.files_were_produced() and self.input_.same_hash_as_stored():
                     step_progress.skipped(self)
                 else:
                     step_progress.started(self)

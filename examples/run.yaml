@@ -68,3 +68,6 @@ debug:  # all are False/empty by default
   file_checks: False  # write to file_checks_debug.log when file check fails
   external_routine_commands: False  # write to routine_cmd_debug.log external routine invocations
   pipelines_mask: []  # limit run only to these DATnnnnnn pipelines
+  force_rerun_steps: [] # list of step names that should be rerun regardless of their existing
+                        # output files step names here should match class names
+                        # (e.g. ReconstructionStep, see full list in tasdmc.steps.__init__.py)
