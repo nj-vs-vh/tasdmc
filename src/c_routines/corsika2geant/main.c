@@ -109,10 +109,7 @@ int main(int argc, char *argv[])
                     {
                         buf[2] = vemcount[m][n][i][0];
                         buf[3] = vemcount[m][n][i][1];
-                        buf[4] = (unsigned short)((time1[m][n] +
-                                                   (float)(tcount * DT * NT) +
-                                                   (float)(i * DT) - tmin) /
-                                                  DT);
+                        buf[4] = (unsigned short)((time1[m][n] + (float)(tcount * DT * NT) + (float)(i * DT) - tmin) / DT);
                         buf[5] = pz[m][n][i];
                         if (buf[5] == 0 || 2 * buf[5] > buf[2] + buf[3])
                             buf[5] = (unsigned short)(cosf(zenith) * (float)(buf[2] + buf[3]) / 2.);
@@ -150,10 +147,7 @@ int main(int argc, char *argv[])
                         {
                             buf[2] = vemcount[m][n][i][0];
                             buf[3] = vemcount[m][n][i][1];
-                            buf[4] = (unsigned short)((time1[m][n] +
-                                                       (float)(tcount * DT * NT) +
-                                                       (float)(i * DT) - tmin) /
-                                                      DT);
+                            buf[4] = (unsigned short)((time1[m][n] + (float)(tcount * DT * NT) + (float)(i * DT) - tmin) / DT);
                             buf[5] = pz[m][n][i];
                             if (buf[5] == 0 || 2 * buf[5] > buf[2] + buf[3])
                                 buf[5] = (unsigned short)(cosf(zenith) * (float)(buf[2] + buf[3]) / 2.);
