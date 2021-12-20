@@ -21,7 +21,7 @@ class TawikiDumpFiles(Files):
 
     @property
     def must_exist(self) -> List[Path]:
-        return self.id_paths
+        return self.all_files
 
     @classmethod
     def from_reconstructed_events(cls, re: ReconstructedEvents) -> TawikiDumpFiles:
@@ -69,7 +69,7 @@ class TawikiDumpStep(PipelineStep):
         with Pipes(self.output.log, self.output.log) as pipes:
             execute_routine(
                 'sdascii.run',
-                [self.input_.rufldf_dst, "-no_bw", "-o", self.output.dump, "-emin", E_min],
+                [self.input_.rufldf_dst, "-no_bw", "-f", "-o", self.output.dump, "-emin", E_min, "-tb"],
                 *pipes,
                 global_=True,
             )

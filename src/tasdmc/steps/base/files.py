@@ -119,24 +119,17 @@ class Files(ABC):
     # methods for calculating Files' hash and storing it on disk for later check
 
     @property
-    def id_paths(self) -> Optional[List[Path]]:
+    def id_paths(self) -> List[Path]:
         """Explicit list of file paths that uniquely identify the Files instance
 
-        If not overriden by a subclass and subclass is a dataclass, all Path and List[Path] fields are used.
+        If not overriden by a subclass and subclass is a dataclass, all files' paths are used to ID.
         """
-        return None
-
-    @property
-    def _id_paths(self) -> List[Path]:
-        if self.id_paths is not None:
-            return self.id_paths
-        else:
-            return self.all_files
+        return self.all_files
 
     @property
     def id_(self) -> str:
         """Unique identitifer for Files instance"""
-        paths_id = concatenate_and_hash(self._id_paths)
+        paths_id = concatenate_and_hash(self.id_paths)
         return f"{self.__class__.__name__}.{paths_id}"
 
     @property
@@ -159,7 +152,7 @@ class Files(ABC):
             pass
 
         file_hashes = []
-        for file in self._id_paths:
+        for file in self.id_paths:
             file_hashes.append(self._get_file_contents_hash(file))
         contents_hash = concatenate_and_hash(file_hashes)
 
