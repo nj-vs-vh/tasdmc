@@ -10,13 +10,13 @@
 // extern unsigned short pz[NX][NY][NT];
 
 extern float emin;
-extern int particleCount = 0;
-extern int outlierParticleCount = 0;
+extern int particle_count = 0;
+extern int outlier_particle_count = 0;
 
-extern float interpolationRadius;
+extern float interpolation_radius;
 
-extern float minArrivalTimes[NX][NY];
-extern int currentBatchIdx;
+extern float min_arrival_times[NX][NY];
+extern int current_batch_idx;
 extern FILE* temp_now;
 extern FILE* temp_later;
 
