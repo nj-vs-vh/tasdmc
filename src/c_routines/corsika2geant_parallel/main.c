@@ -27,9 +27,11 @@ Based on runcorsd-old/corsika2geant.c
 // defining global variables
 float minArrivalTimes[NX][NY];
 float interpolationRadius; // radius of area near the core that requires interpolation of values
-float emin;
+
+float emin = 0.0;
 int particleCount = 0;
 int outlierParticleCount = 0;
+int currentBatchIdx = 0;
 
 
 int main(int argc, char *argv[])
@@ -53,7 +55,6 @@ int main(int argc, char *argv[])
 
     FILE *fout;
     srand48(314159265);
-    emin = 0.;
 
     ParticleFileStats stats;
     EventHeaderData event_data;

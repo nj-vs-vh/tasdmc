@@ -26,7 +26,7 @@ void readEventHeaderData(EventHeaderData *d, FILE *file)
     d->origin[1] = -d->eventbuf[8] / d->eventbuf[9] * (d->eventbuf[6] - observationLevel);
     d->origin[2] = d->eventbuf[6];
     d->tmin = hypotf(hypotf(d->origin[0], d->origin[1]), d->origin[2] - observationLevel) / CSPEED;
-    d->zenith = eventbuf[10];
+    d->zenith = d->eventbuf[10];
 }
 
 void readParticleData(ParticleData *pd, FILE *file)
@@ -36,6 +36,7 @@ void readParticleData(ParticleData *pd, FILE *file)
     float p = hypotf(pd->partbuf[3], hypotf(pd->partbuf[1], pd->partbuf[2]));
     float mass = pmass[pd->id];
     pd->energy = hypotf(mass, p) - mass;
+    pd->sectheta = p / pd->partbuf[3];
 }
 
 // Generic iterator over CORSIKA output particle file, executing a callback on each particle

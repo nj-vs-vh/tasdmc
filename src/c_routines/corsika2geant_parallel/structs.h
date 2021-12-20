@@ -7,6 +7,7 @@ files and some common operations on them
 #define STRUCTS_H_
 
 #include "constants.h"
+#include <stdbool.h>
 
 typedef struct ParticleFileStats
 {
@@ -34,9 +35,9 @@ typedef struct ParticleData
         4, 5: position in observation level plane, cm; 6: t since first interaction, ns
     */
     float partbuf[NPART];
-    // some derived values
     int id;
-    float energy;
+    float energy;  // in GeV
+    float sectheta;
 } ParticleData;
 
 bool particleGeometricalCut(ParticleData* pd);
