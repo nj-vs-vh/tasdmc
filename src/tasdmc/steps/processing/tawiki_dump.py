@@ -85,25 +85,30 @@ class TawikiDumpFileSet(Files):
     tdfs: List[TawikiDumpFiles]
 
     @property
-    def id_paths(self) -> List[Path]:
+    def all_files(self) -> List[Path]:
         return chain.from_iterable((tdf.log, tdf.dump) for tdf in self.tdfs)
 
     @property
     def must_exist(self) -> List[Path]:
-        return self.id_paths
+        return self.all_files
 
 
 @dataclass
 class MergedTawikiDump(Files):
     merged_dump: Path
+    log: Path
 
     @property
     def must_exist(self) -> List[Path]:
-        return [self.merged_dump]
+        return self.all_files
 
     @classmethod
     def new(cls) -> MergedTawikiDump:
-        return MergedTawikiDump(fileio.final_dir() / "tawiki_dump.sdascii")
+        dump = fileio.final_dir() / "tawiki_dump.sdascii"
+        return MergedTawikiDump(
+            merged_dump=dump,
+            log=Path(str(dump) + ".log"),
+        )
 
 
 @dataclass
@@ -124,10 +129,13 @@ class TawikiDumpsMergeStep(PipelineStep):
         )
 
     def _run(self):
-        with open(self.output.merged_dump, "w") as out:
+        with open(self.output.merged_dump, "w") as out, open(self.output.log, "w") as log:
             for tdf in self.input_.tdfs:
+                line_count = 0
                 with open(tdf.dump, "r") as in_:
                     for line in in_:
                         line = line.strip()
                         if line:
+                            line_count += 1
                             out.write(line + '\n')
+                log.write(f"{tdf.dump.relative_to(fileio.run_dir())} - {line_count}\n")
