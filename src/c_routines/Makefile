@@ -71,7 +71,7 @@ C2G_PBINDIR = ${BINDIR}/${C2G_P}
 ${C2G_PBINDIR}: | ${BINDIR}
 	${MKDIR_RECIPE}
 
-C2G_P_OBJS = $(addsuffix .o, $(addprefix ${C2G_PBINDIR}/, main corsika_vem_init corsika_vem eloss_sdgeant iterator structs))
+C2G_P_OBJS = $(addsuffix .o, $(addprefix ${C2G_PBINDIR}/, main eloss_sdgeant iterator structs vem arrival_times utils))
 
 # calculating 16 * (memory in Gb) with bc & deleting everything after decimal point from output
 NT_VALUE := $(shell echo "16 * ${TASDMC_MEMORY_PER_PROCESS_GB}" | bc | cut -d '.' -f 1)

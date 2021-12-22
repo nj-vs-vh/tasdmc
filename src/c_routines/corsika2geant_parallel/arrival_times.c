@@ -1,7 +1,7 @@
 #include "./constants.h"
 #include "./globals.h"
 #include "./structs.h"
-
+#include "./utils.h"
 
 void initArrivalTimes()
 {
@@ -41,14 +41,14 @@ void inetrpolateArrivalTimes()
     while (min_arrival_times[m_edge][NY / 2] == SENTINEL_TIME)
         m_edge++;
     interpolation_radius = tileIndex2Coord(m_edge) + 2.0;
-    int fill_tiles = m_edge - NX / 2 + 5;
+    int d_idx = m_edge - NX / 2 + 5;
     printf("Annulus Diameter: %g meters\n", interpolation_radius);
 
     int m_closest, m_farthest, n_closest, n_farthest;
     float x, y, x_ring_closest, y_ring_closest;
     float rad_fraction;
-    for (int m = NX / 2 - fill_tiles; m < NX / 2 + fill_tiles; m++)
-        for (int n = NY / 2 - fill_tiles; n < NY / 2 + fill_tiles; n++)
+    for (int m = NX / 2 - d_idx; m < NX / 2 + d_idx; m++)
+        for (int n = NY / 2 - d_idx; n < NY / 2 + d_idx; n++)
         {
             x = tileIndex2Coord(m);
             y = tileIndex2Coord(n);
@@ -63,8 +63,8 @@ void inetrpolateArrivalTimes()
                 n_farthest = coord2TileIndex(-y_ring_closest);
                 min_arrival_times[m][n] = 0.5 * (min_arrival_times[m_closest][n_closest] + min_arrival_times[m_farthest][n_farthest]);
                 min_arrival_times[m][n] += (min_arrival_times[m_closest][n_closest] - min_arrival_times[m_farthest][n_farthest]) /
-                                         rad_fraction /
-                                         2.0;
+                                           rad_fraction /
+                                           2.0;
             }
         }
 }

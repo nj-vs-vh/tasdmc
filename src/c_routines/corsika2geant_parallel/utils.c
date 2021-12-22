@@ -1,24 +1,4 @@
-#include "./constants.h"
-
-int coord2TileIndex(float coord) // input in cm
-{
-    return (int)((coord + (float)(100 * DISTMAX)) / (TILE_SIDE * 100.0));
-}
-
-int tileIndex2Coord(int index) // output in meters!
-{
-    return ((float)index + 0.5) * TILE_SIDE - (float)DISTMAX;
-}
-
-int time2BatchIdx(float time, float start_time)
-{
-    return (int)(time - start_time) / T_BATCH;
-}
-
-float eloss2VemCount(double eloss)
-{
-    return 100 * (float)eloss / VEM;
-}
+#include "./utils.h"
 
 void standardNormalPairBM(double pair[2]) // Box-Muller method
 {
