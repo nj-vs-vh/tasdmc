@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "./globals.h"
 #include "./constants.h"
 #include "./structs.h"
@@ -41,7 +43,7 @@ void sumBatchElosses(ParticleData *pd, EventHeaderData *ed)
             double eloss_bot;
             get_elosses(pd->id, (double)(pd->energy * 1000), (double)(pd->sectheta), &eloss_top, &eloss_bot);
             double normal_pair[2];
-            standardNormalPairBM(normal_pair);
+            getStandardNormalPair(normal_pair);
             float vemcount_from_particle_top = eloss2VemCount(eloss_top * (1. + 0.07 * normal_pair[0]));
             float vemcount_from_particle_bot = eloss2VemCount(eloss_bot * (1. + 0.07 * normal_pair[1]));
             vemcount[m][n][k][0] += (unsigned short)rintf(vemcount_from_particle_top);
@@ -52,6 +54,8 @@ void sumBatchElosses(ParticleData *pd, EventHeaderData *ed)
     else if (batch_idx > current_batch_idx)
     {
         fwrite(pd->partbuf, sizeof(float), NPART, temp_later);
+    } else {
+        fprintf(stdout, "OOPS");
     }
 }
 

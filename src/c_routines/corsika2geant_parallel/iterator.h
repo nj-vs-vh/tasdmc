@@ -11,7 +11,7 @@ bool iterateCorsikaParticleFile(
     EventHeaderData *event_header_data,
     bool verbose);
 
-bool iteratePlainParticleFile(
+void iteratePlainParticleFile(
     FILE *plain_particle_stream,
     void (*processParticle)(ParticleData *, EventHeaderData *),
     EventHeaderData *event_header_data);

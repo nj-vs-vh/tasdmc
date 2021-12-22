@@ -14,6 +14,6 @@
 
 #define eloss2VemCount(eloss) 100 * (float)eloss / VEM
 
-void standardNormalPairBM(double pair[2]);
+void getStandardNormalPair(double pair[2]);
 
 #endif

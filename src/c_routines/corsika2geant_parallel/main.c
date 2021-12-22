@@ -16,8 +16,8 @@ Based on runcorsd-old/corsika2geant.c
 #include <errno.h>
 
 #include "./eloss_sdgeant.h"
-#include "./iterator.h";
-#include "./structs.h";
+#include "./iterator.h"
+#include "./structs.h"
 #include "./globals.h"
 #include "./utils.h"
 
@@ -137,7 +137,6 @@ int main(int argc, char *argv[])
                 "Particles in batch %d: %d; %.4f%% processed\n",
                 current_batch_idx, particle_count, 100 * (float)cumulative_particle_count / (float)total_particle_count);
     }
-
     fclose(temp_now);
     fclose(temp_later);
 

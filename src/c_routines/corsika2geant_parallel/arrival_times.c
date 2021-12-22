@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "./constants.h"
 #include "./globals.h"
 #include "./structs.h"

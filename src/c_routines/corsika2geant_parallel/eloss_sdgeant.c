@@ -143,7 +143,7 @@ int load_elosses(const char *geantfname)
 
     mode = MODE_READ_DST;
     inUnit = ELOSS_SDGEANT_DSTUNIT;
-    rc = dstOpenUnit(inUnit, geantfname, mode);
+    rc = dstOpenUnit(inUnit, (char *)geantfname, mode);
     if (rc != SUCCESS)
     {
         printErr("load_elosses: can't dst-open (unit %d) %s", inUnit, geantfname);
