@@ -4,6 +4,7 @@
 #include <libgen.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "./globals.h"
 #include "./iterator.h"
@@ -19,14 +20,18 @@ void initParticleFileStats(ParticleFileStats *s)
     s->n_blocks_total = 0;
 }
 
-void readEventHeaderData(EventHeaderData *d, FILE *file)
+bool readEventHeaderData(EventHeaderData *d, FILE *file)
 {
-    fread(d->eventbuf, sizeof(float), NWORD, file);
+    if (fread(d->eventbuf, sizeof(float), NWORD, file) != NWORD)
+    {
+        return false;
+    }
     d->origin[0] = -d->eventbuf[7] / d->eventbuf[9] * (d->eventbuf[6] - observationLevel);
     d->origin[1] = -d->eventbuf[8] / d->eventbuf[9] * (d->eventbuf[6] - observationLevel);
     d->origin[2] = d->eventbuf[6];
     d->tmin = hypotf(hypotf(d->origin[0], d->origin[1]), d->origin[2] - observationLevel) / CSPEED;
     d->zenith = d->eventbuf[10];
+    return true;
 }
 
 bool readParticleData(ParticleData *pd, FILE *file)
@@ -86,7 +91,11 @@ bool iterateCorsikaParticleFile(
             else if (!strcmp("EVTH", block_name))
             {
                 stats->nEVTH++;
-                readEventHeaderData(event_header_data, fparticle);
+                if (!readEventHeaderData(event_header_data, fparticle))
+                {
+                    fprintf(stderr, "Can't read header data block from %s", particle_filename);
+                    return false;
+                }
             }
             else if (!strcmp("LONG", block_name))
             {
@@ -132,7 +141,7 @@ bool iterateCorsikaParticleFile(
 
 // Same as CORSIKA particle file, but stripped of all the headers and non-particle data,
 // contains a sequence of 7 float particle blocks
-bool iteratePlainParticleFile(
+void iteratePlainParticleFile(
     FILE *plain_particle_stream,
     void (*processParticle)(ParticleData *, EventHeaderData *),
     EventHeaderData *event_header_data // just passed through to the callback, not modified

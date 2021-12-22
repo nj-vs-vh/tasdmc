@@ -1,6 +1,8 @@
+#include <math.h>
+
 #include "./utils.h"
 
-void standardNormalPairBM(double pair[2]) // Box-Muller method
+void getStandardNormalPair(double pair[2]) // Box-Muller method
 {
     double r, phi;
     r = sqrt(-2.0 * log(drand48()));
