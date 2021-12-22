@@ -29,19 +29,22 @@ void readEventHeaderData(EventHeaderData *d, FILE *file)
     d->zenith = d->eventbuf[10];
 }
 
-void readParticleData(ParticleData *pd, FILE *file)
+bool readParticleData(ParticleData *pd, FILE *file)
 {
-    fread(pd->partbuf, sizeof(float), NPART, file);
+    if (fread(pd->partbuf, sizeof(float), NPART, file) != NPART)
+    {
+        return false;
+    }
     pd->id = (int)pd->partbuf[0] / 1000.0;
     float p = hypotf(pd->partbuf[3], hypotf(pd->partbuf[1], pd->partbuf[2]));
     float mass = pmass[pd->id];
     pd->energy = hypotf(mass, p) - mass;
     pd->sectheta = p / pd->partbuf[3];
+    return true;
 }
 
-// Generic iterator over CORSIKA output particle file, executing a callback on each particle
-// returns success flag
-bool iterateParticleFile(
+// Generic iterator over CORSIKA particle file, executing a callback on each particle; returns success flag
+bool iterateCorsikaParticleFile(
     const char *particle_filename,
     void (*processParticle)(ParticleData *, EventHeaderData *),
     ParticleFileStats *stats,
@@ -64,7 +67,7 @@ bool iterateParticleFile(
     }
     if (verbose)
     {
-        fprintf(stdout, "Opening %s file\n", particle_filename);
+        fprintf(stdout, "\tOpening %s file\n", particle_filename);
     }
     while (fread(&blocklen, sizeof(int), 1, fparticle))
     {
@@ -102,10 +105,14 @@ bool iterateParticleFile(
             }
             else
             {
-                for (int iParticleSubblock = 0; iParticleSubblock < NSENTENCE; iParticleSubblock++)
+                for (int i_part_subblock = 0; i_part_subblock < NSENTENCE; i_part_subblock++)
                 {
                     stats->nPARTSUB++;
-                    readParticleData(&particle_data, fparticle);
+                    if (!readParticleData(&particle_data, fparticle))
+                    {
+                        fprintf(stderr, "Can't read %d-th particle subblock from %s", i_part_subblock, particle_filename);
+                        return false;
+                    }
                     processParticle(&particle_data, event_header_data);
                 }
             }
@@ -115,10 +122,23 @@ bool iterateParticleFile(
     fclose(fparticle);
     if (verbose)
     {
-        printf("read %d blocks\n", stats->n_blocks_total);
+        printf("\tread %d blocks\n", stats->n_blocks_total);
         printf(
-            "RUNH: %d, EVTH: %d, PARTSUB: %d, LONG: %d, EVTE: %d, RUNE: %d\n",
+            "\tRUNH: %d, EVTH: %d, PARTSUB: %d, LONG: %d, EVTE: %d, RUNE: %d\n",
             stats->nRUNH, stats->nEVTH, stats->nPARTSUB, stats->nLONG, stats->nEVTE, stats->nRUNE);
     }
     return true;
+}
+
+// Same as CORSIKA particle file, but stripped of all the headers and non-particle data,
+// contains a sequence of 7 float particle blocks
+bool iteratePlainParticleFile(
+    FILE *plain_particle_stream,
+    void (*processParticle)(ParticleData *, EventHeaderData *),
+    EventHeaderData *event_header_data // just passed through to the callback, not modified
+)
+{
+    ParticleData particle_data;
+    while (readParticleData(&particle_data, plain_particle_stream))
+        processParticle(&particle_data, event_header_data);
 }
