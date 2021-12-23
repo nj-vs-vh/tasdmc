@@ -15,7 +15,7 @@ void initArrivalTimes()
 void saveArrivalTime(ParticleData *pd, EventHeaderData *ed)
 {
     int m, n;
-    if (particlePhysicalCut(pd) && particleGeometricalCut(pd))
+    if (particlePhysicalCut(pd, emin) && particleGeometricalCut(pd))
     {
         particle_count++;
         m = coord2TileIndex(pd->partbuf[4]);

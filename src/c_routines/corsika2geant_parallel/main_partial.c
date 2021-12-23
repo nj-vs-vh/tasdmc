@@ -104,8 +104,9 @@ int main(int argc, char *argv[])
     {
         fprintf(
             stderr,
-            "corsika2geant_parallel is a rewrite of corsika2geant that processes a single dethinned file and produces a 'partial' tile file\n"
-            "partial tile files should then be merged together\n\n"
+            "corsika2geant_parallel_process.run is a rewrite of corsika2geant.run that processes a "
+            "single dethinned particle file and produces a partial tile file\n"
+            "partial tile files should then be merged together by corsik2geant_parallel_merge.run\n\n"
             "accepts exactly 3 command-line arguments:\n"
             "\tdethinned CORSIKA particle file path\n"
             "\tsdgeant.dst file path\n"
