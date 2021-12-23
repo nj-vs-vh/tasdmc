@@ -22,7 +22,13 @@ typedef struct ParticleFileStats
 
 typedef struct EventHeaderData
 {
-    float eventbuf[NWORD]; // event header buffer verbatim, see CORSIKA GUIDE p. 127
+    /* CORSIKA event header verbatim, see CORSIKA GUIDE p. 127:
+        Some useful fields:
+        2 - particle ID
+        3 - energy in GeV
+        10 - theta (zenith) angle
+    */
+    float eventbuf[NWORD];
     float origin[3];       // first interaction point (?)
     float tmin;            // from origin to the observation level along shower axis with the speed of light
     float zenith;

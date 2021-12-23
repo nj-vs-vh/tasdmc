@@ -11,22 +11,22 @@
 #error Array size variable 'NT' has not been defined. Use -DNT=16, 32, 64, etc compilation option
 #endif
 
-// physical constants and detector's tile configuration
+// physical constants and tile map configuration
 
-#define MAP_SIDE 16800  // meters
-#define TILE_SIDE 6  // meters
-#define DISTMAX MAP_SIDE / 2 
-#define NX MAP_SIDE / TILE_SIDE
-#define NY MAP_SIDE / TILE_SIDE
+#define MAP_SIDE 16800 // meters
+#define TILE_SIDE 6    // meters
+#define DISTMAX (MAP_SIDE / 2)
+#define NX (MAP_SIDE / TILE_SIDE)
+#define NY (MAP_SIDE / TILE_SIDE)
 
 #define SENTINEL_TIME 1e9
 
-#define DT 20  // nanoseconds, a bin length for time quantization
-#define T_BATCH DT * NT // length of time bins' batch; NT gives a number of time bins in a batch
+#define DT 20             // nanoseconds, a bin length for time quantization
+#define T_BATCH (DT * NT) // length of time bins' batch; NT gives a number of time bins in a batch
 
-#define VEM 2.05 /* MeV */
+#define VEM 2.05        /* MeV */
 #define CSPEED 29.97925 /* cm/nsec */
-#define TMAX 1280
+#define TMAX 1280  // nsec
 #define PI 3.14159265359
 
 static const float pmass[26] = {0., 0., 0.511e-3, .511e-3, 0., 105.7e-3, 105.7e-3, 135.e-3,
@@ -38,9 +38,9 @@ static const float observationLevel = 1430.e2; // cm, above sea level
 
 // CORSIKA stuff
 
-#define NSENTENCE 39  // particles in one data sub-block
-#define NPART 7  // floats in particle record 
-#define NWORD NPART *NSENTENCE
-#define NSUBBLOCK 21  // data sub-blocks per block
+#define NSENTENCE 39 // particles in one data sub-block
+#define NPART 7      // floats in particle record
+#define NWORD (NPART * NSENTENCE)
+#define NSUBBLOCK 21 // data sub-blocks per block
 
 #endif
