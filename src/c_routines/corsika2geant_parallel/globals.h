@@ -15,9 +15,6 @@ extern float emin;
 extern int particle_count;
 extern int outlier_particle_count;
 
-extern float interpolation_radius;
-extern int interpolation_tiles;
-
 extern float min_arrival_times[NX][NY];
 extern int current_batch_idx;
 extern FILE* temp_now;

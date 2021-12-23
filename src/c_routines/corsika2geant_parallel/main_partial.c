@@ -1,8 +1,6 @@
 /*
-A program to produce CORSIKA particle output to tile file, holding information
-about energy deposit in a tile of virtual detectors.
-
-Based on runcorsd-old/corsika2geant.c
+A routine to convert CORSIKA particle output to a "tile file", holding information
+about energy deposit in a tile of virtual detectors .
 */
 
 #include <stdlib.h>
@@ -29,9 +27,6 @@ Based on runcorsd-old/corsika2geant.c
 float emin = 0.0;
 
 float min_arrival_times[NX][NY];
-
-float interpolation_radius; // radius of area near the core that requires interpolation of values
-int interpolation_tiles;
 
 int particle_count;
 int outlier_particle_count;
