@@ -24,7 +24,7 @@ void initVem()
 
 void sumBatchElosses(ParticleData *pd, EventHeaderData *ed)
 {
-    if (!(particlePhysicalCut(pd) && particleGeometricalCut(pd)))
+    if (!(particlePhysicalCut(pd, emin) && particleGeometricalCut(pd)))
     {
         return;
     }

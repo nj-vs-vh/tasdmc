@@ -6,8 +6,8 @@ files and some common operations on them
 #ifndef STRUCTS_H_
 #define STRUCTS_H_
 
-#include "constants.h"
 #include <stdbool.h>
+#include "constants.h"
 
 typedef struct ParticleFileStats
 {
@@ -47,6 +47,7 @@ typedef struct ParticleData
 } ParticleData;
 
 bool particleGeometricalCut(ParticleData* pd);
-bool particlePhysicalCut(ParticleData* pd);
+bool particlePhysicalCut(ParticleData *pd, float emin);
+
 
 #endif

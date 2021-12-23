@@ -63,7 +63,7 @@ ${BINDIR}/${C2G}.run: ${C2G_OBJS} | ${C2GBINDIR}
 	${OBJ_TO_EXECUTABLE_RECIPE}
 
 
-# corsika2geant_parallel
+# corsika2geant_parallel is split into *_process.run and *_merge.run for the respective steps
 
 C2G_P = corsika2geant_parallel
 
@@ -72,6 +72,7 @@ ${C2G_PBINDIR}: | ${BINDIR}
 	${MKDIR_RECIPE}
 
 C2G_P_OBJS = $(addsuffix .o, $(addprefix ${C2G_PBINDIR}/, main_partial eloss_sdgeant iterator structs vem arrival_times utils))
+C2G_P_MERGE_OBJS = $(addsuffix .o, $(addprefix ${C2G_PBINDIR}/, main_merge structs utils))
 
 # calculating 16 * (memory in Gb) with bc & deleting everything after decimal point from output
 NT_VALUE := $(shell echo "16 * ${TASDMC_MEMORY_PER_PROCESS_GB}" | bc | cut -d '.' -f 1)
@@ -80,7 +81,19 @@ WITH_DEFINED_NT = -DNT=${NT_VALUE}
 ${C2G_PBINDIR}/%.o: ${C2G_P}/%.c
 	${SRC_TO_OBJ_RECIPE} ${WITH_DEFINED_NT}
 
-${BINDIR}/${C2G_P}.run: ${C2G_P_OBJS} | ${C2G_PBINDIR}
+${C2G_PBINDIR}/%.o: ${C2G_P}/%.cpp
+	${CPP} -c $< -o $@ ${CPPFLAGS} ${INCS} ${WITH_DEFINED_NT}
+
+C2G_P_PROCESS = ${C2G_P}_process
+
+${BINDIR}/${C2G_P_PROCESS}.run: ${C2G_P_OBJS} | ${C2G_PBINDIR}
+	${OBJ_TO_EXECUTABLE_RECIPE}
+
+C2G_P_MERGE = ${C2G_P}_merge
+
+
+
+${BINDIR}/${C2G_P_MERGE}.run: ${C2G_P_MERGE_OBJS} | ${C2G_PBINDIR}
 	${OBJ_TO_EXECUTABLE_RECIPE}
 
 
@@ -88,7 +101,7 @@ ${BINDIR}/${C2G_P}.run: ${C2G_P_OBJS} | ${C2G_PBINDIR}
 
 DIRS = ${BINDIR} ${DETHBINDIR} ${C2GBINDIR} ${C2G_PBINDIR}
 
-STEMS = corsika_split_th check_gea_dat_file ${DETHIN} ${C2G} ${C2G_P}
+STEMS = corsika_split_th check_gea_dat_file ${DETHIN} ${C2G} ${C2G_P_PROCESS} ${C2G_P_MERGE}
 
 EXECUTABLES = $(addsuffix .run, ${STEMS})
 
