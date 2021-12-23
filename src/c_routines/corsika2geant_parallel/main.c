@@ -29,7 +29,9 @@ Based on runcorsd-old/corsika2geant.c
 float emin = 0.0;
 
 float min_arrival_times[NX][NY];
+
 float interpolation_radius; // radius of area near the core that requires interpolation of values
+int interpolation_tiles;
 
 int particle_count;
 int outlier_particle_count;
@@ -59,14 +61,55 @@ void prepareTempFilePointers()
     temp_files_swap = !temp_files_swap;
 }
 
+void dumpEventHeader(FILE *fout, EventHeaderData *ed)
+{
+    fwrite(ed->eventbuf, sizeof(float), NWORD, fout);
+}
+
+void dumpVemBatch(FILE *fout, int batch_idx, EventHeaderData *event_data)
+{
+    // m, n, vem top, vem bot, time (DT units since shower core impact), pz
+    unsigned short buf[6];
+
+    for (int m = 0; m < NX; m++)
+    {
+        for (int n = 0; n < NY; n++)
+        {
+            if (min_arrival_times[m][n] != SENTINEL_TIME) // there are particles in this tile at all
+            {
+                buf[0] = (unsigned short)m;
+                buf[1] = (unsigned short)n;
+                for (int k = 0; k < NT; k++)
+                {
+                    if (vemcount[m][n][k][0] > 0 || // at least one VEM worth of energy was deposited
+                        vemcount[m][n][k][1] > 0)
+                    {
+                        unsigned short vem_top = vemcount[m][n][k][0];
+                        unsigned short vem_bot = vemcount[m][n][k][0];
+                        unsigned short pz_ = pz[m][n][k];
+                        buf[2] = vem_top;
+                        buf[3] = vem_bot;
+
+                        buf[4] = (unsigned short)((min_arrival_times[m][n] + (float)(batch_idx * T_BATCH) + (float)(k * DT) - event_data->tmin) / DT);
+
+                        if (pz_ == 0 || 2 * pz_ > vem_top + vem_bot)
+                            pz_ = (unsigned short)(cosf(event_data->zenith) * (float)(vem_top + vem_bot) / 2.);
+                        buf[5] = pz_;
+                        fwrite(buf, sizeof(short), 6, fout);
+                    }
+                }
+            }
+        }
+    }
+}
+
 int main(int argc, char *argv[])
 {
-    // command line arguments parsing
     if (argc != 4)
     {
         fprintf(
             stderr,
-            "corsika2geant (parallel) is a rewrite of corsika2geant that processes a single dethinned file and produces a 'partial' tile file\n"
+            "corsika2geant_parallel is a rewrite of corsika2geant that processes a single dethinned file and produces a 'partial' tile file\n"
             "partial tile files should then be merged together\n\n"
             "accepts exactly 3 command-line arguments:\n"
             "\tdethinned CORSIKA particle file path\n"
@@ -75,24 +118,24 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
     const char *particle_file = argv[1];
-    const char *geantFile = argv[2];
-    const char *outputFile = argv[3];
+    const char *sdgeant_file = argv[2];
+    const char *output_file = argv[3];
 
-    strcpy(temp_filename_1, outputFile);
+    strcpy(temp_filename_1, output_file);
     strcat(temp_filename_1, ".1.tmp");
-    strcpy(temp_filename_2, outputFile);
+    strcpy(temp_filename_2, output_file);
     strcat(temp_filename_2, ".2.tmp");
 
-    FILE *fout;
-    srand48(314159265);
-
+    // srand48(1312);
+    FILE *fout = fopen(output_file, "w");
     fprintf(stdout, "Creating %d x %d grid of tiles, each %d m in size\n", NX, NY, TILE_SIDE);
 
-    fprintf(stdout, "Loading eloss lookup table from %s\n", geantFile);
-    load_elosses(geantFile);
+    fprintf(stdout, "Loading eloss lookup table from %s\n", sdgeant_file);
+    load_elosses(sdgeant_file);
 
     ParticleFileStats stats;
     EventHeaderData event_data;
+
     fprintf(stdout, "Calculating minimum particle arrival time for each tile\n");
     initArrivalTimes();
     particle_count = 0;
@@ -102,15 +145,15 @@ int main(int argc, char *argv[])
         fprintf(stderr, "minimal arrival time calculation failed for %s", particle_file);
         exit(EXIT_FAILURE);
     }
+    dumpEventHeader(fout, &event_data);
     fprintf(stdout,
-            "Particles read: %d\n... of them outliers: %d\nTime of Core Impact, ns: %g\n\n",
+            "Particles read: %d\n... of them outliers: %d\nTime of Core Impact, ns: %g\n",
             particle_count, outlier_particle_count, event_data.tmin);
-    inetrpolateArrivalTimes();
     quantizeArrivalTimes(event_data.tmin);
     int total_particle_count = particle_count;
 
     current_batch_idx = 0;
-    fprintf(stdout, "Calculating VEM counts for time bins in the first batch (%d bins) for each tile\n", NT);
+    fprintf(stdout, "Calculating VEM counts for %d time bins per batch for each tile\n", NT);
     prepareTempFilePointers();
     particle_count = 0;
     initVem();
@@ -119,11 +162,12 @@ int main(int argc, char *argv[])
         fprintf(stderr, "first elosses summation from %s failed", particle_file);
         exit(EXIT_FAILURE);
     }
-    interpolateVemCounts(&event_data);
+    dumpVemBatch(fout, current_batch_idx, &event_data);
+
     int cumulative_particle_count = particle_count;
     fprintf(stdout,
-                "Particles in batch %d: %d; %.4f%% processed\n",
-                current_batch_idx, particle_count, 100 * (float)cumulative_particle_count / (float)total_particle_count);
+            "Particles in batch %d: %d; %.4f%% processed\n",
+            current_batch_idx, particle_count, 100 * (float)cumulative_particle_count / (float)total_particle_count);
 
     for (current_batch_idx = 1; current_batch_idx < (int)ceilf((float)TMAX / (float)NT); current_batch_idx++)
     {
@@ -131,7 +175,7 @@ int main(int argc, char *argv[])
         particle_count = 0;
         initVem();
         iteratePlainParticleFile(temp_now, &sumBatchElosses, &event_data);
-        interpolateVemCounts(&event_data);
+        dumpVemBatch(fout, current_batch_idx, &event_data);
         cumulative_particle_count += particle_count;
         fprintf(stdout,
                 "Particles in batch %d: %d; %.4f%% processed\n",
@@ -139,7 +183,11 @@ int main(int argc, char *argv[])
     }
     fclose(temp_now);
     fclose(temp_later);
+    fclose(fout);
 
-    fprintf(stdout, "OK");
+    remove(temp_filename_1);
+    remove(temp_filename_2);
+
+    fprintf(stdout, "OK\n");
     exit(EXIT_SUCCESS);
 }
