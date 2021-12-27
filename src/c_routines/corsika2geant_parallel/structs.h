@@ -6,6 +6,10 @@ files and some common operations on them
 #ifndef STRUCTS_H_
 #define STRUCTS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
 
 #include "./constants.h"
@@ -51,11 +55,15 @@ bool particleGeometricalCut(ParticleData* pd);
 
 bool particlePhysicalCut(ParticleData *pd, float emin);
 
-bool readEventHeaderData(EventHeaderData *d, FILE *file);
-
 bool readParticleData(ParticleData *pd, FILE *file);
+
+bool readEventHeaderData(EventHeaderData *d, FILE *file);
 
 void initParticleFileStats(ParticleFileStats *s);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

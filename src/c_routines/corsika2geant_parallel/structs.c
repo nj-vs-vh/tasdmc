@@ -16,7 +16,6 @@ bool particlePhysicalCut(ParticleData *pd, float emin)
     return pd->id >= 1 && pd->id < 26 && pd->energy > emin / 1.e6;
 }
 
-
 bool readEventHeaderData(EventHeaderData *d, FILE *file)
 {
     if (fread(d->eventbuf, sizeof(float), NWORD, file) != NWORD)
