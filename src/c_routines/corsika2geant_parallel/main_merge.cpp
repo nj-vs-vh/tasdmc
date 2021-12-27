@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <map>
 
+#include "./structs.h"
 #include "./constants.h"
 
 // {[x, y, z]: value}
@@ -47,7 +48,8 @@ bool loadPartialTileFile(char *filename)
         return false;
     }
 
-    
+    EventHeaderData ed;
+    readEventHeaderData(&ed, fptile);
 
     unsigned short buf[TILE_FILE_BLOCK_SIZE];
     while (fread(buf, sizeof(short), TILE_FILE_BLOCK_SIZE, fptile) == TILE_FILE_BLOCK_SIZE)
@@ -67,6 +69,13 @@ bool loadPartialTileFile(char *filename)
 
 int main(int argc, char *argv[])
 {
+
+    unsigned short test;
+    float test2 = 65537;
+    test = (unsigned short)test2;
+    printf("%d\n", test);
+    return 0;
+
     if (argc != 4)
     {
         fprintf(

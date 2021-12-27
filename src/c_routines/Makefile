@@ -72,7 +72,7 @@ ${C2G_PBINDIR}: | ${BINDIR}
 	${MKDIR_RECIPE}
 
 C2G_P_OBJS = $(addsuffix .o, $(addprefix ${C2G_PBINDIR}/, main_partial eloss_sdgeant iterator structs vem arrival_times utils))
-C2G_P_MERGE_OBJS = $(addsuffix .o, $(addprefix ${C2G_PBINDIR}/, main_merge structs utils))
+C2G_P_MERGE_OBJS = $(addsuffix .o, $(addprefix ${C2G_PBINDIR}/, main_merge utils structs))
 
 # calculating 16 * (memory in Gb) with bc & deleting everything after decimal point from output
 NT_VALUE := $(shell echo "16 * ${TASDMC_MEMORY_PER_PROCESS_GB}" | bc | cut -d '.' -f 1)
@@ -84,14 +84,13 @@ ${C2G_PBINDIR}/%.o: ${C2G_P}/%.c
 ${C2G_PBINDIR}/%.o: ${C2G_P}/%.cpp
 	${CPP} -c $< -o $@ ${CPPFLAGS} ${INCS} ${WITH_DEFINED_NT}
 
+
 C2G_P_PROCESS = ${C2G_P}_process
 
 ${BINDIR}/${C2G_P_PROCESS}.run: ${C2G_P_OBJS} | ${C2G_PBINDIR}
 	${OBJ_TO_EXECUTABLE_RECIPE}
 
 C2G_P_MERGE = ${C2G_P}_merge
-
-
 
 ${BINDIR}/${C2G_P_MERGE}.run: ${C2G_P_MERGE_OBJS} | ${C2G_PBINDIR}
 	${OBJ_TO_EXECUTABLE_RECIPE}
