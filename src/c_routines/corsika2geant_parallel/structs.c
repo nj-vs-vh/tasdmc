@@ -5,7 +5,10 @@
 
 bool particleGeometricalCut(ParticleData *pd)
 {
-    return fabsf(pd->partbuf[4]) < (float)(100 * DISTMAX) && fabsf(pd->partbuf[5]) < (float)(100 * DISTMAX) && pd->partbuf[6] > 1.e4;
+    return (
+        fabsf(pd->partbuf[4]) < (float)(100 * DISTMAX) &&
+        fabsf(pd->partbuf[5]) < (float)(100 * DISTMAX) &&
+        pd->partbuf[6] > 1.e4);
 }
 
 bool particlePhysicalCut(ParticleData *pd, float emin)
