@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
             "\tdethinned CORSIKA particle file path\n"
             "\tsdgeant.dst file path\n"
             "\tpartial tile file path\n"
-            "\t(optional) 'signal start time per tile' file path\n");
+            "\t(optional) min particle arrival time file path\n");
         exit(EXIT_FAILURE);
     }
     const char *particle_file = argv[1];

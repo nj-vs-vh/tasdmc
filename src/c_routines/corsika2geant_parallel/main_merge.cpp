@@ -31,7 +31,6 @@ bool loadMinArrivalTimes(char *filename, float arr[NX][NY])
     {
         fprintf(stderr, "Cannot read min arrival times array from %s", filename);
         fclose(ftimes);
-
         return false;
     }
     fclose(ftimes);
@@ -48,6 +47,8 @@ bool loadPartialTileFile(char *filename)
         return false;
     }
 
+    
+
     unsigned short buf[TILE_FILE_BLOCK_SIZE];
     while (fread(buf, sizeof(short), TILE_FILE_BLOCK_SIZE, fptile) == TILE_FILE_BLOCK_SIZE)
     {
@@ -56,6 +57,7 @@ bool loadPartialTileFile(char *filename)
         unsigned short vem_top_ = buf[2];
         unsigned short vem_bot_ = buf[3];
         unsigned short time_bin_global = buf[4];
+        // unsigned short k = time_bin_global
         unsigned short pz_ = buf[5];
     }
 
