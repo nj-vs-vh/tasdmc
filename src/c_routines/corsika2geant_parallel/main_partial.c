@@ -56,15 +56,20 @@ void prepareTempFilePointers()
     temp_files_swap = !temp_files_swap;
 }
 
-void dumpEventHeader(FILE *fout, EventHeaderData *ed)
+bool dumpEventHeader(FILE *fout, EventHeaderData *ed)
 {
-    fwrite(ed->eventbuf, sizeof(float), NWORD, fout);
+    return (fwrite(ed->eventbuf, sizeof(float), NWORD, fout) == NWORD);
 }
 
-void dumpVemBatch(FILE *fout, int batch_idx, EventHeaderData *event_data)
+bool dumpMinArrivalTimes(FILE *fout)
+{
+    return (fwrite(min_arrival_times, sizeof(float), NX * NY, fout) == (NX * NY));
+}
+
+bool dumpVemBatch(FILE *fout, int batch_idx, EventHeaderData *event_data)
 {
     // m, n, vem top, vem bot, time (DT units since shower core impact), pz
-    unsigned short buf[6];
+    unsigned short buf[TILE_FILE_BLOCK_SIZE];
 
     for (int m = 0; m < NX; m++)
     {
@@ -90,40 +95,65 @@ void dumpVemBatch(FILE *fout, int batch_idx, EventHeaderData *event_data)
                         if (pz_ == 0 || 2 * pz_ > vem_top + vem_bot)
                             pz_ = (unsigned short)(cosf(event_data->zenith) * (float)(vem_top + vem_bot) / 2.);
                         buf[5] = pz_;
-                        fwrite(buf, sizeof(short), 6, fout);
+                        if (fwrite(buf, sizeof(short), TILE_FILE_BLOCK_SIZE, fout) != TILE_FILE_BLOCK_SIZE)
+                        {
+                            return false;
+                        }
                     }
                 }
             }
         }
     }
+    return true;
 }
 
 int main(int argc, char *argv[])
 {
-    if (argc != 4)
+    if (argc < 4 || argc > 5)
     {
         fprintf(
             stderr,
             "corsika2geant_parallel_process.run is a rewrite of corsika2geant.run that processes a "
             "single dethinned particle file and produces a partial tile file\n"
             "partial tile files should then be merged together by corsik2geant_parallel_merge.run\n\n"
-            "accepts exactly 3 command-line arguments:\n"
+            "accepts exactly 4 command-line arguments:\n"
             "\tdethinned CORSIKA particle file path\n"
             "\tsdgeant.dst file path\n"
-            "\toutput file path\n");
+            "\tpartial tile file path\n"
+            "\t(optional) 'signal start time per tile' file path\n");
         exit(EXIT_FAILURE);
     }
     const char *particle_file = argv[1];
     const char *sdgeant_file = argv[2];
-    const char *output_file = argv[3];
+    const char *tile_file = argv[3];
+    const char *arrival_times_file = NULL;
+    bool dump_min_arrival_times = (argc == 5);
 
-    strcpy(temp_filename_1, output_file);
+    FILE *fout = fopen(tile_file, "w");
+    if (!fout)
+    {
+        fprintf(stderr, "error creating output tile file %s", tile_file);
+        return EXIT_FAILURE;
+    }
+
+    FILE *ftimes;
+    if (dump_min_arrival_times)
+    {
+        arrival_times_file = argv[4];
+        ftimes = fopen(arrival_times_file, "w");
+        if (!ftimes)
+        {
+            fprintf(stderr, "error creating output min arrival times file %s", arrival_times_file);
+            return EXIT_FAILURE;
+        }
+    }
+
+    strcpy(temp_filename_1, tile_file);
     strcat(temp_filename_1, ".1.tmp");
-    strcpy(temp_filename_2, output_file);
+    strcpy(temp_filename_2, tile_file);
     strcat(temp_filename_2, ".2.tmp");
 
     // srand48(1312);
-    FILE *fout = fopen(output_file, "w");
     fprintf(stdout, "Creating %d x %d grid of tiles, each %d m in size\n", NX, NY, TILE_SIDE);
 
     fprintf(stdout, "Loading eloss lookup table from %s\n", sdgeant_file);
@@ -141,7 +171,20 @@ int main(int argc, char *argv[])
         fprintf(stderr, "minimal arrival time calculation failed for %s", particle_file);
         exit(EXIT_FAILURE);
     }
-    dumpEventHeader(fout, &event_data);
+    if (!dumpEventHeader(fout, &event_data))
+    {
+        fprintf(stderr, "error writing header to output file %s", tile_file);
+        exit(EXIT_FAILURE);
+    }
+    if (dump_min_arrival_times)
+    {
+        if (!dumpMinArrivalTimes(ftimes))
+        {
+            fprintf(stderr, "error writing min arrival times to file %s", arrival_times_file);
+            return EXIT_FAILURE;
+        }
+        fclose(ftimes);
+    }
     fprintf(stdout,
             "Particles read: %d\n... of them outliers: %d\nTime of Core Impact, ns: %g\n",
             particle_count, outlier_particle_count, event_data.tmin);
@@ -158,7 +201,11 @@ int main(int argc, char *argv[])
         fprintf(stderr, "first elosses summation from %s failed", particle_file);
         exit(EXIT_FAILURE);
     }
-    dumpVemBatch(fout, current_batch_idx, &event_data);
+    if (!dumpVemBatch(fout, current_batch_idx, &event_data))
+    {
+        fprintf(stderr, "error writing data (batch %d) to output file %s", current_batch_idx, tile_file);
+        exit(EXIT_FAILURE);
+    }
 
     int cumulative_particle_count = particle_count;
     fprintf(stdout,
@@ -171,12 +218,17 @@ int main(int argc, char *argv[])
         particle_count = 0;
         initVem();
         iteratePlainParticleFile(temp_now, &sumBatchElosses, &event_data);
-        dumpVemBatch(fout, current_batch_idx, &event_data);
+        if (!dumpVemBatch(fout, current_batch_idx, &event_data))
+        {
+            fprintf(stderr, "error writing data (batch %d) to output file %s", current_batch_idx, tile_file);
+            exit(EXIT_FAILURE);
+        }
         cumulative_particle_count += particle_count;
         fprintf(stdout,
                 "Particles in batch %d: %d; %.4f%% processed\n",
                 current_batch_idx, particle_count, 100 * (float)cumulative_particle_count / (float)total_particle_count);
     }
+
     fclose(temp_now);
     fclose(temp_later);
     fclose(fout);

@@ -14,7 +14,7 @@ CPP	                = g++
 CPPFLAGS            = $(OPTIMIZATION_OPTION) -Wall -fPIC
 
 INCS = -I${SDANALYSIS_DIR}/dst2k-ta/inc
-LIBS=-L${SDANALYSIS_DIR}/dst2k-ta/lib -ldst2k -lm  -lc -lz -lbz2
+LIBS=-L${SDANALYSIS_DIR}/dst2k-ta/lib -ldst2k -lm  -lc -lz -lbz2 -lstdc++
 
 SRC_TO_OBJ_RECIPE = ${CC} -c $< -o $@ ${CFLAGS} ${INCS}
 OBJ_TO_EXECUTABLE_RECIPE = ${CC} $^ -o $@ ${CFLAGS} ${LIBS}

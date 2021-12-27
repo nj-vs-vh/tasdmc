@@ -1,8 +1,67 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <map>
 
 #include "./constants.h"
 
+// {[x, y, z]: value}
+typedef std::map<std::array<unsigned short, 3>, unsigned short> Sparse3DMatrix;
+#define MAX_SPARSE3DMATRIX_SIZE ((double)NX * (double)NY * (double)TMAX) // ~10^10
+#define sparse3DMatrixLoadFactor (matrix)(double)(matrix->size()) / MAX_SPARSE3DMATRIX_SIZE
+
+Sparse3DMatrix vem_top;
+Sparse3DMatrix vem_bot;
+Sparse3DMatrix pz;
+
+float current_min_arrival_times[NX][NY];
+float global_min_arrival_times[NX][NY];
+
+bool loadMinArrivalTimes(char *filename, float arr[NX][NY])
+{
+    fprintf(stdout, "Reading min arrival times file %s\n", filename);
+    FILE *ftimes = fopen(filename, "r");
+    if (ftimes == NULL)
+    {
+        fprintf(stderr, "Cannot open file %s: %s\n", filename, strerror(errno));
+        return false;
+    }
+    if (fread(arr, sizeof(float), NX * NY, ftimes) != (NX * NY))
+    {
+        fprintf(stderr, "Cannot read min arrival times array from %s", filename);
+        fclose(ftimes);
+
+        return false;
+    }
+    fclose(ftimes);
+    return true;
+}
+
+bool loadPartialTileFile(char *filename)
+{
+    fprintf(stdout, "Reading partial tile file %s\n", filename);
+    FILE *fptile = fopen(filename, "r");
+    if (fptile == NULL)
+    {
+        fprintf(stderr, "Cannot open file %s: %s\n", filename, strerror(errno));
+        return false;
+    }
+
+    unsigned short buf[TILE_FILE_BLOCK_SIZE];
+    while (fread(buf, sizeof(short), TILE_FILE_BLOCK_SIZE, fptile) == TILE_FILE_BLOCK_SIZE)
+    {
+        unsigned short m = buf[0];
+        unsigned short n = buf[1];
+        unsigned short vem_top_ = buf[2];
+        unsigned short vem_bot_ = buf[3];
+        unsigned short time_bin_global = buf[4];
+        unsigned short pz_ = buf[5];
+    }
+
+    fclose(fptile);
+    return true;
+}
 
 int main(int argc, char *argv[])
 {
@@ -10,12 +69,34 @@ int main(int argc, char *argv[])
     {
         fprintf(
             stderr,
-            "corsika2geant_parallel_merge.run is ...");
+            "corsika2geant_parallel_merge.run is a routine to merge a set of partial tile files (produced with "
+            "corsika2geant_parallel_partial.run) into a single tile file\n"
+            "also performs interpolation of the near-axis region, masked in CORSIKA/dethinning\n\n"
+            "a single command line argument is a text file listing all partial files to be merged");
         exit(EXIT_FAILURE);
     }
-    const char *particle_file = argv[1];
-    const char *sdgeant_file = argv[2];
-    const char *output_file = argv[3];
+    const char *listing_file = argv[1];
+
+    FILE *flist = fopen(listing_file, "r");
+
+    fprintf(stdout, "Reading partial tile files list from %s\n", listing_file);
+    if (flist == NULL)
+    {
+        fprintf(stderr, "Cannot open file %s: %s\n", listing_file, strerror(errno));
+        return EXIT_FAILURE;
+    }
+
+    char partial_tile_file[4096];
+    char arrival_times_file[4096];
+
+    while (fscanf(flist, "%s\n%s\n", partial_tile_file, arrival_times_file) != EOF)
+    {
+        loadMinArrivalTimes(arrival_times_file, current_min_arrival_times);
+        loadPartialTileFile(partial_tile_file);
+    }
+
+    fprintf(stdout, "OK\n");
+    fclose(flist);
 }
 
 // void inetrpolateArrivalTimes()
@@ -51,8 +132,6 @@ int main(int argc, char *argv[])
 //             }
 //         }
 // }
-
-
 
 // void interpolateVemCounts(EventHeaderData *ed)
 // {
