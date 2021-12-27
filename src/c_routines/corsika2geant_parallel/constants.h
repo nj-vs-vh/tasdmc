@@ -21,12 +21,12 @@
 
 #define SENTINEL_TIME 1e9
 
-#define DT 20             // nanoseconds, a bin length for time quantization
-#define T_BATCH (DT * NT) // length of time bins' batch; NT gives a number of time bins in a batch
+#define DT 20               // time bin duration, nsec
+#define T_BATCH (DT * NT)   // length of time bins' batch; NT gives a number of time bins in a batch
+#define TMAX 1280           // time bins total
 
-#define VEM 2.05        /* MeV */
-#define CSPEED 29.97925 /* cm/nsec */
-#define TMAX 1280  // nsec
+#define VEM 2.05            // MeV
+#define CSPEED 29.97925     // cm/nsec
 #define PI 3.14159265359
 
 static const float pmass[26] = {0., 0., 0.511e-3, .511e-3, 0., 105.7e-3, 105.7e-3, 135.e-3,
@@ -36,11 +36,12 @@ static const float pmass[26] = {0., 0., 0.511e-3, .511e-3, 0., 105.7e-3, 105.7e-
 
 static const float observationLevel = 1430.e2; // cm, above sea level
 
-// CORSIKA stuff
+// file IO stuff
 
 #define NSENTENCE 39 // particles in one data sub-block
 #define NPART 7      // floats in particle record
 #define NWORD (NPART * NSENTENCE)
 #define NSUBBLOCK 21 // data sub-blocks per block
+#define TILE_FILE_BLOCK_SIZE 6
 
 #endif
