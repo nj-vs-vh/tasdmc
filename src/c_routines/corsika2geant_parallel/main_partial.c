@@ -89,9 +89,9 @@ bool dumpVemBatch(FILE *fout, int batch_idx, EventHeaderData *event_data)
                         unsigned short pz_ = pz[m][n][k];
                         buf[2] = vem_top;
                         buf[3] = vem_bot;
-
-                        buf[4] = (unsigned short)((min_arrival_times[m][n] + (float)(batch_idx * T_BATCH) + (float)(k * DT) - event_data->tmin) / DT);
-
+                        // in partial tile file we store only time bin number relative to signal start (0 to TMAX)
+                        // conversion to time bin relative to global reference time (tmin) is done after merge!
+                        buf[4] = batch_idx * NT + k;
                         if (pz_ == 0 || 2 * pz_ > vem_top + vem_bot)
                             pz_ = (unsigned short)(cosf(event_data->zenith) * (float)(vem_top + vem_bot) / 2.);
                         buf[5] = pz_;
@@ -119,15 +119,12 @@ int main(int argc, char *argv[])
             "accepts exactly 4 command-line arguments:\n"
             "\tdethinned CORSIKA particle file path\n"
             "\tsdgeant.dst file path\n"
-            "\tpartial tile file path\n"
-            "\t(optional) min particle arrival time file path\n");
+            "\tpartial tile file path\n");
         exit(EXIT_FAILURE);
     }
     const char *particle_file = argv[1];
     const char *sdgeant_file = argv[2];
     const char *tile_file = argv[3];
-    const char *arrival_times_file = NULL;
-    bool dump_min_arrival_times = (argc == 5);
 
     FILE *fout = fopen(tile_file, "w");
     if (!fout)
@@ -136,24 +133,12 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    FILE *ftimes;
-    if (dump_min_arrival_times)
-    {
-        arrival_times_file = argv[4];
-        ftimes = fopen(arrival_times_file, "w");
-        if (!ftimes)
-        {
-            fprintf(stderr, "error creating output min arrival times file %s", arrival_times_file);
-            return EXIT_FAILURE;
-        }
-    }
-
     strcpy(temp_filename_1, tile_file);
     strcat(temp_filename_1, ".1.tmp");
     strcpy(temp_filename_2, tile_file);
     strcat(temp_filename_2, ".2.tmp");
 
-    // srand48(1312);
+    srand48(314159265);
     fprintf(stdout, "Creating %d x %d grid of tiles, each %d m in size\n", NX, NY, TILE_SIDE);
 
     fprintf(stdout, "Loading eloss lookup table from %s\n", sdgeant_file);
@@ -176,14 +161,10 @@ int main(int argc, char *argv[])
         fprintf(stderr, "error writing header to output file %s", tile_file);
         exit(EXIT_FAILURE);
     }
-    if (dump_min_arrival_times)
+    if (!dumpMinArrivalTimes(fout))
     {
-        if (!dumpMinArrivalTimes(ftimes))
-        {
-            fprintf(stderr, "error writing min arrival times to file %s", arrival_times_file);
-            return EXIT_FAILURE;
-        }
-        fclose(ftimes);
+        fprintf(stderr, "error writing min arrival times to file %s", tile_file);
+        return EXIT_FAILURE;
     }
     fprintf(stdout,
             "Particles read: %d\n... of them outliers: %d\nTime of Core Impact, ns: %g\n",

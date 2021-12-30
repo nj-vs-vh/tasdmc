@@ -8,49 +8,29 @@
 #include "./constants.h"
 
 // {[x, y, t]: value}
-typedef std::map<std::array<unsigned short, 3>, unsigned short> Sparse3DMatrix;
+typedef std::map<std::array<short, 3>, unsigned short> Sparse3DMatrix;
 #define MAX_SPARSE3DMATRIX_SIZE ((double)NX * (double)NY * (double)TMAX) // ~10^10
 #define sparse3DMatrixLoadFactor(matrix) (double)(matrix.size()) / MAX_SPARSE3DMATRIX_SIZE
-#define assignValueOrContinue(sparse_matrix, key, assign_to) \
-    if (1)                                                   \
-    {                                                        \
-        auto result_iter = sparse_matrix.find(key);          \
-        if (result_iter != sparse_matrix.end())              \
-        {                                                    \
-            assign_to = result_iter->second;                 \
-        }                                                    \
-        else                                                 \
-            continue;                                        \
-    }
+#define insertAddIfExists(matrix, key, value) if (1) { \
+    auto it = matrix.find(key); \
+    if (it != matrix.end()) \
+        it->second += value; \
+    else \
+        matrix[key] = value; } 
 
 Sparse3DMatrix vem_top;
 Sparse3DMatrix vem_bot;
 Sparse3DMatrix pz;
 
+float reference_min_arrival_times[NX][NY];
 float current_min_arrival_times[NX][NY];
-float global_min_arrival_times[NX][NY];
 
-bool loadMinArrivalTimes(char *filename, float arr[NX][NY])
+bool readMinArrivalTimes(FILE *f, float arr[NX][NY])
 {
-    fprintf(stdout, "Reading min arrival times file %s\n", filename);
-    FILE *ftimes = fopen(filename, "r");
-    if (ftimes == NULL)
-    {
-        fprintf(stderr, "Cannot open file %s: %s\n", filename, strerror(errno));
-        return false;
-    }
-    if (fread(arr, sizeof(float), NX * NY, ftimes) != (NX * NY))
-    {
-        fprintf(stderr, "Cannot read min arrival times array from %s", filename);
-        fclose(ftimes);
-        return false;
-    }
-    // TODO: update global_min_arrival_time here
-    fclose(ftimes);
-    return true;
+    return (fread(arr, sizeof(float), NX * NY, f) == (NX * NY));
 }
 
-bool loadPartialTileFile(char *filename, EventHeaderData *event_data)
+bool loadPartialTileFile(char *filename, EventHeaderData *event_data, bool initial)
 {
     fprintf(stdout, "Reading partial tile file %s\n", filename);
     FILE *fptile = fopen(filename, "r");
@@ -62,30 +42,38 @@ bool loadPartialTileFile(char *filename, EventHeaderData *event_data)
 
     if (!readEventHeaderData(event_data, fptile))
     {
+        fprintf(stderr, "Error reading event header from partial tile file %s\n", filename);
         return false;
     }
 
+    if (!readMinArrivalTimes(fptile, current_min_arrival_times))
+    {
+        fprintf(stderr, "Error reading min arrival times from partial tile file %s\n", filename);
+        return false;
+    }
+
+    if (initial)
+        memcpy(reference_min_arrival_times, current_min_arrival_times, NX * NY * sizeof(float));
+
     unsigned short buf[TILE_FILE_BLOCK_SIZE];
+    std::array<short, 3> mnk;
     while (fread(buf, sizeof(short), TILE_FILE_BLOCK_SIZE, fptile) == TILE_FILE_BLOCK_SIZE)
     {
-        unsigned short m = buf[0];
-        unsigned short n = buf[1];
+        mnk[0] = (short)buf[0];
+        mnk[1] = (short)buf[1];
+        // no actual rounding here because min arrival times are quantized in DT units on initial processing
+        short delta_k = (short)((current_min_arrival_times[mnk[0]][mnk[1]] -
+                                 reference_min_arrival_times[mnk[0]][mnk[1]]) /
+                                DT);
+        mnk[2] = ((short)buf[4]) + delta_k;
         unsigned short vem_top_ = buf[2];
         unsigned short vem_bot_ = buf[3];
-        int time_bin_global = (float)buf[4];
-        if (buf[4] > 32768)
-        {
-            // -1 here is empirical, but probably due to rounding down working the wrong way
-            time_bin_global -= 65537 - 1;
-        }
-        // inverse of main_partial.c L93; equals to (batch_idx * NT + k) there
-        unsigned short k = (unsigned short)(time_bin_global + ((event_data->tmin - current_min_arrival_times[m][n]) / DT));
-        printf("\n");
         unsigned short pz_ = buf[5];
 
-        vem_top[{m, n, k}] = vem_top_;
-        vem_bot[{m, n, k}] = vem_bot_;
-        pz[{m, n, k}] = pz_;
+        // if value does not exist, the default constructor will create 0 and add new value to it
+        vem_top[mnk] += vem_top_;
+        vem_bot[mnk] += vem_bot_;
+        pz[mnk] += pz_;
     }
 
     fclose(fptile);
@@ -103,20 +91,22 @@ bool dumpTileFile(char *filename, EventHeaderData *ed)
 
     if (fwrite(ed->eventbuf, sizeof(float), NWORD, fout) != NWORD)
     {
+        fprintf(stderr, "Error writing event header to file: %s\n", strerror(errno));
         return false;
     }
 
     unsigned short buf[TILE_FILE_BLOCK_SIZE];
-    std::array<unsigned short, 3> mnk;
+    std::array<short, 3> mnk;
 
     for (auto it = vem_top.begin(); it != vem_top.end(); ++it)
     {
         mnk = it->first;
-        buf[0] = mnk[0];
-        buf[1] = mnk[1];
-        buf[2] = it->second;
+        buf[0] = mnk[0];     // m
+        buf[1] = mnk[1];     // n
+        buf[2] = it->second; // vem_top
         buf[3] = vem_bot[mnk];
-        buf[4] = (unsigned short)((current_min_arrival_times[mnk[0]][mnk[1]] + (float)(mnk[2] * DT) - ed->tmin) / DT);
+        // transforming # bins from min arrival time (in [0; TMAX]) to # bins from tmin
+        buf[4] = (unsigned short)((reference_min_arrival_times[mnk[0]][mnk[1]] + (float)(mnk[2]) * DT - ed->tmin) / DT);
         buf[5] = pz[mnk];
         if (fwrite(buf, sizeof(short), TILE_FILE_BLOCK_SIZE, fout) != TILE_FILE_BLOCK_SIZE)
         {
@@ -148,25 +138,20 @@ int main(int argc, char *argv[])
 
     FILE *flist = fopen(listing_file, "r");
 
-    fprintf(stdout, "Reading partial tile files list from %s\n", listing_file);
+    fprintf(stdout, "Reading file list %s\n", listing_file);
     if (flist == NULL)
     {
         fprintf(stderr, "Cannot open file %s: %s\n", listing_file, strerror(errno));
-        return EXIT_FAILURE;
+        exit(EXIT_FAILURE);
     }
 
     char partial_tile_file[4096];
-    char arrival_times_file[4096];
-    while (fscanf(flist, "%s\n%s\n", partial_tile_file, arrival_times_file) != EOF)
+    bool initial_file = true;
+    while (fscanf(flist, "%s\n", partial_tile_file) != EOF)
     {
-        if (!loadMinArrivalTimes(arrival_times_file, current_min_arrival_times))
-        {
+        if (!loadPartialTileFile(partial_tile_file, &event_data, initial_file))
             exit(EXIT_FAILURE);
-        }
-        if (!loadPartialTileFile(partial_tile_file, &event_data))
-        {
-            exit(EXIT_FAILURE);
-        }
+        initial_file = !initial_file;
         fprintf(stdout, "Sparse matrices load (1%% = about 600Mb RAM): %f%%\n", 100 * sparse3DMatrixLoadFactor(vem_top));
     }
 
