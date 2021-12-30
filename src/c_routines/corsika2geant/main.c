@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     unsigned short buf[6];
     int i, j, m, n, tcount;
     double count, count2;
-    // srand48(314159265);
+    srand48(314159265);
     tcount = 0;
     count = count2 = 0.;
 
@@ -160,6 +160,6 @@ int main(int argc, char *argv[])
         tcount++;
     }
     fclose(fout);
-    fprintf(stdout, "OK");
+    fprintf(stdout, "OK\n");
     exit(EXIT_SUCCESS);
 }
