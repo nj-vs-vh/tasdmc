@@ -7,10 +7,21 @@
 #include "./structs.h"
 #include "./constants.h"
 
-// {[x, y, z]: value}
+// {[x, y, t]: value}
 typedef std::map<std::array<unsigned short, 3>, unsigned short> Sparse3DMatrix;
 #define MAX_SPARSE3DMATRIX_SIZE ((double)NX * (double)NY * (double)TMAX) // ~10^10
-#define sparse3DMatrixLoadFactor (matrix)(double)(matrix->size()) / MAX_SPARSE3DMATRIX_SIZE
+#define sparse3DMatrixLoadFactor(matrix) (double)(matrix.size()) / MAX_SPARSE3DMATRIX_SIZE
+#define assignValueOrContinue(sparse_matrix, key, assign_to) \
+    if (1)                                                   \
+    {                                                        \
+        auto result_iter = sparse_matrix.find(key);          \
+        if (result_iter != sparse_matrix.end())              \
+        {                                                    \
+            assign_to = result_iter->second;                 \
+        }                                                    \
+        else                                                 \
+            continue;                                        \
+    }
 
 Sparse3DMatrix vem_top;
 Sparse3DMatrix vem_bot;
@@ -34,11 +45,12 @@ bool loadMinArrivalTimes(char *filename, float arr[NX][NY])
         fclose(ftimes);
         return false;
     }
+    // TODO: update global_min_arrival_time here
     fclose(ftimes);
     return true;
 }
 
-bool loadPartialTileFile(char *filename)
+bool loadPartialTileFile(char *filename, EventHeaderData *event_data)
 {
     fprintf(stdout, "Reading partial tile file %s\n", filename);
     FILE *fptile = fopen(filename, "r");
@@ -48,8 +60,10 @@ bool loadPartialTileFile(char *filename)
         return false;
     }
 
-    EventHeaderData ed;
-    readEventHeaderData(&ed, fptile);
+    if (!readEventHeaderData(event_data, fptile))
+    {
+        return false;
+    }
 
     unsigned short buf[TILE_FILE_BLOCK_SIZE];
     while (fread(buf, sizeof(short), TILE_FILE_BLOCK_SIZE, fptile) == TILE_FILE_BLOCK_SIZE)
@@ -58,35 +72,79 @@ bool loadPartialTileFile(char *filename)
         unsigned short n = buf[1];
         unsigned short vem_top_ = buf[2];
         unsigned short vem_bot_ = buf[3];
-        unsigned short time_bin_global = buf[4];
-        // unsigned short k = time_bin_global
+        int time_bin_global = (float)buf[4];
+        if (buf[4] > 32768)
+        {
+            // -1 here is empirical, but probably due to rounding down working the wrong way
+            time_bin_global -= 65537 - 1;
+        }
+        // inverse of main_partial.c L93; equals to (batch_idx * NT + k) there
+        unsigned short k = (unsigned short)(time_bin_global + ((event_data->tmin - current_min_arrival_times[m][n]) / DT));
+        printf("\n");
         unsigned short pz_ = buf[5];
+
+        vem_top[{m, n, k}] = vem_top_;
+        vem_bot[{m, n, k}] = vem_bot_;
+        pz[{m, n, k}] = pz_;
     }
 
     fclose(fptile);
     return true;
 }
 
+bool dumpTileFile(char *filename, EventHeaderData *ed)
+{
+    FILE *fout = fopen(filename, "w");
+    if (fout == NULL)
+    {
+        fprintf(stderr, "Cannot open file %s: %s\n", filename, strerror(errno));
+        return false;
+    }
+
+    if (fwrite(ed->eventbuf, sizeof(float), NWORD, fout) != NWORD)
+    {
+        return false;
+    }
+
+    unsigned short buf[TILE_FILE_BLOCK_SIZE];
+    std::array<unsigned short, 3> mnk;
+
+    for (auto it = vem_top.begin(); it != vem_top.end(); ++it)
+    {
+        mnk = it->first;
+        buf[0] = mnk[0];
+        buf[1] = mnk[1];
+        buf[2] = it->second;
+        buf[3] = vem_bot[mnk];
+        buf[4] = (unsigned short)((current_min_arrival_times[mnk[0]][mnk[1]] + (float)(mnk[2] * DT) - ed->tmin) / DT);
+        buf[5] = pz[mnk];
+        if (fwrite(buf, sizeof(short), TILE_FILE_BLOCK_SIZE, fout) != TILE_FILE_BLOCK_SIZE)
+        {
+            return false;
+        }
+    }
+    fclose(fout);
+    return true;
+}
+
 int main(int argc, char *argv[])
 {
-
-    unsigned short test;
-    float test2 = 65537;
-    test = (unsigned short)test2;
-    printf("%d\n", test);
-    return 0;
-
-    if (argc != 4)
+    if (argc != 3)
     {
         fprintf(
             stderr,
             "corsika2geant_parallel_merge.run is a routine to merge a set of partial tile files (produced with "
             "corsika2geant_parallel_partial.run) into a single tile file\n"
             "also performs interpolation of the near-axis region, masked in CORSIKA/dethinning\n\n"
-            "a single command line argument is a text file listing all partial files to be merged");
+            "accepts exactly 2 command line arguments:\n"
+            "\ttext file listing all partial files to be merged\n"
+            "\toutput tile file name\n");
         exit(EXIT_FAILURE);
     }
     const char *listing_file = argv[1];
+    char *output_file = argv[2];
+
+    EventHeaderData event_data;
 
     FILE *flist = fopen(listing_file, "r");
 
@@ -99,12 +157,20 @@ int main(int argc, char *argv[])
 
     char partial_tile_file[4096];
     char arrival_times_file[4096];
-
     while (fscanf(flist, "%s\n%s\n", partial_tile_file, arrival_times_file) != EOF)
     {
-        loadMinArrivalTimes(arrival_times_file, current_min_arrival_times);
-        loadPartialTileFile(partial_tile_file);
+        if (!loadMinArrivalTimes(arrival_times_file, current_min_arrival_times))
+        {
+            exit(EXIT_FAILURE);
+        }
+        if (!loadPartialTileFile(partial_tile_file, &event_data))
+        {
+            exit(EXIT_FAILURE);
+        }
+        fprintf(stdout, "Sparse matrices load (1%% = about 600Mb RAM): %f%%\n", 100 * sparse3DMatrixLoadFactor(vem_top));
     }
+
+    dumpTileFile(output_file, &event_data);
 
     fprintf(stdout, "OK\n");
     fclose(flist);
