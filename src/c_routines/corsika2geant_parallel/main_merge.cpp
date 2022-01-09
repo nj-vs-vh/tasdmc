@@ -11,23 +11,36 @@
 typedef std::map<std::array<short, 3>, unsigned short> Sparse3DMatrix;
 #define MAX_SPARSE3DMATRIX_SIZE ((double)NX * (double)NY * (double)TMAX) // ~10^10
 #define sparse3DMatrixLoadFactor(matrix) (double)(matrix.size()) / MAX_SPARSE3DMATRIX_SIZE
-#define insertAddIfExists(matrix, key, value) if (1) { \
-    auto it = matrix.find(key); \
-    if (it != matrix.end()) \
-        it->second += value; \
-    else \
-        matrix[key] = value; } 
 
 Sparse3DMatrix vem_top;
 Sparse3DMatrix vem_bot;
 Sparse3DMatrix pz;
 
 float reference_min_arrival_times[NX][NY];
+float global_min_arrival_times[NX][NY];
 float current_min_arrival_times[NX][NY];
 
 bool readMinArrivalTimes(FILE *f, float arr[NX][NY])
 {
-    return (fread(arr, sizeof(float), NX * NY, f) == (NX * NY));
+    // filling arr with sentinel values
+    for (short m = 0; m < NX; m++)
+        for (short n = 0; n < NY; n++)
+            arr[m][n] = SENTINEL_TIME;
+
+    short m;
+    short n;
+    float time;
+    while (1)
+    {
+        size_t total_bytes_read = fread(&m, sizeof(short), 1, f) +
+                                  fread(&n, sizeof(short), 1, f) +
+                                  fread(&time, sizeof(float), 1, f);
+        if (total_bytes_read != 3) // reached the end of the file, something's not right
+            return false;
+        if (m == -1) // reached delimiter triplet, no more min arrival time values
+            return true;
+        arr[m][n] = time;
+    }
 }
 
 bool loadPartialTileFile(char *filename, EventHeaderData *event_data, bool initial)
