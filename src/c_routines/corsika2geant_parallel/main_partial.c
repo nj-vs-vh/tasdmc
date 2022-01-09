@@ -56,14 +56,29 @@ void prepareTempFilePointers()
     temp_files_swap = !temp_files_swap;
 }
 
+// dumping verbatim event header (primary particle info, shower geometry, etc) from CORSIKA particle output
 bool dumpEventHeader(FILE *fout, EventHeaderData *ed)
 {
     return (fwrite(ed->eventbuf, sizeof(float), NWORD, fout) == NWORD);
 }
 
+// dumping min_arrival_times array as a sparse 2D matrix (triplets of m, n, time);
+// after it a single delimiter triplet -1, -1, SENTINEL_TIME
 bool dumpMinArrivalTimes(FILE *fout)
 {
-    return (fwrite(min_arrival_times, sizeof(float), NX * NY, fout) == (NX * NY));
+    for (short m = 0; m < NX; m++)
+        for (short n = 0; n < NY; n++)
+            if (min_arrival_times[m][n] != SENTINEL_TIME)
+                if (!((fwrite(&m, sizeof(short), 1, fout) == 1) &&
+                      (fwrite(&n, sizeof(short), 1, fout) == 1) &&
+                      (fwrite(&min_arrival_times[m][n], sizeof(float), 1, fout) == 1)))
+                    return false;
+    short dummy_idx = -1;
+    float dummy_time = SENTINEL_TIME;
+    return (
+        (fwrite(&dummy_idx, sizeof(short), 1, fout) == 1) &&
+        (fwrite(&dummy_idx, sizeof(short), 1, fout) == 1) &&
+        (fwrite(&dummy_time, sizeof(float), 1, fout) == 1));
 }
 
 bool dumpVemBatch(FILE *fout, int batch_idx, EventHeaderData *event_data)
@@ -72,15 +87,12 @@ bool dumpVemBatch(FILE *fout, int batch_idx, EventHeaderData *event_data)
     unsigned short buf[TILE_FILE_BLOCK_SIZE];
 
     for (int m = 0; m < NX; m++)
-    {
         for (int n = 0; n < NY; n++)
-        {
             if (min_arrival_times[m][n] != SENTINEL_TIME) // there are particles in this tile at all
             {
                 buf[0] = (unsigned short)m;
                 buf[1] = (unsigned short)n;
                 for (int k = 0; k < NT; k++)
-                {
                     if (vemcount[m][n][k][0] > 0 || // at least one VEM worth of energy was deposited
                         vemcount[m][n][k][1] > 0)
                     {
@@ -96,14 +108,9 @@ bool dumpVemBatch(FILE *fout, int batch_idx, EventHeaderData *event_data)
                             pz_ = (unsigned short)(cosf(event_data->zenith) * (float)(vem_top + vem_bot) / 2.);
                         buf[5] = pz_;
                         if (fwrite(buf, sizeof(short), TILE_FILE_BLOCK_SIZE, fout) != TILE_FILE_BLOCK_SIZE)
-                        {
                             return false;
-                        }
                     }
-                }
             }
-        }
-    }
     return true;
 }
 

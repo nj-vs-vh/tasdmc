@@ -1,4 +1,4 @@
-for file in DAT000085.p*
+for file in DAT??????.p*
 do
     dethinning.run $file $file.dethinned
 done

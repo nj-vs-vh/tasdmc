@@ -3,7 +3,7 @@ LISTFILE=dethinned_list
 rm $LISTFILE
 touch $LISTFILE
 
-for dethinned in DAT000085.p??.dethinned
+for dethinned in DAT??????.p??.dethinned
 do
     echo $dethinned >> $LISTFILE
     # break;
