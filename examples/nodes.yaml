@@ -1,9 +1,10 @@
-# this is distributed run nodes configuration
+# distributed run nodes configuration
+# see README for detailed comments
 
-- host: worker-machine.url.org  # ssh keys must be placed on host beforehand!
+- host: worker-machine.url.org
   conda_env: conda_env_with_tasdmc_installed
-  name: node1  # optional name for display
-  config_override:  # overrides run.yaml's 'default' fields for this worker
+  name: node1
+  config_override:
     corsika:
       path: /path/to/corsika/on/worker/machine
     resources:
@@ -11,9 +12,8 @@
       max_memory: 12
 - host: another-worker-machine.url.org
   conda_env: conda_env_name_on_another_host
-  weight: 0.8  # optional weight determining how much work will be sent to the node relative to others; defaults to 1.0
-  config_override:  # overrides run.yaml's 'default' fields for this worker
+  weight: 0.8
+  config_override:
     corsika:
       path: /path/to/corsika/on/another/worker/machine
-- host: self  # a special host name to create local run on the same machine distributed run is created
-  # user and conda_env fields are ignored
+- host: self

@@ -11,9 +11,10 @@ from .utils import bytes2Gb
 
 def run_system_monitor():
     set_process_title("tasdmc system monitor")
-    interval = float(config.get_key("resources.monitor_interval", default=60))
-    if interval <= 0:
+    interval = config.get_key("resources.monitor_interval", default=60)
+    if interval is None or interval == 0:
         return
+    interval = float(interval)
 
     while True:
         time_before_measurement = time.time()
