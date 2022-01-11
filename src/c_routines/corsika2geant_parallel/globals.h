@@ -4,13 +4,6 @@
 #include "./constants.h"
 #include <stdio.h>
 
-// extern float eventbuf[NWORD];
-// extern float origin[3], zenith;
-
-// extern float tmin, filldist, emin;
-// extern int dm, dn;
-// extern unsigned short pz[NX][NY][NT];
-
 extern float emin;
 extern int particle_count;
 extern int outlier_particle_count;

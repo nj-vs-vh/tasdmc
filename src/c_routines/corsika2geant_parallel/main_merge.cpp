@@ -19,19 +19,17 @@ typedef std::map<std::array<short, 3>, unsigned short> Sparse3DMatrix;
     {                                          \
         auto it = matrix.find(key);            \
         if (it == matrix.end())                \
-        {                                      \
             assign_to = 0;                     \
-        }                                      \
-        assign_to = it->second;                \
+        else                                   \
+            assign_to = it->second;            \
     }
 
 Sparse3DMatrix vem_top;
 Sparse3DMatrix vem_bot;
 Sparse3DMatrix pz;
 
-// all the time indices (k) in merged sparse array are stored relative to the this times and may be negative
+// all the time indices (k) in merged sparse array are stored relative to these times and hence can be negative
 float reference_min_arrival_times[NX][NY];
-// min of min arrival times in each partial tile file
 float global_min_arrival_times[NX][NY];
 float current_min_arrival_times[NX][NY];
 
@@ -231,7 +229,6 @@ void interpolateTile(EventHeaderData *ed)
 
                     unsigned short pz_sample;
                     getValueOrZero(pz, mnk_sample, pz_sample);
-
 
                     float vem_sample_to_interp_factor = powf(r_ratio, 2.6) * expf(zencor * (sampling_radius - r) / 575.0);
 
