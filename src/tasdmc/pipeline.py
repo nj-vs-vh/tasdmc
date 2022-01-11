@@ -12,6 +12,8 @@ from tasdmc.steps import (
     ParticleFileSplittingStep,
     DethinningStep,
     Corsika2GeantStep,
+    Corsika2GeantParallelProcessStep,
+    Corsika2GeantParallelMergeStep,
     TothrowGenerationStep,
     EventsGenerationStep,
     SpectralSamplingStep,
@@ -29,6 +31,7 @@ from tasdmc.utils import batches
 def get_steps(corsika_card_paths: List[Path], include_global: bool = True) -> List[PipelineStep]:
     """List of pipeline steps *in order of optimal execution*"""
     add_tawiki_steps = bool(config.get_key("pipeline.produce_tawiki_dumps", default=False))
+    legacy_c2g_step = bool(config.get_key("pipeline.legacy_corsika2geant", default=True))
     tawiki_dump_steps_by_log10Emin = defaultdict(list)
 
     steps: List[PipelineStep] = []
@@ -40,8 +43,19 @@ def get_steps(corsika_card_paths: List[Path], include_global: bool = True) -> Li
             particle_file_splitting = ParticleFileSplittingStep.from_corsika_step(corsika_step)
             steps.append(particle_file_splitting)
             dethinning_steps = DethinningStep.from_particle_file_splitting_step(particle_file_splitting)
-            steps.extend(dethinning_steps)
-            corsika2geant = Corsika2GeantStep.from_dethinning_steps(dethinning_steps)
+            if legacy_c2g_step:
+                # all dethinnings are executed first, then converted to tile file in bulk with legacy corsika2geant
+                steps.extend(dethinning_steps)
+                corsika2geant = Corsika2GeantStep.from_dethinning_steps(dethinning_steps)
+            else:
+                # each dethinning step is immediately followed by c2g_parallel_process
+                c2g_process_steps = []
+                for dethinning_step in dethinning_steps:
+                    c2g_process = Corsika2GeantParallelProcessStep.from_dethinning_step(dethinning_step)
+                    c2g_process_steps.append(c2g_process)
+                    steps.append(dethinning_step)
+                    steps.append(c2g_process)
+                corsika2geant = Corsika2GeantParallelMergeStep.from_c2g_parallel_process_steps(c2g_process_steps)
             steps.append(corsika2geant)
             tothrow_gen = TothrowGenerationStep.from_corsika2geant(corsika2geant)
             steps.append(tothrow_gen)

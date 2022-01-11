@@ -6,6 +6,7 @@ from .processing.corsika import CorsikaStep
 from .processing.particle_file_splitting import ParticleFileSplittingStep
 from .processing.dethinning import DethinningStep
 from .processing.corsika2geant import Corsika2GeantStep
+from .processing.corsika2geant_parallel import Corsika2GeantParallelProcessStep, Corsika2GeantParallelMergeStep
 from .processing.tothrow_generation import TothrowGenerationStep
 from .processing.event_generation import EventsGenerationStep
 from .processing.spectral_sampling import SpectralSamplingStep
@@ -18,6 +19,8 @@ all_steps: List[Type[PipelineStep]] = [
     ParticleFileSplittingStep,
     DethinningStep,
     Corsika2GeantStep,
+    Corsika2GeantParallelProcessStep,
+    Corsika2GeantParallelMergeStep,
     TothrowGenerationStep,
     EventsGenerationStep,
     SpectralSamplingStep,
