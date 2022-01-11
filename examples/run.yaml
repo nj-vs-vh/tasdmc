@@ -34,9 +34,8 @@ dethinning:
                       # most of the times is not needed; defaults to False
 
 throwing:  # determines how CORSIKA showers will be 'thrown' onto the SD grid to generate MC events
-  n_events_at_min_energy: 1e6  # normalizing constant: number of events
-                               # at input_files.log10E_min; defaults to 1e6
-  dnde_exponent: 2  # power law spectrum exponent; defaults to 2 (dN/dE ~ E^-2)
+  n_events_at_min_energy: 1e6 # number of events thrown at energy corresponding to input_files.log10E_min
+  dnde_exponent: 2  # power law spectrum exponent; e.g. value 2 means events thrown according to dN/dE ~ E^-2
   sdmc_spctr_executable_name: null  # specify this if there are multiple sdmc_spctr_*.run available
                                     # on your PATH; this should not be a problem in most cases and
                                     # tasdmc will check and inform you if this field is required;
