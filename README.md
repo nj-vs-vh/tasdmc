@@ -102,21 +102,21 @@ dethinning:
   n_parallel: 6 # determines how many dethinning steps are run in parallel;
                 # defaults to the number of CPU on the machine
 
-throwing:  # determines how CORSIKA showers will be 'thrown' onto the SD grid to generate MC events
-  n_events_at_min_energy: 1e6 # number of events thrown at energy corresponding to input_files.log10E_min
-  dnde_exponent: 2  # power law spectrum exponent; e.g. value 2 means events thrown according to dN/dE ~ E^-2
-  sdmc_spctr_executable_name: null  # specify this if there are multiple sdmc_spctr_*.run available
-                                    # on your PATH; this should not be a problem in most cases and
-                                    # tasdmc will check and inform you if this field is required;
-                                    # defaults to null (take whatever single version is available,
-                                    # raise error if there are multiple)
-  sdmc_spctr_n_try: 10  # how many times to retry failed sdmc_spctr execution; defaults to 10
-  smear_events_in_bin: True # smear events in 0.1 log10E energy bin according to E^-2 spectrum?;
-                            # defaults to True
-  calibration_dir: sdcalib_13_yrs_from_2008_to_2021 # directory indise $TASDMC_DATA_DIR containing
-                                                    # sdcalib_*.bin files, one for each calibration
-                                                    # epoch; these files can be created from raw
-                                                    # calibration data with 'extract-calibration'
+throwing:  # determines how CORSIKA showers will be 'thrown' to generate MC events
+  n_events_at_min_energy: 1e6 # number of events thrown at input_files.log10E_min
+  dnde_exponent: 2  # power law spectrum exponent; e.g. 2 means events are thrown
+                    # according to dN/dE ~ E^-2
+  sdmc_spctr_executable_name: null  # specify this if there are multiple sdmc_spctr
+                                    # versions available on your PATH; this should
+                                    # not be a problem in most cases and tasdmc will
+                                    # check and inform you if this field is needed
+  sdmc_spctr_n_try: 10  # retry count for sdmc_sptcr program; defaults to 10
+  smear_events_in_bin: True # flag to smear events in 0.1 log energy bin according
+                            # to E^-2 spectrum; defaults to True
+  calibration_dir: sdcalib_dir_name # directory indise $TASDMC_DATA_DIR containing
+                                    # sdcalib_*.bin files, one for each calibration
+                                    # epoch; these files can be created from raw
+                                    # calibration data with 'extract-calibration'
 
 spectral_sampling:
   target: HiRes # HiRes | TASD2015 | E_minus_3; target spectrum for generated MC events
@@ -152,14 +152,16 @@ debug:  # all are False/empty by default
 It contains a list of entries, each describing the node. See [example](examples/nodes.yaml):
 
 ```yaml
-  # Note that auth is not handled by tasdmc: ssh keys must be exchanged beforehand,
-  # .ssh/config file may be used to specify username, proxy jumps etc.
-  # In short, tasdmc will work only if command like this works in your terminal:
-  # > ssh worker-machine.url.org
+# Note that auth is not handled by tasdmc: ssh keys must be exchanged beforehand,
+# for complex setups ~/.ssh/config file may be used to specify username, proxy jumps etc.
+# In short, tasdmc will work only if command like this works in your terminal
+# without password prompt and any command line params:
+# > ssh worker-machine.url.org
 - host: worker-machine.url.org
   conda_env: conda_env_with_tasdmc_installed
   name: node1  # optional name for display purposes
-  config_override:  # overrides "default" values from run.yaml e.g. to specify CORSIKA path for each node
+  # overrides "default" values from run.yaml e.g. to specify CORSIKA path for each node
+  config_override:
     corsika:
       path: /path/to/corsika/on/worker/machine
     resources:
@@ -168,15 +170,20 @@ It contains a list of entries, each describing the node. See [example](examples/
     # other values will be "inherited" from run.yaml
 - host: another-worker-machine.url.org
   conda_env: conda_env_name_on_another_host
-  weight: 0.8  # optional weight determining how much work will be sent to the node relative to others; defaults to 1.0
+  # optional weight determining how much work will be assigned to the node
+  # relative to others; defaults to 1.0, so in this case the node will have
+  # to do 20% less work
+  weight: 0.8
   config_override:
     corsika:
       path: /path/to/corsika/on/another/worker/machine
-- host: self  # a special host name to create local run on the same machine distributed run is created
+  # a special host name to create local run on the same machine distributed
+  # run is created
+- host: self
   weight: 0.1
 ```
 
-Note that distributed run functionality aims to be a very light automatization: it just generates configs for each
+Distributed run functionality aims to be a very light automatization: it just generates configs for each
 node's run and starts the simulation on them just as it would be started manually. Hence, you can manually monitor
 and control local runs on each node if you prefer. Generated local runs have names according to the convention
 `<distributed-run-name>:node-from-<distributed-run-host>`.
