@@ -2,11 +2,13 @@ import os
 from pathlib import Path
 import re
 import hashlib
+from uuid import uuid4
 from functools import wraps
+from subprocess import CalledProcessError
 
 from typing import List, Any, Callable, TypeVar, BinaryIO, Generator, Iterable, TypeVar, Tuple
 
-from tasdmc.c_routines_wrapper import list_events_in_dst_file
+from tasdmc.c_routines_wrapper import list_events_in_dst_file, execute_routine, Pipes
 from .exceptions import FilesCheckFailed
 
 
@@ -86,6 +88,22 @@ def check_last_line_contains(file: Path, must_contain: str):
                 last_line = line
         if must_contain not in last_line:
             raise FilesCheckFailed(f"{file} does not contain '{must_contain}' in the last line ('{last_line}')")
+
+
+def check_tile_file_contents(tile_path: Path):
+    uuid = uuid4().hex  # thread safety -- concurrent checks of the same tile file are possible
+    check_stdout = Path(str(tile_path) + f'.check.stdout.{uuid}')
+    check_stderr = Path(str(tile_path) + f'.check.stderr.{uuid}')
+    try:
+        with Pipes(check_stdout, check_stderr) as (stdout, stderr):
+            execute_routine('check_gea_dat_file.run', [tile_path], stdout, stderr)
+        check_file_is_empty(check_stderr)
+        check_last_line_contains(check_stdout, 'OK')
+    except CalledProcessError as e:
+        raise FilesCheckFailed(str(e))
+    finally:
+        check_stdout.unlink(missing_ok=True)
+        check_stderr.unlink(missing_ok=True)
 
 
 def check_dst_file_not_empty(file: Path):
