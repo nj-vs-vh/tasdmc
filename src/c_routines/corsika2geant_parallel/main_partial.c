@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
             "corsika2geant_parallel_process.run is a rewrite of corsika2geant.run that processes a "
             "single dethinned particle file and produces a partial tile file\n"
             "partial tile files should then be merged together by corsik2geant_parallel_merge.run\n\n"
-            "accepts exactly 4 command-line arguments:\n"
+            "accepts exactly 3 command-line arguments:\n"
             "\tdethinned CORSIKA particle file path\n"
             "\tsdgeant.dst file path\n"
             "\tpartial tile file path\n");

@@ -1,17 +1,14 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
-from subprocess import CalledProcessError
 from gdown.cached_download import assert_md5sum
-from uuid import uuid4
 
 from typing import List
 
 from tasdmc import fileio
 from tasdmc.c_routines_wrapper import execute_routine, Pipes
 from tasdmc.steps.base import Files, NotAllRetainedFiles, PipelineStep
-from tasdmc.steps.utils import check_file_is_empty, check_last_line_contains
-from tasdmc.steps.exceptions import FilesCheckFailed
+from tasdmc.steps.utils import check_file_is_empty, check_last_line_contains, check_tile_file_contents
 from tasdmc.utils import concatenate_and_hash
 
 from .dethinning import DethinningOutputFiles, DethinningStep
@@ -75,35 +72,22 @@ class C2GOutputFiles(Files):
 
     @classmethod
     def from_c2g_input_files(cls, c2g_input: C2GInputFiles) -> C2GOutputFiles:
+        return cls.from_corsika_event_name(c2g_input.corsika_event_name)
+
+    @classmethod
+    def from_corsika_event_name(cls, corsika_event_name: str) -> C2GOutputFiles:
         outdir = fileio.c2g_output_files_dir()
         return cls(
-            tile=outdir / (c2g_input.corsika_event_name + '_gea.dat'),
-            stdout=outdir / (c2g_input.corsika_event_name + '.c2g.stdout'),
-            stderr=outdir / (c2g_input.corsika_event_name + '.c2g.stderr'),
-            corsika_event_name=c2g_input.corsika_event_name,
+            tile=outdir / (corsika_event_name + '_gea.dat'),
+            stdout=outdir / (corsika_event_name + '.c2g.stdout'),
+            stderr=outdir / (corsika_event_name + '.c2g.stderr'),
+            corsika_event_name=corsika_event_name,
         )
 
     def _check_contents(self):
         check_file_is_empty(self.stderr, ignore_strings=['$$$ dst_get_block_ : End of input file reached'])
         check_last_line_contains(self.stdout, 'OK')
-        uuid = uuid4().hex
-        check_stdout = Path(str(self.tile) + f'.check.stdout.{uuid}')
-        check_stderr = Path(str(self.tile) + f'.check.stderr.{uuid}')
-        try:
-            with Pipes(check_stdout, check_stderr) as (stdout, stderr):
-                execute_routine(
-                    'check_gea_dat_file.run',
-                    [self.tile],
-                    stdout,
-                    stderr,
-                )
-            check_file_is_empty(check_stderr)
-            check_last_line_contains(check_stdout, 'OK')
-        except CalledProcessError as e:
-            raise FilesCheckFailed(str(e))
-        finally:
-            check_stdout.unlink(missing_ok=True)
-            check_stderr.unlink(missing_ok=True)
+        check_tile_file_contents(self.tile)
 
 
 class Corsika2GeantStep(PipelineStep):
@@ -137,7 +121,11 @@ class Corsika2GeantStep(PipelineStep):
 
     @classmethod
     def validate_config(cls):
-        assert (
-            fileio.DataFiles.sdgeant.exists()
-        ), f"{fileio.DataFiles.sdgeant} file not found, use 'tasdmc download-data-files'"
-        assert_md5sum(fileio.DataFiles.sdgeant, '0cebc42f86e227e2fb2397dd46d7d981', quiet=True)
+        _validate_sdgeant()
+
+def _validate_sdgeant():
+    assert (
+        fileio.DataFiles.sdgeant.exists()
+    ), f"{fileio.DataFiles.sdgeant} file not found, use 'tasdmc download-data-files'"
+    assert_md5sum(fileio.DataFiles.sdgeant, '0cebc42f86e227e2fb2397dd46d7d981', quiet=True)
+
