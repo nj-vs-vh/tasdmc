@@ -12,11 +12,12 @@ import struct
 import math
 import re
 
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 from tasdmc import config
 from tasdmc.steps.base import Files, PipelineStep
 from tasdmc.steps.processing.corsika2geant import C2GOutputFiles, Corsika2GeantStep
+from tasdmc.steps.processing.corsika2geant_parallel import Corsika2GeantParallelMergeStep
 from tasdmc.steps.corsika_cards_generation import get_cards_count_at_log10E, log10E_bounds_from_config
 
 
@@ -49,7 +50,7 @@ class TothrowGenerationStep(PipelineStep):
         return f"Tothrow files generation for {self.input_.corsika_event_name}"
 
     @classmethod
-    def from_corsika2geant(cls, c2g_step: Corsika2GeantStep) -> TothrowGenerationStep:
+    def from_corsika2geant(cls, c2g_step: Union[Corsika2GeantStep, Corsika2GeantParallelMergeStep]) -> TothrowGenerationStep:
         return TothrowGenerationStep(
             c2g_step.output,
             TothrowFile.from_corsika2geant_output(c2g_output=c2g_step.output),

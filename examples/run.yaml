@@ -7,6 +7,10 @@ description:
 pipeline:
   produce_tawiki_dumps: True  # convert reconstructed .dst.gz files to ASCII tables
                               # in TA Wiki format; defaults to False
+  legacy_corsika2geant: False # if set to True, legacy corsika2geant routine with 
+                              # appropriate pipeline configuration is used
+                              # significantly increases simultaneous disk space
+                              # usage; defaults to True for backwards compatibility
 
 input_files:
   particle: proton

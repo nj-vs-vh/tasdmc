@@ -56,7 +56,7 @@ def error_catching(cmd_fn):
         try:
             cmd_fn(*args, **kwargs)
         except Exception as e:
-            click.secho(f"\n{e.__class__.__name__}: {e}", fg='red', bold=True, err=True)
+            click.secho(f"\n{e.__class__.__name__} exception raised: {e}", fg='red', bold=True, err=True)
             sys.exit(1)
 
     return wrapped

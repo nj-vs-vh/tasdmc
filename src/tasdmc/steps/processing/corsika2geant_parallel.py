@@ -36,9 +36,9 @@ class PartialTileFile(NotAllRetainedFiles):
     @classmethod
     def from_dethinning_output(cls, dethinning_output: DethinningOutputFiles) -> PartialTileFile:
         corsika_event_name = dethinning_output.dethinned_particle.name.split('.')[0]  # DATnnnnnn
-        ptile = fileio.c2g_output_files_dir() / (dethinning_output.dethinned_particle.name + '.partial_tile')
-        return cls(
-            dethinning_output=Path(ptile),
+        ptile = str(fileio.c2g_output_files_dir() / (dethinning_output.dethinned_particle.name + '.partial_tile'))
+        return PartialTileFile(
+            partial_tile=Path(ptile),
             stdout=Path(ptile + '.stdout'),
             stderr=Path(ptile + '.stderr'),
             corsika_event_name=corsika_event_name,
@@ -63,7 +63,7 @@ class Corsika2GeantParallelProcessStep(PipelineStep):
 
     @property
     def description(self) -> str:
-        return f"Partial tile file generation from {self.input_.dethinned_particle}"
+        return f"Partial tile file generation from {self.input_.dethinned_particle.name}"
 
     def _run(self):
         with Pipes(self.output.stdout, self.output.stderr) as (stdout, stderr):
@@ -129,7 +129,7 @@ class Corsika2GeantParallelMergeStep(PipelineStep):
     output: C2GOutputFiles
 
     @classmethod
-    def from_dethinning_steps(
+    def from_c2g_parallel_process_steps(
         cls, c2g_p_process_steps: List[Corsika2GeantParallelProcessStep]
     ) -> Corsika2GeantParallelMergeStep:
         input_ = PartialTileFileSet.from_partial_tile_files([step.output for step in c2g_p_process_steps])
