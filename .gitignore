@@ -14,6 +14,7 @@ dist/
 data/
 
 test_corsika2geant
+*.mp4
 
 # default dir for runs data
 runs/

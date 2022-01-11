@@ -123,7 +123,7 @@ def animate_tile(
 
 
 if __name__ == "__main__":
-    tile = TileFile.load("runs/test-run/corsika2geant_output/DAT000026_gea.dat")
+    tile = TileFile.load("../tasdmc-misc/DAT000205_gea.dat")
     # for param in ("vem_top", "vem_bot", "pz"):
-    param = "vem_bot"
-    animate_tile(tile, f"{param}.mp4", param=param, center_width=300)
+    param = "vem_top"
+    animate_tile(tile, f"{param}.mp4", param=param, center_width=600)
