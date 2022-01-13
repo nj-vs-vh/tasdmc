@@ -133,7 +133,7 @@ def validate_config():
 def get_cards_count_at_log10E(log10E: float):
     params = BTS_PAR[log10E]
     event_number_multiplier = _event_number_multiplier_from_config()
-    cards_count = int(params[6] * event_number_multiplier)
+    cards_count = int(ceil(params[6] * event_number_multiplier))
 
     # NOTE: this limitation is eliminated in the latest corsika
     # NRREXT option may be used, files are then named DATnnnnnnnnn istead of DATnnnnnn
