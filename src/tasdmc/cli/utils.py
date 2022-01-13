@@ -1,5 +1,6 @@
 import click
 import sys
+import traceback
 
 from tasdmc import system, pipeline, config, fileio
 from tasdmc.utils import user_confirmation
@@ -56,7 +57,8 @@ def error_catching(cmd_fn):
         try:
             cmd_fn(*args, **kwargs)
         except Exception as e:
-            click.secho(f"\n{e.__class__.__name__} exception raised: {e}", fg='red', bold=True, err=True)
+            click.secho(f"\n{e.__class__.__name__} exception raised: {e}\n\n", fg='red', bold=True, err=True)
+            traceback.print_exc()
             sys.exit(1)
 
     return wrapped
