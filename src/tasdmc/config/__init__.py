@@ -43,6 +43,7 @@ Global.load()
 
 def validate(step_classes: Optional[List[Type['PipelineStep']]] = None):  # type: ignore
     from tasdmc.steps.corsika_cards_generation import validate_config
+
     validate_config()
     if step_classes is None:
         from tasdmc.steps import all_steps as step_classes
@@ -86,7 +87,9 @@ def used_processes() -> int:
             + f"than a single-thread requirement ({Global.memory_per_process_Gb} Gb)"
         )
     max_processes_inferred = int(max_memory_explicit / Global.memory_per_process_Gb)
-    max_processes_variants = [np for np in [max_processes_explicit, max_processes_inferred, resources.n_cpu()] if np > 0]
+    max_processes_variants = [
+        np for np in [max_processes_explicit, max_processes_inferred, resources.n_cpu()] if np > 0
+    ]
     return min(max_processes_variants)
 
 

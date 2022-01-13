@@ -39,6 +39,7 @@ class Files(ABC):
 
         May be overriden by subclasses.
         """
+
         def is_list_of_paths(t: Any):
             args = get_args(t)
             origin = get_origin(t)
@@ -96,7 +97,7 @@ class Files(ABC):
 
     def files_were_produced(self) -> bool:
         """Returns bool value indicating if Files' were already produced.
-        
+
         This differs from assert_files_are_ready in semantics: files were once produced (i.e. the step producing it was
         completed) vs files are ready at the moment (i.e. ready to be consumed by a step as input). See subclasses for
         details.
@@ -174,8 +175,7 @@ class Files(ABC):
             stored_hash = f.read()
         if _input_hashes_log_enabled() and self.contents_hash != stored_hash:
             input_hashes_debug(
-                f"{self} hash comparison "
-                + f"FAILED (actual hash: {self.contents_hash}; stored hash: {stored_hash})"
+                f"{self} hash comparison " + f"FAILED (actual hash: {self.contents_hash}; stored hash: {stored_hash})"
             )
         return self.contents_hash == stored_hash
 
@@ -206,7 +206,7 @@ class _AllowedToBeMissingFiles(Files):
 
 class NotAllRetainedFiles(_AllowedToBeMissingFiles):
     """Subclass for cases when some of the files are not retained (e.g., they are too big or just redundant)
-    
+
     In this case the "original" file will be deleted and "original.deleted" will be created in its place,
     containing info about "original"'s size and contents hash.
     """
@@ -250,8 +250,7 @@ class NotAllRetainedFiles(_AllowedToBeMissingFiles):
                     if _file_checks_log_enabled():
                         if f not in self.not_retained:
                             file_checks_debug(
-                                f"{self} check failed:\n"
-                                + f"{f.name} is missing and isn't marked as not retained"
+                                f"{self} check failed:\n" + f"{f.name} is missing and isn't marked as not retained"
                             )
                         elif not self._with_deleted_suffix(f).exists():
                             file_checks_debug(

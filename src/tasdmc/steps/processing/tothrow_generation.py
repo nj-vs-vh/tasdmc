@@ -50,7 +50,9 @@ class TothrowGenerationStep(PipelineStep):
         return f"Tothrow files generation for {self.input_.corsika_event_name}"
 
     @classmethod
-    def from_corsika2geant(cls, c2g_step: Union[Corsika2GeantStep, Corsika2GeantParallelMergeStep]) -> TothrowGenerationStep:
+    def from_corsika2geant(
+        cls, c2g_step: Union[Corsika2GeantStep, Corsika2GeantParallelMergeStep]
+    ) -> TothrowGenerationStep:
         return TothrowGenerationStep(
             c2g_step.output,
             TothrowFile.from_corsika2geant_output(c2g_output=c2g_step.output),

@@ -100,9 +100,7 @@ class CorsikaStep(PipelineStep):
             )
             # quick hacks relying on default CORSIKA naming strategy, not to be relied upon
             corsika_exe_name = corsika_path.name.lower()
-            assert 'thin' in corsika_exe_name, (
-                "CORSIKA seems to be compiled without THINning option" + common_msg_end
-            )
+            assert 'thin' in corsika_exe_name, "CORSIKA seems to be compiled without THINning option" + common_msg_end
             low_E_hadr_model: str = config.get_key('corsika.low_E_hadronic_interactions_model')
             assert low_E_hadr_model.lower() in corsika_exe_name, "Low energy hadronic seems incorrect"
             high_E_hadr_model: str = config.get_key('corsika.high_E_hadronic_interactions_model')

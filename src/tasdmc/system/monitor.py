@@ -24,14 +24,18 @@ def run_system_monitor():
             sys.exit(0)
         for _ in range(5):  # trying several times
             try:
-                running_processes = [p for p in processes if p.status() == psutil.STATUS_RUNNING and p.pid != os.getpid()]
+                running_processes = [
+                    p for p in processes if p.status() == psutil.STATUS_RUNNING and p.pid != os.getpid()
+                ]
                 if running_processes:
                     cpu_percents = [p.cpu_percent(0.3) for p in running_processes]
                     #                    same as top‘s RES column
                     memory_used = [bytes2Gb(p.memory_info().rss) for p in running_processes]
                     logs.system_resources_info(
-                        "CPU " + " ".join(f"{cp:.3f}" for cp in cpu_percents)
-                        + " MEM " + " ".join(f"{m:.3f}" for m in memory_used)
+                        "CPU "
+                        + " ".join(f"{cp:.3f}" for cp in cpu_percents)
+                        + " MEM "
+                        + " ".join(f"{m:.3f}" for m in memory_used)
                         + f" DISK {directory_size(fileio.run_dir()):.3f}/{available_disk_space(fileio.run_dir()):.3f}"
                     )
                     break

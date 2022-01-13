@@ -123,9 +123,9 @@ class Corsika2GeantStep(PipelineStep):
     def validate_config(cls):
         _validate_sdgeant()
 
+
 def _validate_sdgeant():
     assert (
         fileio.DataFiles.sdgeant.exists()
     ), f"{fileio.DataFiles.sdgeant} file not found, use 'tasdmc download-data-files'"
     assert_md5sum(fileio.DataFiles.sdgeant, '0cebc42f86e227e2fb2397dd46d7d981', quiet=True)
-

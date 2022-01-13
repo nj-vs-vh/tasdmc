@@ -118,8 +118,7 @@ def set_dot_notation(d: Dict, key: str, value: Any):
         if not isinstance(subdict, dict):
             keyspec = ('"' + '.'.join(traversed_keys) + '"') if len(traversed_keys) else 'root'
             raise KeyError(
-                f"Expected {keyspec} to be dict with {level_key} key, but "
-                + f"found {subdict.__class__.__name__}",
+                f"Expected {keyspec} to be dict with {level_key} key, but found {subdict.__class__.__name__}",
             )
         if i_level == n_levels - 1:
             subdict[level_key] = value

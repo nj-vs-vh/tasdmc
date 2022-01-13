@@ -9,7 +9,6 @@ from ..group import cli
 from ..utils import error_catching
 
 
-
 @cli.command(
     "extract-calibration",
     help="Exctract calibration from raw per-day data",

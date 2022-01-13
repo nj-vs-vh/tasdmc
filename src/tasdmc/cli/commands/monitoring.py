@@ -35,7 +35,6 @@ def info_cmd():
     config.RunConfig.dump(stdout=True)
 
 
-
 @cli.command("progress", help="Display progress for run NAME")
 @click.option(
     "-f",

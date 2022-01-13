@@ -53,7 +53,7 @@ class PipelineStepProgress:
             except ValueError:
                 continue
             rest = ' '.join(rest)
-            event_type=EventType(event_type_str)
+            event_type = EventType(event_type_str)
             if event_type is EventType.COMPLETED and rest:
                 value = float(rest)
             elif event_type is EventType.FAILED and rest:

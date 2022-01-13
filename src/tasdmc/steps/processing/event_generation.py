@@ -162,7 +162,10 @@ class EventsGenerationStep(PipelineStep):
                     epoch_log_file.unlink(missing_ok=True)
                     for i_try in range(1, n_try + 1):
                         log.write(f'\tAttempt {i_try}/{n_try}\n')
-                        with UnlimitedStackSize(), Pipes(epoch_log_file, epoch_log_file, append=True) as (stdout, stderr):
+                        with UnlimitedStackSize(), Pipes(epoch_log_file, epoch_log_file, append=True) as (
+                            stdout,
+                            stderr,
+                        ):
                             sdmc_spctr_res = execute_routine(
                                 _get_sdmc_spctr_executable(),
                                 [

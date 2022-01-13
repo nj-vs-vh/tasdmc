@@ -65,7 +65,7 @@ class TawikiDumpStep(PipelineStep):
             return
 
         # E_min = 10 ** (self.input_.log10E_min - 18)  # log10E -> EeV
-        
+
         # using constant default energy cutoff of 1 EeV
         # TODO: create a config field for all the cuts and use it throughout
         E_min = 1.0
@@ -78,7 +78,7 @@ class TawikiDumpStep(PipelineStep):
             )
 
 
-# merging dumps 
+# merging dumps
 # it's a bit hacky
 # TODO: create an aggregation step abstraction
 

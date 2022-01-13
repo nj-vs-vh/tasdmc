@@ -62,8 +62,7 @@ class NodeExecutor(ABC):
     def run_simulation(self, dry: bool = False):
         node_run_config_path = self.save_run_config_to_node()
         dry_opt = '--dry' if dry else ''
-        redirect = '' if dry else '&> tasdmc.log.temp'
-        self.run(f"tasdmc run-local -r {node_run_config_path} --remove-run-config-file {dry_opt} {redirect}", disown=(not dry))
+        self.run(f"tasdmc run-local -r {node_run_config_path} --remove-run-config-file {dry_opt}", disown=(not dry))
 
     def update_config(self, dry: bool = False) -> bool:
         new_node_run_config = self.save_run_config_to_node()

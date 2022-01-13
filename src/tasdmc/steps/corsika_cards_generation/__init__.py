@@ -37,9 +37,7 @@ def generate_corsika_cards() -> List[Path]:
     logs.cards_generation_info(f'Hadronic interactions models: {high_E_model}/{low_E_model}')
 
     event_number_multiplier = _event_number_multiplier_from_config()
-    logs.cards_generation_info(
-        f"Event numbers are multiplied by {event_number_multiplier:.3f} in each energy bin"
-    )
+    logs.cards_generation_info(f"Event numbers are multiplied by {event_number_multiplier:.3f} in each energy bin")
 
     # common corsika card parameters
     cd = CorsikaCardData()
@@ -86,7 +84,7 @@ def generate_corsika_cards() -> List[Path]:
             cards_count_msg = f"{len(card_index_range)}/{cards_count} cards, starting at {card_index_range[0]}"
         else:
             cards_count_msg = f"{cards_count:d} cards"
-        
+
         cards_count_in_subset = len(card_index_range)
         skipped_msg = (
             ''
@@ -120,14 +118,10 @@ def validate_config():
 
     allowed_high_E_models = ('QGSJETII', 'EPOS')
     if config.get_key('corsika.high_E_hadronic_interactions_model') not in allowed_high_E_models:
-        raise ValueError(
-            f"high_E_hadronic_interactions_model must be one of: {', '.join(allowed_high_E_models)}"
-        )
+        raise ValueError(f"high_E_hadronic_interactions_model must be one of: {', '.join(allowed_high_E_models)}")
     allowed_low_E_models = ('FLUKA', 'URQMD', 'GHEISHA')
     if config.get_key('corsika.low_E_hadronic_interactions_model') not in allowed_low_E_models:
-        raise ValueError(
-            f"low_E_hadronic_interactions_model must be one of: {', '.join(allowed_low_E_models)}"
-        )
+        raise ValueError(f"low_E_hadronic_interactions_model must be one of: {', '.join(allowed_low_E_models)}")
 
 
 def get_cards_count_at_log10E(log10E: float):
@@ -153,7 +147,7 @@ def is_subset_configured():
 
 
 def card_index_range_from_config(cards_count: int) -> Iterable[int]:
-    """This function returns range(cards_count) for local runs and for distributed runs returns only """
+    """This function returns range(cards_count) for local runs and for distributed runs returns only"""
     input_files_subset_config = config.get_key('input_files.subset', default=None)
     if input_files_subset_config is None:  # i.e. this is local run config, generating all cards
         return range(cards_count)
@@ -166,13 +160,10 @@ def card_index_range_from_config(cards_count: int) -> Iterable[int]:
     sum_of_subsets = sum(subset_sizes)
     if sum_of_subsets > cards_count:  # because of rounding up
         max_subset_idx = subset_sizes.index(max(subset_sizes))
-        subset_sizes[max_subset_idx] -= (sum_of_subsets - cards_count)
+        subset_sizes[max_subset_idx] -= sum_of_subsets - cards_count
     assert sum(subset_sizes) == cards_count
 
-    subset_bounds = [
-        (sum(subset_sizes[:i]), sum(subset_sizes[:i+1]))
-        for i in range(len(subset_sizes))
-    ]
+    subset_bounds = [(sum(subset_sizes[:i]), sum(subset_sizes[: i + 1])) for i in range(len(subset_sizes))]
     return range(*subset_bounds[this_idx])
 
 
@@ -181,9 +172,7 @@ def _particle_id_from_config() -> Tuple[str, int]:
     try:
         return particle, PARTICLE_ID_BY_NAME[particle]
     except KeyError:
-        raise ValueError(
-            f'Unknown particle "{particle}", must be one of: {", ".join(PARTICLE_ID_BY_NAME.keys())}'
-        )
+        raise ValueError(f'Unknown particle "{particle}", must be one of: {", ".join(PARTICLE_ID_BY_NAME.keys())}')
 
 
 def log10E_bounds_from_config() -> Tuple[float, float]:

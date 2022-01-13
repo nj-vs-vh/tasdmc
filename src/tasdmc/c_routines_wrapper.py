@@ -22,7 +22,7 @@ def execute_routine(
     check_errors: bool = True,
 ):
     executable_path = str(config.Global.bin_dir / executable_name) if not global_ else executable_name
-    
+
     routine_cmd = " ".join([str(a) for a in [executable_path, *args]])
     if debug_routines_execution():
         with open(fileio.routine_cmd_debug_log(), 'a') as f:
@@ -39,7 +39,7 @@ def execute_routine(
     if debug_routines_execution() and result.returncode != 0:
         with open(fileio.routine_cmd_debug_log(), 'a') as f:
             f.write(f"\nFAILED:\n{routine_cmd}\n\n")
-    
+
     return result
 
 
