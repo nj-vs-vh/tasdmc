@@ -11,27 +11,16 @@ from ..utils import run_standard_pipeline_in_background, loading_run_by_name, er
 
 
 @cli.command("continue", help="Continue execution of aborted run NAME")
-@click.option(
-    "--foreground",
-    is_flag=True,
-    default=False,
-    help="Assume that you will background & disown the program yourself",
-)
 @loading_run_by_name
 @error_catching
-def continue_run_cmd(foreground: bool):
+def continue_run_cmd():
     if config.is_local_run():
         if system.process_alive(pid=fileio.get_saved_main_pid()):
             click.secho(f"Run already alive")
             sys.exit(1)
         fileio.prepare_run_dir(continuing=True)
-        if foreground:
-            pipeline.run_simulation()
-        else:
-            run_standard_pipeline_in_background()
+        run_standard_pipeline_in_background()
     else:
-        click.echo("Continuing distributed run is broken for now, please do it manually")
-        return
         nodes.check_all()
         nodes.continue_all()
 

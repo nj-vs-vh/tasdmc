@@ -1,4 +1,5 @@
 import click
+from pathlib import Path
 
 from tasdmc import config, pipeline, fileio, nodes
 
@@ -16,14 +17,16 @@ from ..utils import run_standard_pipeline_in_background, error_catching
     help="Check that simulation is runnable but do not run it",
 )
 @click.option(
-    "--foreground",
+    "--remove-run-config-file",
     is_flag=True,
     default=False,
-    help="Assume that you will background & disown the program yourself",
+    help="Delete a file with run config after it's read",
 )
 @error_catching
-def local_run_cmd(run_config_filename: str, dry: bool, foreground: bool):
+def local_run_cmd(run_config_filename: str, dry: bool, remove_run_config_file: bool):
     config.RunConfig.load(run_config_filename)
+    if remove_run_config_file:
+        Path(run_config_filename).unlink()
     fileio.prepare_run_dir()
     if dry:
         try:
@@ -31,10 +34,7 @@ def local_run_cmd(run_config_filename: str, dry: bool, foreground: bool):
         finally:
             fileio.remove_run_dir()
     else:
-        if foreground:
-            pipeline.run_simulation()
-        else:
-            run_standard_pipeline_in_background()
+        run_standard_pipeline_in_background()
 
 
 @cli.command("run-distributed", help="Run simulation distributed across several machines (nodes)")
