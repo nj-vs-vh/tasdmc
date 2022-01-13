@@ -55,6 +55,9 @@ def generate_corsika_cards() -> List[Path]:
     if low_E_model == 'URQMD':
         cd.replace_card("ECUTS", "0.3  0.05  0.00025  0.00025")
 
+    def file_index_to_runnr(idx: int, energy_id: int) -> str:
+        return f"{idx * 100 + energy_id:06d}"
+
     logs.cards_generation_info('\nCards per energy bin')
     for log10E in log10E_range_from_config():
         cd.set_fixed_log10en(log10E)
@@ -65,11 +68,10 @@ def generate_corsika_cards() -> List[Path]:
 
         cards_count = get_cards_count_at_log10E(log10E)  # a total number of cards
         skipped_cards_count = 0
-
-        def file_index_to_runnr(idx: int, energy_id: int) -> str:
-            return f"{idx * 100 + energy_id:06d}"
-
-        for card_index in card_index_range_from_config(cards_count):
+        card_index_range = list(card_index_range_from_config(cards_count))
+        if len(card_index_range) == 0:
+            continue
+        for card_index in card_index_range:
             runnr = file_index_to_runnr(card_index, energy_id)
             card_file = fileio.corsika_input_files_dir() / f"DAT{runnr}.in"
             generated_card_paths.append(card_file)
@@ -78,10 +80,8 @@ def generate_corsika_cards() -> List[Path]:
                 continue
             cd.set_RUNNR(runnr)
             cd.set_random_seeds()
-            with open(card_file, "w") as f:
-                f.write(cd.buf + "\n")
+            card_file.write_text(cd.buf + "\n")
 
-        card_index_range = list(card_index_range_from_config(cards_count))
         if is_subset_configured():
             cards_count_msg = f"{len(card_index_range)}/{cards_count} cards, starting at {card_index_range[0]}"
         else:
