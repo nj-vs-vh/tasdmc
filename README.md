@@ -100,12 +100,17 @@ corsika:
 
 dethinning:
   n_parallel: 6 # determines how many dethinning steps are run in parallel;
-                # defaults to the number of CPU on the machine
+                # defaults to the number of CPU on the machine; increasing this
+                # value leads to less peaks in disk usage but slightly higher
+                # computation time
 
-throwing:  # determines how CORSIKA showers will be 'thrown' to generate MC events
+# determines how CORSIKA showers will be 'thrown' to generate MC events
+throwing:
   n_events_at_min_energy: 1e6 # number of events thrown at input_files.log10E_min
+                              # this diretly affects the final dataset size!
   dnde_exponent: 2  # power law spectrum exponent; e.g. 2 means events are thrown
-                    # according to dN/dE ~ E^-2
+                    # according to dN/dE ~ E^-2 (this is not a final spectrum, see
+                    # spectral_sampling config later)
   sdmc_spctr_executable_name: null  # specify this if there are multiple sdmc_spctr
                                     # versions available on your PATH; this should
                                     # not be a problem in most cases and tasdmc will
@@ -120,11 +125,11 @@ throwing:  # determines how CORSIKA showers will be 'thrown' to generate MC even
 
 spectral_sampling:
   target: HiRes # HiRes | TASD2015 | E_minus_3; target spectrum for generated MC events
-  aux_log10E_min: # by default spectrum is sampled with log10E_min = input_files.log10E_min,
+  aux_log10E_min: # by default spectrum is sampled starting from input_files.log10E_min,
                   # producing a spectrum with a full range of simulated energies.
-                  # for some applications (e.g. neural net training), spectra with higher minimum
-                  # energies are useful as the default one will likely contain only a small sample
-                  # of high-energy events
+                  # for some applications (e.g. neural net training), spectra with
+                  # higher minimum energies are useful as the default one will
+                  # contain a very small sample of high-energy events
     - 18.95
     - 19.45
 
@@ -133,7 +138,7 @@ resources:
   max_memory: 4  # Gb
   # since TASDMC_MEMORY_PER_PROCESS_GB is configured in build-time, only one of these may
   # be specified; if both are specified, the most conservative will be used
-  monitor_interval: 60  # sec; null = disable system resources monitoring; defaults to 60
+  monitor_interval: 60  # seconds; null = disable system resources monitor; defaults to 60
 
 debug:  # all are False/empty by default
   input_hashes: False  # write to input_hashes_debug.log when input hash comparison fails
@@ -148,7 +153,7 @@ debug:  # all are False/empty by default
 
 #### `nodes`
 
-"Nodes" file contains info on how to distribute run's workload across several SSH-connected nodes.
+"Nodes" file tells `tasdmc` how to distribute run's workload across several SSH-connected machines.
 It contains a list of entries, each describing the node. See [example](examples/nodes.yaml):
 
 ```yaml
@@ -157,7 +162,7 @@ It contains a list of entries, each describing the node. See [example](examples/
 # In short, tasdmc will work only if command like this works in your terminal
 # without password prompt and any command line params:
 # > ssh worker-machine.url.org
-- host: worker-machine.url.org
+- host: worker-machine.url.org  # can also be an alias from .ssh/config
   conda_env: conda_env_with_tasdmc_installed
   name: node1  # optional name for display purposes
   # overrides "default" values from run.yaml e.g. to specify CORSIKA path for each node

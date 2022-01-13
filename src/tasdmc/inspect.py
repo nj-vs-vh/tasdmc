@@ -144,7 +144,7 @@ def _inspect_pipeline_steps(pipeline_id: str, fix: bool = False, verbose: bool =
     pipeline_card_file = fileio.corsika_input_files_dir() / f"{pipeline_id}.in"
     if not pipeline_card_file.exists():
         click.secho("Can't find CORSIKA input card for pipeline!", fg='red', bold=True)
-    pipeline_steps = get_steps(corsika_card_paths=[pipeline_card_file], include_global=False)
+    pipeline_steps = get_steps(corsika_card_paths=[pipeline_card_file], include_aggregation_steps=False)
 
     for step in pipeline_steps:
         step_inspection = StepInspectionResult.inspect(step)

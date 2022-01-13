@@ -3,8 +3,9 @@ import multiprocessing as mp
 from pathlib import Path
 from ctypes import c_int8
 from collections import defaultdict
+from itertools import chain
 
-from typing import List
+from typing import List, Union
 
 from tasdmc import config, fileio, system
 from tasdmc.steps import (
@@ -28,7 +29,7 @@ from tasdmc.steps.base.step_status_shared import set_step_statuses_array
 from tasdmc.utils import batches
 
 
-def get_steps(corsika_card_paths: List[Path], include_global: bool = True) -> List[PipelineStep]:
+def get_steps(corsika_card_paths: List[Path], include_aggregation_steps: bool = True) -> List[PipelineStep]:
     """List of pipeline steps *in order of optimal execution*"""
     add_tawiki_steps = bool(config.get_key("pipeline.produce_tawiki_dumps", default=False))
     legacy_c2g_step = bool(config.get_key("pipeline.legacy_corsika2geant", default=True))
@@ -39,6 +40,7 @@ def get_steps(corsika_card_paths: List[Path], include_global: bool = True) -> Li
     # TODO: make batch size configurable here?
     for corsika_steps_batch in batches(corsika_steps, config.used_processes()):
         steps.extend(corsika_steps_batch)
+        c2g_steps_batch: List[Union[Corsika2GeantStep, Corsika2GeantParallelMergeStep]] = []
         for corsika_step in corsika_steps_batch:
             particle_file_splitting = ParticleFileSplittingStep.from_corsika_step(corsika_step)
             steps.append(particle_file_splitting)
@@ -57,26 +59,40 @@ def get_steps(corsika_card_paths: List[Path], include_global: bool = True) -> Li
                     steps.append(c2g_process)
                 corsika2geant = Corsika2GeantParallelMergeStep.from_c2g_parallel_process_steps(c2g_process_steps)
             steps.append(corsika2geant)
-            tothrow_gen = TothrowGenerationStep.from_corsika2geant(corsika2geant)
-            steps.append(tothrow_gen)
-            events_generation = EventsGenerationStep.from_corsika2geant_with_tothrow(corsika2geant, tothrow_gen)
-            steps.append(events_generation)
-            for spectral_sampling in SpectralSamplingStep.from_events_generation(events_generation):
-                steps.append(spectral_sampling)
-                reconstruction = ReconstructionStep.from_spectral_sampling(spectral_sampling)
-                steps.append(reconstruction)
-                if add_tawiki_steps:
-                    tawiki_dump = TawikiDumpStep.from_reconstruction_step(reconstruction)
-                    tawiki_dump_steps_by_log10Emin[reconstruction.input_.log10E_min].append(tawiki_dump)
-                    steps.append(tawiki_dump)
-    if add_tawiki_steps and include_global:
+            c2g_steps_batch.append(corsika2geant)
+        # after c2g, no cleanup is done between steps so we can launch them in batches again to avoid
+        # pipeline jam (later steps sit in queue and just wait for the previous ones)
+        tothrow_steps_batch = [TothrowGenerationStep.from_corsika2geant(c2g) for c2g in c2g_steps_batch]
+        steps.extend(tothrow_steps_batch)
+        event_gen_steps_batch = [
+            EventsGenerationStep.from_corsika2geant_with_tothrow(c2g, tothrow)
+            for (c2g, tothrow) in zip(c2g_steps_batch, tothrow_steps_batch)
+        ]
+        steps.extend(event_gen_steps_batch)
+        # larger batch: original batch size * number of minimal energies to sample
+        spectral_sampling_batch = chain.from_iterable(
+            SpectralSamplingStep.from_events_generation(event_gen) for event_gen in event_gen_steps_batch
+        )
+        steps.extend(spectral_sampling_batch)
+        reconstruction_steps_batch = [
+            ReconstructionStep.from_spectral_sampling(spectral_sampling)
+            for spectral_sampling in spectral_sampling_batch
+        ]
+        steps.extend(reconstruction_steps_batch)
+
+        if add_tawiki_steps:
+            for reco in reconstruction_steps_batch:
+                tawiki_dump_step = TawikiDumpStep.from_reconstruction_step(reco)
+                tawiki_dump_steps_by_log10Emin[reco.input_.log10E_min].append(tawiki_dump_step)
+                steps.append(tawiki_dump_step)
+    if add_tawiki_steps and include_aggregation_steps:
         for log10E_min, tawiki_dump_steps in tawiki_dump_steps_by_log10Emin.items():
             steps.append(TawikiDumpsMergeStep.from_tawiki_dump_steps(tawiki_dump_steps, log10E_min))
     return steps
 
 
 def with_pipelines_mask(steps: List[PipelineStep]) -> List[PipelineStep]:
-    pipelines_mask: List[str] = config.get_key('debug.pipelines_mask', default=False)
+    pipelines_mask: List[str] = config.get_key('debug.pipelines_mask', default=[])
     if not pipelines_mask:
         return steps
     else:
@@ -95,8 +111,7 @@ def run_simulation(dry: bool = False):
 
     system.run_in_background(run_system_monitor, keep_session=True)
 
-    step_indices = list(range(len(steps)))
-    for step, idx in zip(steps, step_indices):
+    for idx, step in enumerate(steps):
         step.set_index(idx)
     shared_step_statuses_array = mp.Array(c_int8, len(steps), lock=True)  # initially all zeros = steps pending
 
