@@ -7,9 +7,6 @@ from ..options import run_config_option, nodes_config_option
 from ..utils import run_standard_pipeline_in_background, error_catching
 
 
-# new run commands
-
-
 @cli.command("run-local", help="Run simulation on this machine")
 @run_config_option('run_config_filename')
 @click.option(
@@ -57,7 +54,5 @@ def distributed_run_cmd(run_config_filename: str, nodes_config_filename: str, dr
     nodes.run_all_dry()
     if dry:
         return
-    click.echo("Launching distributed run is broken for now, please do it manually")
-    return
     fileio.prepare_run_dir()
     nodes.run_all()

@@ -63,7 +63,7 @@ class NodeExecutor(ABC):
         node_run_config_path = self.save_run_config_to_node()
         try:
             dry_opt = '--dry' if dry else ''
-            self.run(f"tasdmc run-local {dry_opt} --foreground -r {node_run_config_path}", disown=(not dry))
+            self.run(f"tasdmc run-local -r {node_run_config_path} {dry_opt} &> /dev/null", disown=(not dry))
         finally:
             self.remove_from_node(node_run_config_path)
 
