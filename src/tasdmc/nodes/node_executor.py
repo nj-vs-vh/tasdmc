@@ -106,7 +106,7 @@ class NodeExecutor(ABC):
         for fabric_param_name, default_value in [
             ('hide', 'both'),
             ('warn', True),
-            ('pty', True),
+            ('pty', False),
         ]:
             if fabric_param_name not in kwargs:
                 kwargs[fabric_param_name] = default_value
