@@ -149,37 +149,32 @@ def routine_cmd_debug_log():
 
 def prepare_run_dir(continuing: bool = False):
     rd = run_dir()
-    try:
-        if continuing:
-            rd.mkdir(exist_ok=True)
-        else:
-            try:
-                rd.mkdir()
-                click.echo(f"Run directory created: {rd.absolute()}")
-            except FileExistsError as fee:
-                raise ValueError(
-                    f"Run '{rd.name}' already exists, pick another run name. "
-                    + f"To continue aborted run, use 'tasdmc continue {rd.name}'"
-                ) from fee
+    if continuing:
+        rd.mkdir(exist_ok=True)
+    else:
+        try:
+            rd.mkdir()
+            click.echo(f"Run directory created: {rd.absolute()}")
+        except FileExistsError as fee:
+            raise ValueError(
+                f"Run '{rd.name}' already exists, pick another run name. "
+                + f"To continue aborted run, use 'tasdmc continue {rd.name}'"
+            ) from fee
+    if logs_dir().exists():
+        old_logs_dir_name = f'before-{datetime.utcnow().isoformat(timespec="seconds")}'
+        old_logs_dir = logs_dir() / old_logs_dir_name
+        old_logs_dir.mkdir()
+        for old_log in logs_dir().glob('*'):
+            if not old_log.name.startswith('before'):
+                shutil.move(old_log, old_logs_dir / old_log.name)
 
-        if logs_dir().exists():
-            old_logs_dir_name = f'before-{datetime.utcnow().isoformat(timespec="seconds")}'
-            old_logs_dir = logs_dir() / old_logs_dir_name
-            old_logs_dir.mkdir()
-            for old_log in logs_dir().glob('*'):
-                if not old_log.name.startswith('before'):
-                    shutil.move(old_log, old_logs_dir / old_log.name)
+    config.RunConfig.dump(saved_run_config_file())
 
-        config.RunConfig.dump(saved_run_config_file())
-
-        if config.is_local_run():
-            for dir_getter in _local_run_internal_dir_getters:
-                dir_getter().mkdir(exist_ok=continuing)
-        if config.is_distributed_run():
-            config.NodesConfig.dump(saved_nodes_config_file())
-    except Exception as e:
-        remove_run_dir()
-        raise e
+    if config.is_local_run():
+        for dir_getter in _local_run_internal_dir_getters:
+            dir_getter().mkdir(exist_ok=continuing)
+    if config.is_distributed_run():
+        config.NodesConfig.dump(saved_nodes_config_file())
 
 
 def remove_run_dir():
