@@ -2,8 +2,14 @@
 
 # `tasdmc` - Telescope Array Surface Detectors Monte Carlo simulation
 
-`tasdmc` aims at providing set of scripts to run Telescope Array Surface Detectors Monte Carlo
-simulation in a reliable, transparent, configurable and reproducible way.
+`tasdmc` is a tool to run Telescope Array Surface Detectors Monte Carlo
+simulation in a reliable, transparent, and reproducible way.
+
+Features:
+* Concise configuration
+* Automatic parallelization across processes and machines
+* Simulation progress monitoring
+* Debugging tools
 
 
 ## Installation
