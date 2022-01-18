@@ -103,6 +103,16 @@ def run_simulation(dry: bool = False):
     system.set_process_title("tasdmc main")
     fileio.save_main_process_pid()
     steps = get_steps(corsika_card_paths=generate_corsika_cards())
+
+    # TEMP
+    import shutil
+    for step in steps:
+        for files in [step.input_, step.output]:
+            old_hash_path = files._get_stored_hash_path(use_absolute_paths=True)
+            new_hash_path = files._get_stored_hash_path(use_absolute_paths=False)
+            if old_hash_path.exists() and not new_hash_path.exists():
+                shutil.move(old_hash_path, new_hash_path)
+
     steps = with_pipelines_mask(steps)
     config.validate(set(step.__class__ for step in steps))
 
