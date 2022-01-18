@@ -77,7 +77,7 @@ def fork_cmd(fork_name: str, after: str):
         raise ValueError("--after currently may be only 'corsika'")
     symlink_target_dirs = [dg() for dg in symlinked_dir_getters]
     old_input_hashes_dir = fileio.input_hashes_dir()
-    config.RunConfig.update_name(fork_name)
+    config.RunConfig.loaded().update_name(fork_name)
     fileio.prepare_run_dir(create_only=True)
     # after config is updated dir getters will return new run's directories
     # but first we need to clear their caches
@@ -89,10 +89,11 @@ def fork_cmd(fork_name: str, after: str):
             + f"{symlink_target_dir.relative_to(config.Global.runs_dir)}"
         )
         symlink_dir.symlink_to(symlink_target_dir, target_is_directory=True)
+    fileio.prepare_run_dir(continuing=True)  # creating all the other dirs, copying configs, etc
     click.echo("Copying input hashes to the forked run")
+    fileio.input_hashes_dir.cache_clear()
     for input_hash_file in old_input_hashes_dir.iterdir():
         shutil.copy(input_hash_file, fileio.input_hashes_dir() / input_hash_file.name)
-    fileio.prepare_run_dir(continuing=True)  # creating all the other dirs, copying configs, etc
     click.echo(f"Use 'tasdmc continue {fork_name}' to start forked simulation")
 
 

@@ -49,7 +49,7 @@ class PipelineStep(ABC):
 
     @property
     def id_(self):
-        return f'{self.__class__.__name__}:{self.input_.id_}:{self.output.id_}'
+        return f'{self.__class__.__name__}:{self.input_.get_id()}:{self.output.get_id()}'
 
     def set_index(self, i: int):
         self._step_status_index_in_shared_array = i

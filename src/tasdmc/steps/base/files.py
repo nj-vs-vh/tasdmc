@@ -30,7 +30,7 @@ class Files(ABC):
         return super(Files, cls).__new__(cls)
 
     def __str__(self):
-        return self.id_
+        return self.get_id()
 
     @property
     def all_files(self) -> List[Path]:
@@ -127,17 +127,19 @@ class Files(ABC):
         """
         return self.all_files
 
-    @property
-    def id_(self) -> str:
+    def get_id(self, use_absolute_paths: bool = False) -> str:
         """Unique identitifer for Files instance"""
-        paths_id = concatenate_and_hash(self.id_paths)
+        id_paths_to_hash = self.id_paths
+        if not use_absolute_paths:  # for backwards compatibility
+            id_paths_to_hash = [p.relative_to(fileio.run_dir()) for p in id_paths_to_hash]
+        paths_id = concatenate_and_hash(id_paths_to_hash)
         return f"{self.__class__.__name__}.{paths_id}"
 
-    @property
-    def _stored_hash_path(self) -> Path:
-        return fileio.input_hashes_dir() / self.id_
+    def _get_stored_hash_path(self, use_absolute_paths: bool = False) -> Path:
+        return fileio.input_hashes_dir() / self.get_id(use_absolute_paths)
 
     def _get_file_contents_hash(self, file: Path) -> str:
+        """May be overriden for cases when file's hash can be read not only from its contents directly"""
         if not file.exists():
             raise HashComputationFailed(
                 f"Can't compute {self.__class__.__name__}'s contents hash, some files to be hashed do not exist"
@@ -162,15 +164,21 @@ class Files(ABC):
 
     def store_contents_hash(self):
         contents_hash = self.contents_hash
-        with open(self._stored_hash_path, 'w') as f:
+        with open(self._get_stored_hash_path(), 'w') as f:
             f.write(contents_hash)
 
     def same_hash_as_stored(self) -> bool:
-        stored_hash_path = self._stored_hash_path
+        stored_hash_path = self._get_stored_hash_path()
         if not stored_hash_path.exists():
             if _input_hashes_log_enabled():
-                input_hashes_debug(f"{self} has no stored hash, comparison FAILED")
-            return False
+                input_hashes_debug(f"{self} hash not found in new (relative path based) file, checking old")
+            stored_hash_path = self._get_stored_hash_path(use_absolute_paths=True)
+            if not stored_hash_path.exists():
+                if _input_hashes_log_enabled():
+                    input_hashes_debug(
+                        f"{self} has no stored hash even in legacy absolute path based file, comparison FAILED"
+                    )
+                return False
         with open(stored_hash_path, 'r') as f:
             stored_hash = f.read()
         if _input_hashes_log_enabled() and self.contents_hash != stored_hash:

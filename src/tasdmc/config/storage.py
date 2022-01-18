@@ -79,7 +79,7 @@ class RunConfig(ConfigContainer):
             raise BadConfigError(f"Run config must contain a mapping, got {contents.__class__.__name__}")
         for fqk, value in items_dot_notation(contents):
             if value is None:
-                raise BadConfigError(f"Null (None) values are not permitted in config: {fqk}")
+                raise BadConfigError(f"Null/None values are not permitted in config: {fqk}")
         rc = RunConfig(contents)
         if rc.name is None:
             raise BadConfigError("Run config must include name key!")
@@ -92,10 +92,8 @@ class RunConfig(ConfigContainer):
         if self.contents is not None:
             self.contents.pop('debug', '')
 
-    @classmethod
-    def update_name(cls, new_name: str):
-        contents = cls.loaded().contents
-        contents["name"] = new_name
+    def update_name(self, new_name: str):
+        self.contents["name"] = new_name
 
     @property
     def name(self):
