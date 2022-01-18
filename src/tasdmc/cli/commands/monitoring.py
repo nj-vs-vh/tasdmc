@@ -9,7 +9,7 @@ from ..group import cli
 from ..utils import loading_run_by_name, error_catching
 
 
-@cli.command("info", help="Display general info for run NAME")
+@cli.command("info", help="Display general info for RUN_NAME")
 @loading_run_by_name
 @error_catching
 def info_cmd():
@@ -35,7 +35,7 @@ def info_cmd():
     config.RunConfig.dump(stdout=True)
 
 
-@cli.command("progress", help="Display progress for run NAME")
+@cli.command("progress", help="Display progress for RUN_NAME")
 @click.option(
     "-f",
     "--follow",
@@ -88,21 +88,25 @@ def progress_cmd(follow: bool, dump_json: bool, per_node: bool):
             aggregated_plp.print()
 
 
-@cli.command("status", help="Check status for run NAME")
+@cli.command("status", help="Check status for run RUN_NAME")
 @click.option("-n", "n_last_messages", default=0, help="Number of messages from worker processes to print")
 @click.option("-p", "display_processes", is_flag=True, default=False, help="List worker processes")
 @loading_run_by_name
 @error_catching
 def process_status_cmd(n_last_messages: int, display_processes: bool):
     if config.is_local_run():
-        system.print_process_status(fileio.get_saved_main_pid(), display_processes=display_processes)
+        saved_main_pid = fileio.get_saved_main_pid()
+        if saved_main_pid is None:
+            click.echo("Run was never launched (probably just forked?)")
+        else:
+            system.print_process_status(fileio.get_saved_main_pid(), display_processes=display_processes)
         if n_last_messages:
             display_logs.print_multiprocessing_log(n_last_messages)
     else:
         nodes.print_statuses(n_last_messages, display_processes)
 
 
-@cli.command("resources", help="Display system resources utilization for run NAME")
+@cli.command("resources", help="Display system resources utilization for RUN_NAME")
 @click.option(
     "--abstime",
     default=False,
@@ -148,7 +152,7 @@ def system_resources_cmd(latest: bool, abstime: bool, dump_json: bool, per_node:
             display_logs.SystemResourcesTimeline.display_multiple(timelines)
 
 
-@cli.command("inputs", help="Display inputs for run NAME")
+@cli.command("inputs", help="Display inputs for RUN_NAME")
 @loading_run_by_name
 @error_catching
 def inputs_cmd():

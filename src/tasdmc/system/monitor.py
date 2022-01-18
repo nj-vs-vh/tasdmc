@@ -18,9 +18,12 @@ def run_system_monitor():
 
     while True:
         time_before_measurement = time.time()
-
-        processes = get_run_processes(fileio.get_saved_main_pid())
-        if processes is None:
+        saved_main_pid =  fileio.get_saved_main_pid()
+        if saved_main_pid is not None:
+            processes = get_run_processes(saved_main_pid)
+            if processes is None:
+                sys.exit(0)
+        else:
             sys.exit(0)
         for _ in range(5):  # trying several times
             try:

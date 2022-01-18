@@ -92,6 +92,11 @@ class RunConfig(ConfigContainer):
         if self.contents is not None:
             self.contents.pop('debug', '')
 
+    @classmethod
+    def update_name(cls, new_name: str):
+        contents = cls.loaded().contents
+        contents["name"] = new_name
+
     @property
     def name(self):
         return self.contents.get("name")

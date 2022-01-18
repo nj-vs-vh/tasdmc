@@ -6,7 +6,7 @@ from ..group import cli
 from ..utils import loading_run_by_name, error_catching
 
 
-@cli.command("fix-failed", help="Fix failed pipelines")
+@cli.command("fix-failed", help="Fix failed pipelines for RUN_NAME")
 @click.option("--hard", is_flag=True, default=False, help="If specified, removes all failed pipeline files entirely")
 @loading_run_by_name
 @error_catching
@@ -24,7 +24,7 @@ def fix_failed_pipelines_cmd(hard: bool):
         inspect.inspect_and_fix_failed(failed_pipeline_ids)
 
 
-@cli.command("inspect", help="Inspect pipelines step-by-step")
+@cli.command("inspect", help="Step-by-step inspection of pipelines in RUN_NAME")
 @click.option("-v", "--verbose", is_flag=True, default=False, help="Print verbose information about steps")
 @click.option("-p", "--page", "pagesize", default=0, help="Page size; 0 for no pagination (default)")
 @click.option("-f", "--failed", is_flag=True, default=False, help="Inspect only failed pipelines")

@@ -13,7 +13,7 @@ from pathlib import Path
 from functools import partial
 from itertools import chain
 
-from typing import List, Optional, TypeVar, Type
+from typing import List, Optional, TypeVar, Type, Dict
 
 from tasdmc import fileio
 from tasdmc.logs.step_progress import EventType, PipelineStepProgress
@@ -26,7 +26,7 @@ def print_multiprocessing_log(n_messages: int):
     lines_for_last_run = fileio.multiprocessing_log().read_text().splitlines()
     lines_for_last_run.reverse()
 
-    messages_by_pid = defaultdict(list)
+    messages_by_pid: Dict[int, List[str]] = defaultdict(list)
     for line in lines_for_last_run:
         if not line:
             continue

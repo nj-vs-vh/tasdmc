@@ -147,10 +147,10 @@ def routine_cmd_debug_log():
 # top-level functions
 
 
-def prepare_run_dir(continuing: bool = False):
+def prepare_run_dir(continuing: bool = False, create_only: bool = False):
     rd = run_dir()
     if continuing:
-        rd.mkdir(exist_ok=True)
+        assert rd.exists(), "Can't continue with non-existent run dir"
     else:
         try:
             rd.mkdir()
@@ -160,6 +160,10 @@ def prepare_run_dir(continuing: bool = False):
                 f"Run '{rd.name}' already exists, pick another run name. "
                 + f"To continue aborted run, use 'tasdmc continue {rd.name}'"
             ) from fee
+
+    if create_only:
+        return
+
     if logs_dir().exists():
         old_logs_dir_name = f'before-{datetime.utcnow().isoformat(timespec="seconds")}'
         old_logs_dir = logs_dir() / old_logs_dir_name
@@ -195,8 +199,11 @@ def get_previous_logs_dirs() -> List[Path]:
     return before_dirs
 
 
-def get_saved_main_pid():
-    return int(saved_main_pid_file().read_text())
+def get_saved_main_pid() -> Optional[int]:
+    try:
+        return int(saved_main_pid_file().read_text())
+    except Exception:
+        return None
 
 
 def get_config_paths(run_name: str) -> Tuple[Path, Path]:
