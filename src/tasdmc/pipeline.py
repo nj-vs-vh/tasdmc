@@ -105,6 +105,7 @@ def run_simulation(dry: bool = False):
     steps = get_steps(corsika_card_paths=generate_corsika_cards())
 
     # TEMP
+    print("Renaming old input hash files to relative-path-based pattern")
     import shutil
     for step in steps:
         for files in [step.input_, step.output]:
