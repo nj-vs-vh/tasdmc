@@ -26,10 +26,6 @@ class PartialTileFile(NotAllRetainedFiles):
     corsika_event_name: str
 
     @property
-    def must_exist(self) -> List[Path]:
-        return self.all_files
-
-    @property
     def not_retained(self) -> List[Path]:
         return [self.partial_tile]
 
@@ -92,12 +88,13 @@ class PartialTileFileSet(NotAllRetainedFiles):
     corsika_event_name: str
 
     @property
-    def must_exist(self) -> List[Path]:
+    def all_files(self) -> List[Path]:
+        # listing can be generated anytime
         return [ptf.partial_tile for ptf in self.partial_tile_files]
 
     @property
     def not_retained(self) -> List[Path]:
-        return self.must_exist
+        return self.all_files
 
     def create_listing_file(self):
         with open(self.listing, 'w') as f:

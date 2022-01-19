@@ -20,10 +20,6 @@ class SplitParticleFiles(NotAllRetainedFiles):
     stdout: Path
 
     @property
-    def must_exist(self) -> List[Path]:
-        return self.files
-
-    @property
     def not_retained(self) -> List[Path]:
         return self.files
 

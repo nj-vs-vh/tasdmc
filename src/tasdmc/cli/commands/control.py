@@ -1,8 +1,7 @@
 import sys
 import click
-import shutil
 
-from tasdmc import config, system, fileio, nodes, pipeline
+from tasdmc import config, system, fileio, nodes, fork
 from tasdmc.config.update import update_run_config
 from tasdmc.utils import user_confirmation_destructive
 
@@ -63,37 +62,9 @@ def abort_run_cmd(confirm: bool):
 @error_catching
 def fork_cmd(fork_name: str, after: str):
     if config.is_distributed_run():
-        click.echo("Sorry, fork is currently available only for local runs")
+        click.echo("Forking is currently available only for local runs")
         return
-    # TODO: manually listing directories here is bad, should infer them from step sequence and their i/o Files
-    symlinked_dir_getters = [
-        fileio.corsika_input_files_dir,
-        fileio.corsika_output_files_dir,
-    ]
-    if after == 'corsika':
-        pass
-        # for later fork points dir_getters_to_symlink list should be extended
-    else:
-        raise ValueError("--after currently may be only 'corsika'")
-    symlink_target_dirs = [dg() for dg in symlinked_dir_getters]
-    old_input_hashes_dir = fileio.input_hashes_dir()
-    config.RunConfig.loaded().update_name(fork_name)
-    fileio.prepare_run_dir(create_only=True)
-    # after config is updated dir getters will return new run's directories
-    # but first we need to clear their caches
-    [dg.cache_clear() for dg in symlinked_dir_getters]
-    symlink_dirs = [dg() for dg in symlinked_dir_getters]
-    for symlink_dir, symlink_target_dir in zip(symlink_dirs, symlink_target_dirs):
-        click.echo(
-            f"Creating symlink {symlink_dir.relative_to(config.Global.runs_dir)} -> "
-            + f"{symlink_target_dir.relative_to(config.Global.runs_dir)}"
-        )
-        symlink_dir.symlink_to(symlink_target_dir, target_is_directory=True)
-    fileio.prepare_run_dir(continuing=True)  # creating all the other dirs, copying configs, etc
-    click.echo("Copying input hashes to the forked run")
-    fileio.input_hashes_dir.cache_clear()
-    for input_hash_file in old_input_hashes_dir.iterdir():
-        shutil.copy(input_hash_file, fileio.input_hashes_dir() / input_hash_file.name)
+    fork.fork_run(fork_name, after)
     click.echo(f"Use 'tasdmc continue {fork_name}' to start forked simulation")
 
 

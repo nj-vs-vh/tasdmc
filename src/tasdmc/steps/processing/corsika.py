@@ -15,10 +15,6 @@ from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty
 class CorsikaCard(Files):
     card: Path
 
-    @property
-    def must_exist(self) -> List[Path]:
-        return [self.card]
-
 
 @dataclass
 class CorsikaOutputFiles(Files):
@@ -26,10 +22,6 @@ class CorsikaOutputFiles(Files):
     longtitude: Path
     stdout: Path
     stderr: Path
-
-    @property
-    def must_exist(self) -> List[Path]:
-        return [self.particle, self.longtitude, self.stderr, self.stdout]
 
     def prepare_for_step_run(self):
         for f in self.must_exist:  # corsika_wrapper do not overwrite files, so delete them manually

@@ -17,13 +17,10 @@ from .particle_file_splitting import SplitParticleFiles, ParticleFileSplittingSt
 class SplitParticleFile(NotAllRetainedFiles):
     particle: Path
 
-    @property
-    def must_exist(self) -> List[Path]:
-        return [self.particle]
 
     @property
     def not_retained(self) -> List[Path]:
-        return [self.particle]
+        return self.all_files
 
     @classmethod
     def from_split_particle_files(cls, spf: SplitParticleFiles) -> List[SplitParticleFile]:
@@ -35,10 +32,6 @@ class DethinningOutputFiles(NotAllRetainedFiles):
     dethinned_particle: Path
     stdout: Path
     stderr: Path
-
-    @property
-    def must_exist(self) -> List[Path]:
-        return [self.dethinned_particle, self.stderr, self.stdout]
 
     @property
     def not_retained(self) -> List[Path]:

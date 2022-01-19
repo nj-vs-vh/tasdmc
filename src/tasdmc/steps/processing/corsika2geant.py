@@ -25,12 +25,12 @@ class C2GInputFiles(NotAllRetainedFiles):
         return [do.dethinned_particle for do in self.dethinning_outputs]
 
     @property
-    def must_exist(self) -> List[Path]:
+    def all_files(self) -> List[Path]:
         return self._dethinned_particle_files
 
     @property
     def not_retained(self) -> List[Path]:
-        return self._dethinned_particle_files
+        return self.all_files
 
     def create_listing_file(self):
         with open(self.dethinned_files_listing, 'w') as f:

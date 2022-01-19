@@ -29,16 +29,34 @@ from tasdmc.steps.base.step_status_shared import set_step_statuses_array
 from tasdmc.utils import batches
 
 
-def get_steps(corsika_card_paths: List[Path], include_aggregation_steps: bool = True) -> List[PipelineStep]:
-    """List of pipeline steps *in order of optimal execution*"""
+def get_steps(
+    corsika_card_paths: List[Path],
+    include_aggregation_steps: bool = True,
+    batched: bool = True
+) -> List[PipelineStep]:
+    """
+    Args:
+        corsika_card_paths (List[Path]): List of paths to CORSIKA input cards; usually generated
+                                         with generate_corsika_cards, but may also be manually crafted
+        include_aggregation_steps (bool, optional): Whether to include multipipeline aggregation steps
+                                                    (e.g. dump params from all .dst.gz into a csv file).
+                                                    Defaults to True.
+        batched (bool, optional): Whether to batch steps by the number of processes used (e.g. 16 CORSIKA
+                                  steps, then 16 splitting steps, etc). Setting the flag to False is the same
+                                  as setting the batch size to the number of pipelines (i.e. all CORSIKA steps,
+                                  then all splitting steps, etc). Defaults to True.
+
+    Returns:
+        List[PipelineStep]: A list of pipeline steps in order of optimal execution
+    """
     add_tawiki_steps = bool(config.get_key("pipeline.produce_tawiki_dumps", default=False))
     legacy_c2g_step = bool(config.get_key("pipeline.legacy_corsika2geant", default=True))
     tawiki_dump_steps_by_log10Emin = defaultdict(list)
 
     steps: List[PipelineStep] = []
     corsika_steps = CorsikaStep.from_corsika_cards(corsika_card_paths)
-    # TODO: make batch size configurable here?
-    for corsika_steps_batch in batches(corsika_steps, config.used_processes()):
+    batch_size = config.used_processes() if batched else len(corsika_steps)
+    for corsika_steps_batch in batches(corsika_steps, batch_size):
         steps.extend(corsika_steps_batch)
         c2g_steps_batch: List[Union[Corsika2GeantStep, Corsika2GeantParallelMergeStep]] = []
         for corsika_step in corsika_steps_batch:

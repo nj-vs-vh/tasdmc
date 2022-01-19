@@ -21,10 +21,6 @@ class TawikiDumpFiles(Files):
 
     log10E_min: float
 
-    @property
-    def must_exist(self) -> List[Path]:
-        return self.all_files
-
     @classmethod
     def from_reconstructed_events(cls, re: ReconstructedEvents) -> TawikiDumpFiles:
         base_name = (re.rufldf_dst.name).removesuffix(".dst.gz")
@@ -91,19 +87,11 @@ class TawikiDumpFileSet(Files):
     def all_files(self) -> List[Path]:
         return chain.from_iterable((tdf.log, tdf.dump) for tdf in self.tdfs)
 
-    @property
-    def must_exist(self) -> List[Path]:
-        return self.all_files
-
 
 @dataclass
 class MergedTawikiDump(Files):
     merged_dump: Path
     log: Path
-
-    @property
-    def must_exist(self) -> List[Path]:
-        return self.all_files
 
     @classmethod
     def new(cls, log10E_min: float) -> MergedTawikiDump:

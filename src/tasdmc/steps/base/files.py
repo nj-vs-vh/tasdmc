@@ -18,12 +18,6 @@ class Files(ABC):
     Subclassed by each step to incapsulate specific behavior and checks.
     """
 
-    @property
-    @abstractmethod
-    def must_exist(self) -> List[Path]:
-        """List of file Paths that must exist for Files to be a valid step output. Must be overriden by subclasses."""
-        pass
-
     def __new__(cls, *args, **kwargs):
         if not is_dataclass(cls):
             raise TypeError("All Files subclasses must be dataclasses!")
@@ -53,6 +47,12 @@ class Files(ABC):
             elif is_list_of_paths(f.type) or f.type == 'List[Path]':
                 all_file_paths.extend(value)
         return all_file_paths
+
+    @property
+    def must_exist(self) -> List[Path]:
+        """List of file Paths that must be produced for Files to be a valid step output.
+        Defaults to all_files property. May be overriden by subclasses."""
+        return self.all_files
 
     def clean(self):
         for f in self.all_files:
@@ -123,7 +123,7 @@ class Files(ABC):
     def id_paths(self) -> List[Path]:
         """Explicit list of file paths that uniquely identify the Files instance
 
-        If not overriden by a subclass and subclass is a dataclass, all files' paths are used to ID.
+        If not overriden by a subclass and subclass is a dataclass, all Files' paths are used as ID.
         """
         return self.all_files
 
@@ -188,31 +188,7 @@ class Files(ABC):
         return self.contents_hash == stored_hash
 
 
-class _AllowedToBeMissingFiles(Files):
-    """Base Files class assumes that all files in must_exist must actually exist but this may not always be required"""
-
-    @abstractmethod
-    def _get_missing_file_contents_hash(self, file: Path) -> str:
-        pass
-
-    def _get_file_contents_hash(self, file: Path) -> str:
-        if not file.exists():
-            return self._get_missing_file_contents_hash(file)
-        else:
-            return super()._get_file_contents_hash(file)
-
-    @abstractmethod
-    def _files_were_produced_but_some_missing(self) -> bool:
-        pass
-
-    def files_were_produced(self) -> bool:
-        for f in self.must_exist:
-            if not f.exists():
-                return self._files_were_produced_but_some_missing()
-        return super().files_were_produced()
-
-
-class NotAllRetainedFiles(_AllowedToBeMissingFiles):
+class NotAllRetainedFiles(Files):
     """Subclass for cases when some of the files are not retained (e.g., they are too big or just redundant)
 
     In this case the "original" file will be deleted and "original.deleted" will be created in its place,
@@ -231,7 +207,9 @@ class NotAllRetainedFiles(_AllowedToBeMissingFiles):
         if not set(self.not_retained).issubset(self.must_exist):
             raise ValueError(f"All not retained files must also be marked as must_exist")
 
-    def _get_missing_file_contents_hash(self, file: Path) -> str:
+    def _get_file_contents_hash(self, file: Path) -> str:
+        if file.exists():
+            return super()._get_file_contents_hash(file)
         deleted_file = self._with_deleted_suffix(file)
         if deleted_file.exists():
             with open(deleted_file, 'r') as df:
@@ -248,10 +226,16 @@ class NotAllRetainedFiles(_AllowedToBeMissingFiles):
         else:
             raise HashComputationFailed(
                 f"Can't compute {self.__class__.__name__}'s contents hash, "
-                + "some files to be hashed and their .deleted traces do not exist"
+                + "some files to be hashed and their .deleted remnants do not exist"
             )
 
-    def _files_were_produced_but_some_missing(self) -> bool:
+    def files_were_produced(self) -> bool:
+        for f in self.must_exist:
+            if not f.exists():
+                return self._files_were_produced_but_maybe_some_deleted()
+        return super().files_were_produced()
+
+    def _files_were_produced_but_maybe_some_deleted(self) -> bool:
         for f in self.must_exist:
             if not f.exists():
                 if f not in self.not_retained or not self._with_deleted_suffix(f).exists():
@@ -283,7 +267,7 @@ class NotAllRetainedFiles(_AllowedToBeMissingFiles):
             if f.exists():
                 with open(self._with_deleted_suffix(f), 'w') as del_f:
                     del_f.write(
-                        f'{f}\nwas produced bytes and then deleted\n\n'
+                        f'{f}\nwas produced and then deleted\n\n'
                         + f'its size was {f.stat().st_size} bytes\n\n'
                         + 'its contents hash was:\n'
                         + file_contents_hash(f)
