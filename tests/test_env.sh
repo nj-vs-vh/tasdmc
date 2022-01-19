@@ -1,5 +1,5 @@
 # testing environment
-# these values are not actually used for now, so just exporting sentinel values
+# these values are not actually used for now, so just exporting dummies
 
 export TASDMC_RUNS_DIR="/"
 export TASDMC_DATA_DIR="/"
