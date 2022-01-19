@@ -37,7 +37,7 @@ def fork_run(fork_name: str, after: str):
     click.echo("Copying input file hashes to the forked run to allow seamless continuation")
     for input_hash_file in in_src_run_dir(fileio.input_hashes_dir()).iterdir():
         shutil.copy(input_hash_file, fileio.input_hashes_dir() / input_hash_file.name)
-    cards = generate_corsika_cards(logging=False)
+    cards = generate_corsika_cards(logging=False, dry=True)
     # with non-batched steps list we can stop as soon we see a single step after the fork point
     steps = get_steps(cards, batched=False)
     for step in steps:

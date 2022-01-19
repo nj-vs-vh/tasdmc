@@ -21,7 +21,7 @@ from .corsika_card import (
 )
 
 
-def generate_corsika_cards(logging: bool = True) -> List[Path]:
+def generate_corsika_cards(logging: bool = True, dry: bool = False) -> List[Path]:
     generated_card_paths: List[Path] = []
 
     particle, particle_id = _particle_id_from_config()
@@ -83,7 +83,8 @@ def generate_corsika_cards(logging: bool = True) -> List[Path]:
                 continue
             cd.set_RUNNR(runnr)
             cd.set_random_seeds()
-            card_file.write_text(cd.buf + "\n")
+            if not dry:
+                card_file.write_text(cd.buf + "\n")
 
         if is_subset_configured():
             cards_count_msg = f"{len(card_index_range)}/{cards_count} cards, starting at {card_index_range[0]}"

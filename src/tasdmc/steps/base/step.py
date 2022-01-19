@@ -47,8 +47,10 @@ class PipelineStep(ABC):
         else:
             return self.previous_steps[0].pipeline_id
 
-    @property
-    def id_(self):
+    def __str__(self) -> str:
+        return self.get_id()
+
+    def get_id(self) -> str:
         return f'{self.__class__.__name__}:{self.input_.get_id()}:{self.output.get_id()}'
 
     def set_index(self, i: int):
@@ -102,7 +104,7 @@ class PipelineStep(ABC):
                     pipeline_progress.mark_failed(
                         self.pipeline_id,
                         errmsg=(
-                            f"Pipeline configuration error in {self.id_}\n\n"
+                            f"Pipeline configuration error in {self}\n\n"
                             + f"Previous steps were completed, but not all their outputs are produced:\n"
                             + "\n".join([f"\t{s.output}" for s in previous_steps])
                         ),
@@ -112,7 +114,7 @@ class PipelineStep(ABC):
                     pipeline_progress.mark_failed(
                         self.pipeline_id,
                         errmsg=(
-                            f"Pipeline configuration error in {self.id_}\n\n"
+                            f"Pipeline configuration error in {self}\n\n"
                             + f"Previous steps were completed, their outputs produced:\n"
                             + "\n".join([f"\t{s.output}" for s in previous_steps])
                             + f"\nBut this step's input is not:\n\t{self.input_}"
@@ -142,7 +144,7 @@ class PipelineStep(ABC):
                 step_progress.failed(self, errmsg=str(e))
                 pipeline_progress.mark_failed(
                     self.pipeline_id,
-                    errmsg=f"Pipeline failed on {self.id_} with traceback:\n\n{traceback.format_exc()}",
+                    errmsg=f"Pipeline failed on {self} with traceback:\n\n{traceback.format_exc()}",
                 )
                 raise StepFailedException()
         except StepFailedException:  # any other error during waiting/pipeline integrity check/whatever

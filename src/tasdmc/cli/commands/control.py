@@ -49,8 +49,7 @@ def abort_run_cmd(confirm: bool):
 @cli.command(
     "fork",
     help="Create a new run by forking RUN_NAME at the specified pipeline step; "
-    + "This command does not copy any data but creates symlinks, forked run can potentially overwrite "
-    + "files in the parent run, so use it with care!"
+    + "This command does not copy any actual data but creates symlinks instead"
 )
 @click.option(
     "--after", "-a", "after",
