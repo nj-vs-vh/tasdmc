@@ -15,13 +15,13 @@ import re
 from typing import List, Tuple, Union
 
 from tasdmc import config
-from tasdmc.steps.base import Files, PipelineStep
+from tasdmc.steps.base import Files, PipelineStep, files_dataclass
 from tasdmc.steps.processing.corsika2geant import C2GOutputFiles, Corsika2GeantStep
 from tasdmc.steps.processing.corsika2geant_parallel import Corsika2GeantParallelMergeStep
 from tasdmc.steps.corsika_cards_generation import get_cards_count_at_log10E, log10E_bounds_from_config
 
 
-@dataclass
+@files_dataclass
 class TothrowFile(Files):
     tothrow: Path
 
@@ -41,6 +41,7 @@ class TothrowFile(Files):
         return showlib_file, n_particles_per_epoch
 
 
+@dataclass
 class TothrowGenerationStep(PipelineStep):
     input_: C2GOutputFiles
     output: TothrowFile

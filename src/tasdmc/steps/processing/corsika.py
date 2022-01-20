@@ -6,17 +6,17 @@ import corsika_wrapper as cw
 from typing import List
 
 from tasdmc import fileio, config
-from tasdmc.steps.base import Files, PipelineStep
+from tasdmc.steps.base import Files, PipelineStep, files_dataclass
 from tasdmc.steps.exceptions import FilesCheckFailed
 from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty, check_last_line_contains
 
 
-@dataclass
+@files_dataclass
 class CorsikaCard(Files):
     card: Path
 
 
-@dataclass
+@files_dataclass
 class CorsikaOutputFiles(Files):
     particle: Path
     longtitude: Path
@@ -53,6 +53,7 @@ class CorsikaOutputFiles(Files):
         check_particle_file_contents(self.particle)
 
 
+@dataclass
 class CorsikaStep(PipelineStep):
     input_: CorsikaCard
     output: CorsikaOutputFiles

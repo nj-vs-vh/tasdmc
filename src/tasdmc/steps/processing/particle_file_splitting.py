@@ -8,12 +8,12 @@ from tasdmc import config
 from tasdmc.system.resources import n_cpu
 from tasdmc.c_routines_wrapper import execute_routine, Pipes
 
-from tasdmc.steps.base import NotAllRetainedFiles, PipelineStep
+from tasdmc.steps.base import NotAllRetainedFiles, PipelineStep, files_dataclass
 from .corsika import CorsikaStep, CorsikaOutputFiles
 from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty, check_last_line_contains
 
 
-@dataclass
+@files_dataclass
 class SplitParticleFiles(NotAllRetainedFiles):
     files: List[Path]
     stderr: Path

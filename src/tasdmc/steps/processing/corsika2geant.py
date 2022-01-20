@@ -7,14 +7,14 @@ from typing import List
 
 from tasdmc import fileio
 from tasdmc.c_routines_wrapper import execute_routine, Pipes
-from tasdmc.steps.base import Files, NotAllRetainedFiles, PipelineStep
+from tasdmc.steps.base import Files, NotAllRetainedFiles, PipelineStep, files_dataclass
 from tasdmc.steps.utils import check_file_is_empty, check_last_line_contains, check_tile_file_contents
 from tasdmc.utils import concatenate_and_hash
 
 from .dethinning import DethinningOutputFiles, DethinningStep
 
 
-@dataclass
+@files_dataclass
 class C2GInputFiles(NotAllRetainedFiles):
     dethinning_outputs: List[DethinningOutputFiles]
     dethinned_files_listing: Path  # list of paths stored in text file, as from ls * > file_list.txt
@@ -59,7 +59,7 @@ class C2GInputFiles(NotAllRetainedFiles):
         return concatenate_and_hash(dethinning_output_hashes)
 
 
-@dataclass
+@files_dataclass
 class C2GOutputFiles(Files):
     tile: Path
     stdout: Path
@@ -90,6 +90,7 @@ class C2GOutputFiles(Files):
         check_tile_file_contents(self.tile)
 
 
+@dataclass
 class Corsika2GeantStep(PipelineStep):
     input_: C2GInputFiles
     output: C2GOutputFiles

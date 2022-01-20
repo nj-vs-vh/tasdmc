@@ -7,16 +7,15 @@ from typing import List
 from tasdmc import fileio
 from tasdmc.c_routines_wrapper import execute_routine, Pipes
 
-from tasdmc.steps.base import NotAllRetainedFiles, PipelineStep
+from tasdmc.steps.base import NotAllRetainedFiles, PipelineStep, files_dataclass
 from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty, check_last_line_contains
 
 from .particle_file_splitting import SplitParticleFiles, ParticleFileSplittingStep
 
 
-@dataclass
+@files_dataclass
 class SplitParticleFile(NotAllRetainedFiles):
     particle: Path
-
 
     @property
     def not_retained(self) -> List[Path]:
@@ -27,7 +26,7 @@ class SplitParticleFile(NotAllRetainedFiles):
         return [SplitParticleFile(pf) for pf in spf.files]
 
 
-@dataclass
+@files_dataclass
 class DethinningOutputFiles(NotAllRetainedFiles):
     dethinned_particle: Path
     stdout: Path

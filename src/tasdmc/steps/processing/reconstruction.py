@@ -8,11 +8,11 @@ from typing import List
 from tasdmc import fileio
 from tasdmc.c_routines_wrapper import execute_routine, Pipes
 from tasdmc.steps.utils import check_last_line_contains, check_dst_file_not_empty
-from ..base import OptionalFiles, PipelineStep
+from ..base import OptionalFiles, PipelineStep, files_dataclass
 from .spectral_sampling import SpectralSampledEvents, SpectralSamplingStep
 
 
-@dataclass
+@files_dataclass
 class ReconstructedEvents(OptionalFiles):
     log: Path
     errorlog: Path

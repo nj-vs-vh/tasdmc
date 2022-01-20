@@ -8,7 +8,7 @@ from enum import Enum
 from typing import List
 
 from tasdmc import config, fileio
-from tasdmc.steps.base import OptionalFiles, PipelineStep
+from tasdmc.steps.base import OptionalFiles, PipelineStep, files_dataclass
 from tasdmc.steps.processing.event_generation import EventFiles, EventsGenerationStep
 
 from tasdmc.c_routines_wrapper import execute_routine, Pipes
@@ -18,7 +18,7 @@ from tasdmc.steps.processing.tothrow_generation import dnde_exponent_from_config
 from tasdmc.steps.utils import check_file_is_empty, check_last_line_contains, check_dst_file_not_empty, log10E2str
 
 
-@dataclass
+@files_dataclass
 class SpectralSampledEvents(OptionalFiles):
     events: Path
     stdout: Path
@@ -58,6 +58,7 @@ class SpectralSampledEvents(OptionalFiles):
         check_dst_file_not_empty(self.events)
 
 
+@dataclass
 class SpectralSamplingStep(PipelineStep):
     input_: EventFiles
     output: SpectralSampledEvents

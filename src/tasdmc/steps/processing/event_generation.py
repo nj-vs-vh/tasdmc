@@ -1,9 +1,9 @@
 """Throwing CORSIKA-generated showers onto an SD grid, taking calibration into account"""
 
 from __future__ import annotations
-from dataclasses import dataclass
 from pathlib import Path
 from functools import lru_cache
+from dataclasses import dataclass
 import os
 import re
 import random
@@ -14,7 +14,7 @@ from gdown.cached_download import assert_md5sum
 from typing import List, Dict, Iterable, Tuple
 
 from tasdmc import fileio, config
-from tasdmc.steps.base import Files, PipelineStep
+from tasdmc.steps.base import Files, PipelineStep, files_dataclass
 from tasdmc.steps.exceptions import FilesCheckFailed, BadDataFiles
 from tasdmc.steps.utils import check_file_is_empty, check_last_line_contains, check_dst_file_not_empty, passed
 from .corsika2geant import C2GOutputFiles, Corsika2GeantStep
@@ -28,7 +28,7 @@ from tasdmc.c_routines_wrapper import (
 from tasdmc.c_routines_wrapper import execute_routine, Pipes
 
 
-@dataclass
+@files_dataclass
 class C2GOutputWithTothrowFiles(Files):
     c2g_output: C2GOutputFiles
     tothrow: TothrowFile
@@ -50,7 +50,7 @@ class C2GOutputWithTothrowFiles(Files):
             )
 
 
-@dataclass
+@files_dataclass
 class EventFiles(Files):
     merged_events_file: Path
     log: Path
@@ -125,6 +125,7 @@ class EventFiles(Files):
         check_dst_file_not_empty(self.merged_events_file)
 
 
+@dataclass
 class EventsGenerationStep(PipelineStep):
     input_: C2GOutputWithTothrowFiles
     output: EventFiles

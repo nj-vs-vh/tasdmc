@@ -6,7 +6,7 @@ from typing import List
 
 from tasdmc import fileio
 from tasdmc.c_routines_wrapper import execute_routine, Pipes
-from tasdmc.steps.base import NotAllRetainedFiles, PipelineStep
+from tasdmc.steps.base import NotAllRetainedFiles, PipelineStep, files_dataclass
 from tasdmc.steps.utils import check_file_is_empty, check_last_line_contains
 from tasdmc.utils import concatenate_and_hash
 
@@ -17,7 +17,7 @@ from .corsika2geant import C2GOutputFiles, _validate_sdgeant
 # process separate dethinned particle files and produce partial files
 
 
-@dataclass
+@files_dataclass
 class PartialTileFile(NotAllRetainedFiles):
     partial_tile: Path
     stdout: Path
@@ -45,6 +45,7 @@ class PartialTileFile(NotAllRetainedFiles):
         check_last_line_contains(self.stdout, 'OK')
 
 
+@dataclass
 class Corsika2GeantParallelProcessStep(PipelineStep):
     input_: DethinningOutputFiles
     output: PartialTileFile
@@ -81,7 +82,7 @@ class Corsika2GeantParallelProcessStep(PipelineStep):
 # merge partial tile files into one final tile
 
 
-@dataclass
+@files_dataclass
 class PartialTileFileSet(NotAllRetainedFiles):
     partial_tile_files: List[PartialTileFile]
     listing: Path
@@ -121,6 +122,7 @@ class PartialTileFileSet(NotAllRetainedFiles):
         return concatenate_and_hash(dethinning_output_hashes)
 
 
+@dataclass
 class Corsika2GeantParallelMergeStep(PipelineStep):
     input_: PartialTileFileSet
     output: C2GOutputFiles

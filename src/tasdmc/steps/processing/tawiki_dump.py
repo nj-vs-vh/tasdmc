@@ -10,11 +10,11 @@ from tasdmc import fileio
 from tasdmc.c_routines_wrapper import execute_routine, Pipes
 from tasdmc.steps.utils import check_last_line_contains, log10E2str
 from ..base.step import PipelineStep
-from ..base.files import Files
+from ..base.files import Files, files_dataclass
 from .reconstruction import ReconstructedEvents, ReconstructionStep
 
 
-@dataclass
+@files_dataclass
 class TawikiDumpFiles(Files):
     dump: Path
     log: Path
@@ -79,7 +79,7 @@ class TawikiDumpStep(PipelineStep):
 # TODO: create an aggregation step abstraction
 
 
-@dataclass
+@files_dataclass
 class TawikiDumpFileSet(Files):
     tdfs: List[TawikiDumpFiles]
 
@@ -88,7 +88,7 @@ class TawikiDumpFileSet(Files):
         return chain.from_iterable((tdf.log, tdf.dump) for tdf in self.tdfs)
 
 
-@dataclass
+@files_dataclass
 class MergedTawikiDump(Files):
     merged_dump: Path
     log: Path

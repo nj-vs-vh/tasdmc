@@ -1,15 +1,21 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from dataclasses import fields, is_dataclass
+from dataclasses import fields, dataclass
 from functools import lru_cache
 
-from typing import Optional, List, Any, Literal, get_args, get_origin, TypeVar
+from typing import List, Any, Literal, get_args, get_origin, Type
 
 from tasdmc import fileio, config
 from tasdmc.logs import input_hashes_debug, file_checks_debug
 from tasdmc.utils import concatenate_and_hash
 from ..exceptions import FilesCheckFailed, HashComputationFailed
 from ..utils import file_contents_hash
+
+
+def files_dataclass(cls: Type):
+    """drop-in replacement for dataclass supporting eq/hash inheritance"""
+    cls._is_files_dataclass = True
+    return dataclass(eq=False)(cls)
 
 
 class Files(ABC):
@@ -19,8 +25,10 @@ class Files(ABC):
     """
 
     def __new__(cls, *args, **kwargs):
-        if not is_dataclass(cls):
-            raise TypeError("All Files subclasses must be dataclasses!")
+        try:
+            assert cls._is_files_dataclass == True
+        except (AttributeError, AssertionError):
+            raise TypeError("All Files subclasses must be decorared with files_dataclass!")
         return super(Files, cls).__new__(cls)
 
     def __str__(self):
