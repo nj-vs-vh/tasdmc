@@ -26,6 +26,14 @@ class Files(ABC):
     def __str__(self):
         return self.get_id()
 
+    def __eq__(self, other: "Files") -> bool:
+        if not isinstance(other, Files):
+            raise TypeError("Files are only comparable with other Files")
+        return self.get_id() == other.get_id()
+
+    def __hash__(self) -> int:
+        return hash(self.get_id())
+
     @property
     def all_files(self) -> List[Path]:
         """All file paths in Files'. Since all subclasses are dataclasses, this can be inferred
