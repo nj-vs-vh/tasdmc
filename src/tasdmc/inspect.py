@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import click
 from pathlib import Path
+from functools import lru_cache
 import traceback
 from enum import Enum
 from dataclasses import dataclass
@@ -62,6 +63,7 @@ class StepInspectionResult:
             return StepStatus.RERUN_REQUIRED
 
     @staticmethod
+    @lru_cache()
     def files_produced_deleted_errmsg(files: Files) -> Tuple[bool, bool, Optional[str]]:
         check_failed_errmsg = None
         produced = False
