@@ -32,7 +32,7 @@ from tasdmc.utils import batches
 def get_steps(
     corsika_card_paths: List[Path],
     include_aggregation_steps: bool = True,
-    batched: bool = True
+    batched: bool = True,
 ) -> List[PipelineStep]:
     """
     Args:
@@ -88,8 +88,10 @@ def get_steps(
         ]
         steps.extend(event_gen_steps_batch)
         # larger batch: original batch size * number of minimal energies to sample
-        spectral_sampling_batch = chain.from_iterable(
-            SpectralSamplingStep.from_events_generation(event_gen) for event_gen in event_gen_steps_batch
+        spectral_sampling_batch = list(
+            chain.from_iterable(
+                SpectralSamplingStep.from_events_generation(event_gen) for event_gen in event_gen_steps_batch
+            )
         )
         steps.extend(spectral_sampling_batch)
         reconstruction_steps_batch = [
