@@ -7,3 +7,5 @@ swig/dstreader_core.i
 
 # generated pre-SWIG and included in template 
 swig/*_numpy_accessors.i
+
+**/.ipynb_checkpoints

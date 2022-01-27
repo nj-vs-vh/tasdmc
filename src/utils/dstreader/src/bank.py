@@ -27,6 +27,9 @@ class Bank:
         self.bank_obj = bank_obj
         self.bank_class = bank_obj.__class__
 
+    def __str__(self) -> str:
+        return f"{self.name} bank, wrapping {self.bank_obj}"
+
     def keys(self):
         return [
             p
