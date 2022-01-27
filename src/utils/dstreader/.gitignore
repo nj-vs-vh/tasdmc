@@ -3,7 +3,7 @@ src/dstreader_core.py
 swig/dstreader_core_wrap.c
 
 # generated pre-SWIG from dstreader_core_template.i
-src/dstreader_core.i
+swig/dstreader_core.i
 
 # generated pre-SWIG and included in template 
 swig/*_numpy_accessors.i
