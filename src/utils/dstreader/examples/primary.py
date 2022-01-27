@@ -9,4 +9,4 @@ with DstFile(example_dst_file) as dst:
         if 'rusdmc' not in banks:
             print("rusdmc bank not found!")
         rusdmc = dst.get_bank('rusdmc')
-        print(f"Primary id = {rusdmc.parttype}, E = {(1000 * rusdmc.energy):.3f} PeV")
+        print(f"Primary id = {rusdmc['parttype']}, E = {(1000 * rusdmc['energy']):.3f} PeV")
