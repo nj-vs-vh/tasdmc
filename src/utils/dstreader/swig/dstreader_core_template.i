@@ -40,10 +40,5 @@ integer4 eventNameFromId(integer4 bank, integer1 *name, integer4 len);
 %include "bank_list.h"
 
 
-// actual banks to be exposed to Python, may be appended with %include "<bankname>_dst.h"
-// if the banks also include arrays, custom numpy accessors should be generated for
-// them with generate_numpy_accessors.py; see setup.py InstallWithSwig class for details
-%include "rusdmc_dst.h"
-%include "rusdraw_dst.h"
-
-// generated numpy accessors will be appended here
+// actual banks to be exposed to Python will be appended here automatically on installation
+// see setup.py for currently added and more or less tested banks.
