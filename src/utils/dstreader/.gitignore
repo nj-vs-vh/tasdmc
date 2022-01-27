@@ -1,3 +1,5 @@
 experiment
 src/dstreader_core.py
+src/dstreader_core.i
 swig/dstreader_core_wrap.c
+swig/*_numpy_accessors.i
