@@ -1,10 +1,11 @@
 import warnings
 
-from typing import TypeVar, Union
+from typing import TypeVar, Union, List
 from numbers import Number
 from numpy.typing import NDArray
 
 from . import dstreader_core as dstc
+from .bank_docs import generated_bank_docs
 
 
 _SwigGeneratedBankObject = TypeVar("_SwigGeneratedBankObject")
@@ -30,7 +31,12 @@ class Bank:
     def __str__(self) -> str:
         return f"{self.name} bank, wrapping {self.bank_obj}"
 
-    def keys(self):
+    @property
+    def doc(self) -> str:
+        return generated_bank_docs[self.name + "_"]
+
+    @property
+    def keys(self) -> List[str]:
         return [
             p
             for p in dir(self.bank_class)
