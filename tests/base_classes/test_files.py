@@ -6,10 +6,10 @@ from itertools import chain
 
 from typing import List
 
-from tasdmc.steps.base import Files
+from tasdmc.steps.base import Files, files_dataclass
 
 
-@dataclass
+@files_dataclass
 class DummyFiles(Files):
     @property
     def must_exist(self) -> List[Path]:
@@ -25,11 +25,11 @@ def test_files_must_be_dataclasses():
 
 
 def test_all_files_property():
-    @dataclass
+    @files_dataclass
     class NestedFiles(DummyFiles):
         smth: Path = Path('dummy')
 
-    @dataclass
+    @files_dataclass
     class FilesWithPaths(DummyFiles):
         file1: Path
         file2: Path
@@ -42,7 +42,7 @@ def test_all_files_property():
     all_files = [Path('a/b/c'), Path('d/e/f')]
     assert FilesWithPaths(*all_files).all_files == all_files
 
-    @dataclass
+    @files_dataclass
     class FilesWithPathLists(DummyFiles):
         files1: List[Path]
         files2: List[Path]
@@ -55,7 +55,7 @@ def test_all_files_property():
     path_lists = [[Path('a/b/c'), Path('d/e/f')], [Path('1/2/3'), Path('4/5/6'), Path('7/8/9')]]
     assert set(FilesWithPathLists(*path_lists).all_files) == set(chain.from_iterable(path_lists))
 
-    @dataclass
+    @files_dataclass
     class FilesWithBoth(DummyFiles):
         file1: Path
         files2: List[Path]

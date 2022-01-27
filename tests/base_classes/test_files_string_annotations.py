@@ -9,10 +9,10 @@ from itertools import chain
 
 from typing import List
 
-from tasdmc.steps.base import Files
+from tasdmc.steps.base import Files, files_dataclass
 
 
-@dataclass
+@files_dataclass
 class DummyFiles(Files):
     @property
     def must_exist(self) -> List[Path]:
