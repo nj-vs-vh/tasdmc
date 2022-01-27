@@ -1,6 +1,13 @@
 %module dstreader_core
 %{
 #include "event.h"
+#define SWIG_FILE_WITH_INIT
+%}
+
+// numpy interface boilerplate
+%include "numpy.i"
+%init %{
+import_array();
 %}
 
 // marking all variables as immutable = read-only
@@ -14,14 +21,13 @@
 %include "cpointer.i"
 %pointer_functions(int, intp);
 
-// %include "typemaps.i"
+// making functions return string on Python side instead of modifying char * arg inplace
 %include "cstring.i"
-
-// making eventNameFromId return name string on Python side instead
-// of modifying passed arg
+// other functions with char * argument may be mapped the same way
+// on Python side signature is integer4_return_value, name = eventNameFromId(bank, len)
 %cstring_bounded_output(integer1 *name, 1024);
 integer4 eventNameFromId(integer4 bank, integer1 *name, integer4 len);
-%ignore eventNameFromId;  // to ignore its later version from included event.h
+%ignore eventNameFromId;  // ignoring unmapped version from event.h
 
 // basic dst file manipulation functions
 %include "event.h"
@@ -35,5 +41,9 @@ integer4 eventNameFromId(integer4 bank, integer1 *name, integer4 len);
 
 
 // actual banks to be exposed to Python, may be appended with %include "<bankname>_dst.h"
-%include "rusdraw_dst.h"
+// if the banks also include arrays in them, custom numpy accessors should be generated for
+// them with generate_numpy_accessors.py; see setup.py InstallWithSwig class for details
 %include "rusdmc_dst.h"
+%include "rusdraw_dst.h"
+
+// generated numpy accessors will be appended here
