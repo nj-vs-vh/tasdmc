@@ -27,10 +27,10 @@ class InstallWithSwig(install):
     def run(self):
         shutil.copy(SWIG_INTERFACE_TEMPLATE, SWIG_INTERFACE_FILE)
         for bank in ['rusdraw', 'rusdmc']:
-            accesors_interface = SWIG_DIR / f"{bank}_numpy_accessors.i"
-            generate_accessors(dst_bank_header=DST2K_TA_INC_DIR / f"{bank}_dst.h", output_file=accesors_interface)
+            accesors_interface_file = SWIG_DIR / f"{bank}_numpy_accessors.i"
+            generate_accessors(dst_bank_header=DST2K_TA_INC_DIR / f"{bank}_dst.h", output_file=accesors_interface_file)
             with open(SWIG_INTERFACE_FILE, "a") as f:
-                f.write(f'\n%include "{accesors_interface.name}"\n')
+                f.write(f'\n%include "{accesors_interface_file.name}"\n')
 
         cmdargs = ["swig", "-python", dst2k_ta_include, f"-I{SWIG_DIR}", str(SWIG_INTERFACE_FILE)]
         print(" ".join(cmdargs))
