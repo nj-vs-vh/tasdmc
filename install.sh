@@ -23,10 +23,10 @@ providing high-level interface, pipeline management, parallelization, etc.
 See https://github.com/nj-vs-vh/tasdmc for documentation and instructions"
 
 echo "
-1. Preparing conda environment - installing CERN ROOT
+1. Preparing conda environment - installing CERN ROOT and GNU Scientific Library
 "
 # root is required for building sdanalysis routines but also automatically installs Python, pip etc
-conda install -c conda-forge root bz2file -y
+conda install -c conda-forge root bz2file gsl -y
 if [ $? -ne 0 ]; then
     echo "Command failed, aborting"
     return 1
@@ -36,13 +36,14 @@ reactivate_conda_env
 
 
 echo "
-2. Building and installing sdanalysis routines
+2. Building and installing sdanalysis package
 "
 source scripts/git_setup_submodule.sh
 cd src/sdanalysis
 mkdir -p bin
 mkdir dst2k-ta/lib -p
 export C_INCLUDE_PATH=$CONDA_PREFIX/include:$C_INCLUDE_PATH
+export LIBRARY_PATH=$CONDA_PREFIX/lib:$LIBRARY_PATH
 export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
 make
 if [ $? -ne 0 ]; then
@@ -54,7 +55,7 @@ cd ../..
 
 
 echo "
-3. Building and installing tasdmc C routines
+3. Building and installing tasdmc's included C programs
 "
 export SDANALYSIS_DIR=$(readlink -f ./src/sdanalysis)
 source scripts/activation/tasdmc-activate-common.sh

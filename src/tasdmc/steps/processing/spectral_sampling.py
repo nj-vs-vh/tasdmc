@@ -90,9 +90,9 @@ class SpectralSamplingStep(PipelineStep):
                     self.output.events,
                     '-s',
                     TargetSpectrum.from_config().value,
-                    '-i',
+                    '-g',  # starting index of the MC event library, default 2.000000
                     dnde_exponent_from_config(),
-                    '-e',
+                    '-e',  # minimum energy [EeV](before energy scale correction), default 0.3162 EeV
                     10 ** (self.output.log10E_min - 18),  # log10(E/eV) => EeV
                     self.input_.merged_events_file,
                 ],
