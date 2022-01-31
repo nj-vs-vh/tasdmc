@@ -184,6 +184,9 @@ class Files(ABC):
             f.write(contents_hash)
 
     def same_hash_as_stored(self, force_log: bool = False) -> bool:
+        if config.Ephemeral.disable_input_hash_checks:
+            self.store_contents_hash()  # next time we will trust this file to be OK
+            return True
         stored_hash_path = self._get_stored_hash_path()
         if not stored_hash_path.exists():
             if _input_hashes_log_enabled() or force_log:

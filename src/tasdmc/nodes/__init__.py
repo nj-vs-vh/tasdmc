@@ -48,13 +48,18 @@ def run_all():
         ex.run_simulation()
 
 
-def continue_all():
+def continue_all(rerun_step_on_input_hash_mismatch: bool, disable_input_hash_checks: bool):
     click.echo(f"Continuing nodes...")
     failed_nodes = []
+    cmdline_flags = ""
+    if rerun_step_on_input_hash_mismatch:
+        cmdline_flags += "--rerun-step-on-input-hash-mismatch "
+    if disable_input_hash_checks:
+        cmdline_flags += "--disable-input-hash-checks "
     for ex in node_executors_from_config():
         click.secho(f"{ex}: ", nl=False, bold=True)
         try:
-            ex.run(f"tasdmc continue {ex.node_run_name}", disown=True)
+            ex.run(f"tasdmc continue {ex.node_run_name} {cmdline_flags}", disown=True)
             _echo_ok()
         except Exception as e:
             _echo_fail()

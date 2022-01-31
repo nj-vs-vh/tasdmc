@@ -11,10 +11,31 @@ from ..utils import run_standard_pipeline_in_background, loading_run_by_name, er
 
 
 @cli.command("continue", help="Continue execution of aborted RUN_NAME")
+@click.option(
+    "--rerun-step-on-input-hash-mismatch",
+    is_flag=True,
+    default=False,
+    help="By default on input hash mismatch step is marked as failed. If the mismatch is due to you changing run"
+    + "config 'on the fly', specify this option and steps with mismatching input hashes will be rerun"
+)
+@click.option(
+    "--disable-input-hash-checks",
+    is_flag=True,
+    default=False,
+    help="Option to completely disable input hash checking (a mechanism to prevent pipeline desync). "
+    + "If specified, hashes of input files will still be calculated and saved, hence subsequent 'continue's "
+    + "will see pipelines as forcibly synced. Use this if you have a problem with hashes not"
+    + "related to configuration change, but due to some technical issue."
+)
 @loading_run_by_name
 @error_catching
-def continue_run_cmd():
+def continue_run_cmd(rerun_step_on_input_hash_mismatch: bool, disable_input_hash_checks: bool):
+    if rerun_step_on_input_hash_mismatch and disable_input_hash_checks:
+        click.echo("--rerun-step-on-input-hash-mismatch and --disable-input-hash-checks options can't be used together")
+        sys.exit(1)
     if config.is_local_run():
+        config.Ephemeral.rerun_step_on_input_hash_mismatch = rerun_step_on_input_hash_mismatch
+        config.Ephemeral.disable_input_hash_checks = disable_input_hash_checks
         saved_main_pid = fileio.get_saved_main_pid()
         if saved_main_pid is not None and system.process_alive(saved_main_pid):
             click.secho(f"Run already alive")
@@ -23,7 +44,7 @@ def continue_run_cmd():
         run_standard_pipeline_in_background()
     else:
         nodes.check_all()
-        nodes.continue_all()
+        nodes.continue_all(rerun_step_on_input_hash_mismatch, disable_input_hash_checks)
 
 
 @cli.command("abort", help="Abort execution of RUN_NAME")

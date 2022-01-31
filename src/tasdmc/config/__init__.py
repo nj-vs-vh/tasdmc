@@ -18,7 +18,7 @@ from .storage import RunConfig, NodesConfig
 
 
 class Global:
-    """Namespace class to hold global/pre-installation configuration options"""
+    """Namespace class holding global/pre-installation configuration options"""
 
     runs_dir: Path
     data_dir: Path
@@ -38,11 +38,20 @@ class Global:
             sys.exit()
 
 
+class Ephemeral:
+    """Namespace class holding emphemeral (= not persistent) config values coming from command-line params"""
+
+    rerun_step_on_input_hash_mismatch: bool = False
+    disable_input_hash_checks: bool = False
+
+
 Global.load()
 
 
 def validate(step_classes: Optional[List[Type['PipelineStep']]] = None):  # type: ignore
     from tasdmc.steps.corsika_cards_generation import validate_config
+
+    assert not (Ephemeral.rerun_step_on_input_hash_mismatch and Ephemeral.disable_input_hash_checks), "Can't be both!"
 
     validate_config()
     if step_classes is None:

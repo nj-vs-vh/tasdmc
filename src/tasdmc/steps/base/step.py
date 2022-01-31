@@ -126,10 +126,18 @@ class PipelineStep(ABC):
             logs.multiprocessing_info(f"{self.description}")
             try:
                 force_rerun = self.__class__.__name__ in config.get_key("debug.force_rerun_steps", default=[])
-                if not force_rerun and self.output.files_were_produced():
+                trying_to_skip = not force_rerun and self.output.files_were_produced()
+                if config.Ephemeral.rerun_step_on_input_hash_mismatch:
+                    # with this option on hash mismatch go to the actual run if arm
+                    trying_to_skip = trying_to_skip and self.input_.same_hash_as_stored()
+                if trying_to_skip:
                     if not self.input_.same_hash_as_stored():
                         self.input_.same_hash_as_stored(force_log=True)
-                        raise StepFailedException(f"Input hash mismatch for {self.input_}, see input_hashes_debug.log")
+                        raise StepFailedException(
+                            f"Input hash mismatch for {self.input_}, see input_hashes_debug.log.\n"
+                            + "To fix this error, run continue with --rerun-step-on-input-hash-mismatch or "
+                            + "--disable-input-hash-checks flag."
+                        )
                     step_progress.skipped(self)
                 else:
                     step_progress.started(self)
