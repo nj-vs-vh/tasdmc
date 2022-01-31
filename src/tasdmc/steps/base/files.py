@@ -183,23 +183,23 @@ class Files(ABC):
         with open(self._get_stored_hash_path(), 'w') as f:
             f.write(contents_hash)
 
-    def same_hash_as_stored(self) -> bool:
+    def same_hash_as_stored(self, force_log: bool = False) -> bool:
         stored_hash_path = self._get_stored_hash_path()
         if not stored_hash_path.exists():
-            if _input_hashes_log_enabled():
-                input_hashes_debug(f"{self} hash not found in new (relative path based) file, checking old")
+            if _input_hashes_log_enabled() or force_log:
+                input_hashes_debug(f"{self}\n\thash not found in new (relative path based) file, checking old")
             stored_hash_path = self._get_stored_hash_path(use_absolute_paths=True)
             if not stored_hash_path.exists():
-                if _input_hashes_log_enabled():
+                if _input_hashes_log_enabled() or force_log:
                     input_hashes_debug(
-                        f"{self} has no stored hash even in legacy absolute path based file, comparison FAILED"
+                        f"{self}\n\thas no stored hash even in legacy absolute path based file, comparison FAILED"
                     )
                 return False
         with open(stored_hash_path, 'r') as f:
             stored_hash = f.read()
-        if _input_hashes_log_enabled() and self.contents_hash != stored_hash:
+        if (_input_hashes_log_enabled() or force_log) and self.contents_hash != stored_hash:
             input_hashes_debug(
-                f"{self} hash comparison " + f"FAILED (actual hash: {self.contents_hash}; stored hash: {stored_hash})"
+                f"{self}\n\thash comparison failed (actual hash: {self.contents_hash}; stored hash: {stored_hash})"
             )
         return self.contents_hash == stored_hash
 

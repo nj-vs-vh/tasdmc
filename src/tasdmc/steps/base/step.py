@@ -126,7 +126,10 @@ class PipelineStep(ABC):
             logs.multiprocessing_info(f"{self.description}")
             try:
                 force_rerun = self.__class__.__name__ in config.get_key("debug.force_rerun_steps", default=[])
-                if not force_rerun and self.output.files_were_produced() and self.input_.same_hash_as_stored():
+                if not force_rerun and self.output.files_were_produced():
+                    if not self.input_.same_hash_as_stored():
+                        self.input_.same_hash_as_stored(force_log=True)
+                        raise StepFailedException(f"Input hash mismatch for {self.input_}, see input_hashes_debug.log")
                     step_progress.skipped(self)
                 else:
                     step_progress.started(self)
@@ -147,7 +150,12 @@ class PipelineStep(ABC):
                     errmsg=f"Pipeline failed on {self} with traceback:\n\n{traceback.format_exc()}",
                 )
                 raise StepFailedException()
-        except StepFailedException:  # any other error during waiting/pipeline integrity check/whatever
+        except Exception as e:  # any other error during waiting/pipeline integrity check/whatever
+            if not isinstance(e, StepFailedException):
+                pipeline_progress.mark_failed(
+                    self.pipeline_id,
+                    errmsg=f"Pipeline failed on {self} with unexpected exception {e} ({e.__class__.__name__})",
+                )
             self.save_runtime_status(StepRuntimeStatus.FAILED)
 
     @abstractmethod
