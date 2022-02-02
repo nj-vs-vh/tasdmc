@@ -11,7 +11,7 @@ from typing import List
 
 from tasdmc import config
 from tasdmc.utils import batches
-from tasdmc.c_routines_wrapper import execute_routine, Pipes
+from tasdmc.subprocess_utils import execute_routine, Pipes
 
 
 DAYS_IN_EPOCH = 30

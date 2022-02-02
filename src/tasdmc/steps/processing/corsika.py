@@ -12,7 +12,7 @@ from tasdmc import fileio, config
 from tasdmc.steps.base import Files, PipelineStep, files_dataclass
 from tasdmc.steps.exceptions import FilesCheckFailed
 from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty, check_last_line_contains
-from tasdmc.c_routines_wrapper import execute_routine, Pipes, UnlimitedStackSize
+from tasdmc.subprocess_utils import execute_routine, Pipes, UnlimitedStackSize
 
 
 @files_dataclass

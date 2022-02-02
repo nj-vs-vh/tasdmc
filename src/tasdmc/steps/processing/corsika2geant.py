@@ -6,7 +6,7 @@ from gdown.cached_download import assert_md5sum
 from typing import List
 
 from tasdmc import fileio
-from tasdmc.c_routines_wrapper import execute_routine, Pipes
+from tasdmc.subprocess_utils import execute_routine, Pipes
 from tasdmc.steps.base import Files, NotAllRetainedFiles, PipelineStep, files_dataclass
 from tasdmc.steps.utils import check_file_is_empty, check_last_line_contains, check_tile_file_contents
 from tasdmc.utils import concatenate_and_hash

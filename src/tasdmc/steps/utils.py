@@ -8,7 +8,7 @@ from subprocess import CalledProcessError
 
 from typing import List, Any, Callable, TypeVar, BinaryIO, Generator, Iterable, TypeVar, Tuple
 
-from tasdmc.c_routines_wrapper import list_events_in_dst_file, execute_routine, Pipes
+from tasdmc.subprocess_utils import list_events_in_dst_file, execute_routine, Pipes
 from .exceptions import FilesCheckFailed
 
 

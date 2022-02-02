@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import List
 
 from tasdmc import fileio
-from tasdmc.c_routines_wrapper import execute_routine, Pipes
+from tasdmc.subprocess_utils import execute_routine, Pipes
 from tasdmc.steps.utils import check_last_line_contains, check_dst_file_not_empty
 from ..base import OptionalFiles, PipelineStep, files_dataclass
 from .spectral_sampling import SpectralSampledEvents, SpectralSamplingStep

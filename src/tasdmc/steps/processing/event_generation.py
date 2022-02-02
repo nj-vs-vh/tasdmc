@@ -19,13 +19,13 @@ from tasdmc.steps.utils import check_file_is_empty, check_last_line_contains, ch
 from .corsika2geant import C2GOutputFiles, Corsika2GeantStep
 from .tothrow_generation import TothrowFile, TothrowGenerationStep
 
-from tasdmc.c_routines_wrapper import (
+from tasdmc.subprocess_utils import (
     concatenate_dst_files,
     list_events_in_dst_file,
     UnlimitedStackSize,
 )
 
-from tasdmc.c_routines_wrapper import execute_routine, Pipes
+from tasdmc.subprocess_utils import execute_routine, Pipes
 
 
 @files_dataclass

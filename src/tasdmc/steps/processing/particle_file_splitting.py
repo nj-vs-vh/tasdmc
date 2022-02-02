@@ -6,7 +6,7 @@ from typing import List
 
 from tasdmc import config
 from tasdmc.system.resources import n_cpu
-from tasdmc.c_routines_wrapper import execute_routine, Pipes
+from tasdmc.subprocess_utils import execute_routine, Pipes
 
 from tasdmc.steps.base import NotAllRetainedFiles, PipelineStep, files_dataclass
 from .corsika import CorsikaStep, CorsikaOutputFiles

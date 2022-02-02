@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List
 
 from tasdmc import fileio
-from tasdmc.c_routines_wrapper import execute_routine, Pipes
+from tasdmc.subprocess_utils import execute_routine, Pipes
 
 from tasdmc.steps.base import NotAllRetainedFiles, PipelineStep, files_dataclass
 from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty, check_last_line_contains

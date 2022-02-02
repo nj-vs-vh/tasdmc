@@ -11,7 +11,7 @@ from tasdmc import config, fileio
 from tasdmc.steps.base import OptionalFiles, PipelineStep, files_dataclass
 from tasdmc.steps.processing.event_generation import EventFiles, EventsGenerationStep
 
-from tasdmc.c_routines_wrapper import execute_routine, Pipes
+from tasdmc.subprocess_utils import execute_routine, Pipes
 from tasdmc.steps.corsika_cards_generation import log10E_bounds_from_config
 from tasdmc.steps.processing.tothrow_generation import dnde_exponent_from_config
 

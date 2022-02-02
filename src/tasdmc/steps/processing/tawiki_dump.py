@@ -7,7 +7,7 @@ from itertools import chain
 from typing import List
 
 from tasdmc import fileio
-from tasdmc.c_routines_wrapper import execute_routine, Pipes
+from tasdmc.subprocess_utils import execute_routine, Pipes
 from tasdmc.steps.utils import check_last_line_contains, log10E2str
 from ..base.step import PipelineStep
 from ..base.files import Files, files_dataclass
