@@ -3,8 +3,10 @@ from pathlib import Path
 from dataclasses import dataclass
 from functools import lru_cache
 import resource
+from tempfile import TemporaryDirectory
+import signal
 
-from typing import TextIO, Optional, List, Any
+from typing import TextIO, Optional, List, Any, AnyStr
 
 from tasdmc import config, fileio
 
@@ -92,3 +94,33 @@ class UnlimitedStackSize:
 
     def __exit__(self, *args):
         resource.setrlimit(resource.RLIMIT_STACK, self.previous_stack_limits)
+
+
+
+class SignalResistantTemporaryDirectory(TemporaryDirectory):
+    """TemporaryDirectory that cleans up on receiving """
+
+    signals = {
+        signal.SIGINT, 
+        signal.SIGTERM,
+    }
+
+    def __enter__(self) -> AnyStr:
+        def cleanup_and_reraise(signum, frame):
+            self.cleanup()
+            signal.signal(signum, signal.SIG_DFL)  # resetting signal handler to default and reraising
+            signal.raise_signal(signum)
+
+        # by default, when the program is aborted, /tmp/corsika_?????? dir is left and must be removed manually
+        # here we make sure to catch the signals used to interrupt and execute cleanup before exiting
+        for s in self.signals:
+            signal.signal(s, cleanup_and_reraise)
+
+        return super().__enter__()
+
+    def __exit__(self, *exc_args) -> None:
+        super().__exit__(*exc_args)
+        # resetting signal handler back to defaults
+        for s in self.signals:
+            signal.signal(s, signal.SIG_DFL)
+

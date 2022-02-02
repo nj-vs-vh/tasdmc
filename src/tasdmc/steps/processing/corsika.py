@@ -1,10 +1,8 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
-import tempfile
-import shutil
-import signal
 import os
+import shutil
 
 from typing import List
 
@@ -12,7 +10,7 @@ from tasdmc import fileio, config
 from tasdmc.steps.base import Files, PipelineStep, files_dataclass
 from tasdmc.steps.exceptions import FilesCheckFailed
 from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty, check_last_line_contains
-from tasdmc.subprocess_utils import execute_routine, Pipes, UnlimitedStackSize
+from tasdmc.subprocess_utils import execute_routine, Pipes, UnlimitedStackSize, SignalResistantTemporaryDirectory
 
 
 @files_dataclass
@@ -77,19 +75,7 @@ class CorsikaStep(PipelineStep):
 
     def _run(self):
         # inspiration and partial credit: https://github.com/fact-project/corsika_wrapper
-        with tempfile.TemporaryDirectory(prefix='corsika_') as tmp_dir:
-
-            def rm_tmp_dir(signum, frame):
-                shutil.rmtree(tmp_dir, ignore_errors=True)
-                # resetting signal handler to default and reraising it to
-                signal.signal(signum, signal.SIG_DFL)
-                signal.raise_signal(signum)
-
-            # by default, when tasdmc is aborted and some corsika steps are running, /tmp/corsika_?????? dirs
-            # are left, taking several Gb each and never cleaned if not by hand; here we make sure to catch
-            # the signal used by abort_run function and delete the temp dir
-            signal.signal(signal.SIGTERM, rm_tmp_dir)
-
+        with SignalResistantTemporaryDirectory(prefix='corsika_') as tmp_dir:
             tmp_run_dir = Path(tmp_dir) / 'run'
             corsika_executable = Path(config.get_key('corsika.path'))
             shutil.copytree(corsika_executable.parent, tmp_run_dir, symlinks=False)
@@ -104,9 +90,6 @@ class CorsikaStep(PipelineStep):
                     stdin_content=self.input_.card.read_text(),  # input cards are fed through stdin
                     run_from_directory=tmp_run_dir,  # CORSIKA needs to be launched from .../run/
                 )
-
-            # resetting signal handler
-            signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
     @classmethod
     def validate_config(self):
