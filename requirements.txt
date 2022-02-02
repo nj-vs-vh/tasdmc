@@ -8,7 +8,6 @@ psutil==5.8.0
 dictdiffer==0.9.0
 setproctitle==1.2.2
 fabric==2.6.0
-git+https://github.com/fact-project/corsika_wrapper
 git+https://github.com/nj-vs-vh/plotext.git
 
 pytest==6.2.5

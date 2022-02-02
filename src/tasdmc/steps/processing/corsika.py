@@ -1,7 +1,10 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
-import corsika_wrapper as cw
+import tempfile
+import shutil
+import signal
+import os
 
 from typing import List
 
@@ -9,6 +12,7 @@ from tasdmc import fileio, config
 from tasdmc.steps.base import Files, PipelineStep, files_dataclass
 from tasdmc.steps.exceptions import FilesCheckFailed
 from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty, check_last_line_contains
+from tasdmc.c_routines_wrapper import execute_routine, Pipes, UnlimitedStackSize
 
 
 @files_dataclass
@@ -72,19 +76,42 @@ class CorsikaStep(PipelineStep):
         return [CorsikaStep(input_, CorsikaOutputFiles.from_corsika_card(input_)) for input_ in inputs]
 
     def _run(self):
-        input_file = self.input_.card
-        cw.corsika(
-            steering_card=cw.read_steering_card(input_file),
-            # DATnnnnn.stdout and DATnnnnnn.stderr are created automatically by wrapper
-            output_path=str(fileio.corsika_output_files_dir() / input_file.stem),
-            corsika_path=config.get_key('corsika.path'),
-            save_stdout=True,
-        )
+        # inspiration and partial credit: https://github.com/fact-project/corsika_wrapper
+        with tempfile.TemporaryDirectory(prefix='corsika_') as tmp_dir:
+
+            def rm_tmp_dir(signum, frame):
+                shutil.rmtree(tmp_dir, ignore_errors=True)
+                # resetting signal handler to default and reraising it to
+                signal.signal(signum, signal.SIG_DFL)
+                signal.raise_signal(signum)
+
+            # by default, when tasdmc is aborted and some corsika steps are running, /tmp/corsika_?????? dirs
+            # are left, taking several Gb each and never cleaned if not by hand; here we make sure to catch
+            # the signal used by abort_run function and delete the temp dir
+            signal.signal(signal.SIGTERM, rm_tmp_dir)
+
+            tmp_run_dir = Path(tmp_dir) / 'run'
+            corsika_executable = Path(config.get_key('corsika.path'))
+            shutil.copytree(corsika_executable.parent, tmp_run_dir, symlinks=False)
+            tmp_corsika = tmp_run_dir / corsika_executable.name
+            with UnlimitedStackSize(), Pipes(self.output.stdout, self.output.stderr) as (pipout, piperr):
+                execute_routine(
+                    executable=tmp_corsika,
+                    global_=True,
+                    args=[],
+                    stdout=pipout,
+                    stderr=piperr,
+                    stdin_content=self.input_.card.read_text(),  # input cards are fed through stdin
+                    run_from_directory=tmp_run_dir,  # CORSIKA needs to be launched from .../run/
+                )
+
+            # resetting signal handler
+            signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
     @classmethod
     def validate_config(self):
         corsika_path = Path(config.get_key('corsika.path'))
-        assert corsika_path.exists(), f"CORSIKA executable {corsika_path} does not exist"
+        assert corsika_path.exists(), f"CORSIKA executable {corsika_path} not found"
 
         if config.get_key('corsika.default_executable_name', default=True):
             common_msg_end = (
@@ -94,13 +121,19 @@ class CorsikaStep(PipelineStep):
             # quick hacks relying on default CORSIKA naming strategy, not to be relied upon
             corsika_exe_name = corsika_path.name.lower()
             assert 'thin' in corsika_exe_name, "CORSIKA seems to be compiled without THINning option" + common_msg_end
-            low_E_hadr_model: str = config.get_key('corsika.low_E_hadronic_interactions_model')
-            assert low_E_hadr_model.lower() in corsika_exe_name, "Low energy hadronic seems incorrect"
-            high_E_hadr_model: str = config.get_key('corsika.high_E_hadronic_interactions_model')
+            low_E_model: str = config.get_key('corsika.low_E_hadronic_interactions_model')
+            if low_E_model == "FLUKA":
+                assert (
+                    os.environ.get("FLUPRO") is not None
+                ), "FLUPRO environment variable must be defined when running CORSIKA with FLUKA model"
+            assert (
+                low_E_model.lower() in corsika_exe_name
+            ), f"Low energy hadronic model mismatch (expected {low_E_model}, but executable name suggests otherwise)"
+            high_E_model: str = config.get_key('corsika.high_E_hadronic_interactions_model')
             high_E_hadr_model_to_executable_name_part = {
                 'QGSJETII': 'QGSII',
                 'EPOS': 'EPOS',
             }
             assert (
-                high_E_hadr_model_to_executable_name_part[high_E_hadr_model].lower() in corsika_exe_name
-            ), "High energy hadronic seems incorrect"
+                high_E_hadr_model_to_executable_name_part[high_E_model].lower() in corsika_exe_name
+            ), f"High energy hadronic model mismatch (expected {high_E_model}, but executable name suggests otherwise)"

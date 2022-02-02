@@ -8,7 +8,6 @@ import os
 import re
 import random
 import tarfile
-import resource
 from gdown.cached_download import assert_md5sum
 
 from typing import List, Dict, Iterable, Tuple
@@ -23,6 +22,7 @@ from .tothrow_generation import TothrowFile, TothrowGenerationStep
 from tasdmc.c_routines_wrapper import (
     concatenate_dst_files,
     list_events_in_dst_file,
+    UnlimitedStackSize,
 )
 
 from tasdmc.c_routines_wrapper import execute_routine, Pipes
@@ -346,15 +346,3 @@ def test_sdmc_spctr_runnable():
     res = execute_routine(sdmc_spctr, [], global_=True, check_errors=False)
     if 'Usage: ' not in res.stderr.decode('utf-8'):
         raise OSError(f'{sdmc_spctr} do not work as expected!')
-
-
-class UnlimitedStackSize:
-    """Equivalent to ulimit -s unlimited in a bash script"""
-
-    def __enter__(self):
-        soft, hard = resource.getrlimit(resource.RLIMIT_STACK)
-        self.previous_stack_limits = (soft, hard)
-        resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, hard))
-
-    def __exit__(self, *args):
-        resource.setrlimit(resource.RLIMIT_STACK, self.previous_stack_limits)
