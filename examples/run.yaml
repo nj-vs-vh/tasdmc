@@ -8,6 +8,7 @@ description:
 pipeline:
   produce_tawiki_dumps: True
   legacy_corsika2geant: False
+  batch_size_multiplier: 2
 
 input_files:
   particle: proton

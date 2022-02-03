@@ -11,7 +11,7 @@ from typing import List, Tuple, Optional, ClassVar, Dict
 
 from tasdmc import fileio
 from tasdmc.utils import batches
-from tasdmc.pipeline import get_steps
+from tasdmc.pipeline import get_steps_queue
 from tasdmc.config.storage import RunConfig
 from tasdmc.steps.exceptions import HashComputationFailed, FilesCheckFailed
 from tasdmc.utils import user_confirmation
@@ -146,7 +146,7 @@ def _inspect_pipeline_steps(pipeline_id: str, fix: bool = False, verbose: bool =
     pipeline_card_file = fileio.corsika_input_files_dir() / f"{pipeline_id}.in"
     if not pipeline_card_file.exists():
         click.secho("Can't find CORSIKA input card for pipeline!", fg='red', bold=True)
-    pipeline_steps = get_steps(corsika_card_paths=[pipeline_card_file], include_aggregation_steps=False)
+    pipeline_steps = get_steps_queue(corsika_card_paths=[pipeline_card_file], include_aggregation_steps=False)
 
     for step in pipeline_steps:
         step_inspection = StepInspectionResult.inspect(step)

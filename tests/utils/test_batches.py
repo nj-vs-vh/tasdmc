@@ -22,4 +22,3 @@ def collection() -> List[int]:
 )
 def test_batches(batch_size: int, expected_batches: List[List[int]], collection: List[int]):
     assert list(batches(collection, batch_size)) == expected_batches
-

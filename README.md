@@ -89,6 +89,12 @@ pipeline:
                               # appropriate pipeline configuration is used
                               # significantly increases simultaneous disk space
                               # usage; defaults to True for backwards compatibility
+  batch_size_multiplier: 1  # the batch size for pipelines execution relative to the
+                            # number of processes used; e.g. if the simulation uses
+                            # 32 processes and the value is 3, 96 CORSIKA steps are
+                            # run first, followed by other steps generally in
+                            # batches of size 96; defaults to 2, set to 0 to disable
+                            # batching (i.e. batch size = number of pipelines)
 
 input_files:
   particle: proton
