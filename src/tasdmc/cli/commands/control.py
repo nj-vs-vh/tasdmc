@@ -61,6 +61,8 @@ def abort_run_cmd(confirm: bool):
             saved_main_pid = fileio.get_saved_main_pid()
             if saved_main_pid is not None:
                 system.abort_run(saved_main_pid)
+            else:
+                click.echo("No saved main pid found for the run")
         else:
             nodes.abort_all()
     else:

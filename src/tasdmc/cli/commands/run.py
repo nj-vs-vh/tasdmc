@@ -25,9 +25,9 @@ from ..utils import run_standard_pipeline_in_background, error_catching
 @error_catching
 def local_run_cmd(run_config_filename: str, dry: bool, remove_run_config_file: bool):
     config.RunConfig.load(run_config_filename)
+    fileio.prepare_run_dir()
     if remove_run_config_file:
         Path(run_config_filename).unlink()
-    fileio.prepare_run_dir()
     if dry:
         try:
             pipeline.run_simulation(dry=True)

@@ -109,6 +109,8 @@ class NodeExecutor(ABC):
         if with_activation:
             if self.activation_cmd is not None:
                 cmd = f"{self.activation_cmd} && {cmd}"
+        if kwargs.get('disown') == True:
+            cmd = cmd + " &> /tmp/tasdmc-disowned.log"
         res = self._run(cmd, **kwargs)
         if check_result:
             self._check_command_result(res)

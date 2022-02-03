@@ -30,7 +30,7 @@ def load_config_by_run_name(name: str) -> bool:
     else:
         run_config_path, nodes_config_path = config_paths
         config.RunConfig.load(run_config_path)
-        if nodes_config_path.exists():  # in any given run this may (for distr. run) or may not (fot local run) exits
+        if nodes_config_path.exists():
             config.NodesConfig.load(nodes_config_path)
         return True
 
