@@ -4,8 +4,8 @@ import click
 
 from tasdmc import fileio, config
 from tasdmc.steps import ParticleFileSplittingStep
-from tasdmc.steps.base.files import Files, NotAllRetainedFiles, OptionalFiles
-from tasdmc.pipeline import get_steps
+from tasdmc.steps.base.files import NotAllRetainedFiles
+from tasdmc.pipeline import get_steps_queue
 from tasdmc.steps.corsika_cards_generation import generate_corsika_cards
 
 
@@ -39,7 +39,7 @@ def fork_run(fork_name: str, after: str):
         shutil.copy(input_hash_file, fileio.input_hashes_dir() / input_hash_file.name)
     cards = generate_corsika_cards(logging=False, dry=True)
     # with non-batched steps list we can stop as soon we see a single step after the fork point
-    steps = get_steps(cards, batched=False)
+    steps = get_steps_queue(cards, disable_batching=True)
     for step in steps:
         if isinstance(step, break_at_step_class):
             break

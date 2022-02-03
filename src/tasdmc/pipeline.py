@@ -29,10 +29,10 @@ from tasdmc.steps.base.step_status_shared import set_step_statuses_array
 from tasdmc.utils import batches
 
 
-def get_steps(
+def get_steps_queue(
     corsika_card_paths: List[Path],
     include_aggregation_steps: bool = True,
-    batched: bool = True,
+    disable_batching: bool = False,
 ) -> List[PipelineStep]:
     """
     Args:
@@ -49,23 +49,33 @@ def get_steps(
     Returns:
         List[PipelineStep]: A list of pipeline steps in order of optimal execution
     """
-    add_tawiki_steps = bool(config.get_key("pipeline.produce_tawiki_dumps", default=False))
-    legacy_c2g_step = bool(config.get_key("pipeline.legacy_corsika2geant", default=True))
-    tawiki_dump_steps_by_log10Emin = defaultdict(list)
+    all_corsika_steps = CorsikaStep.from_corsika_cards(corsika_card_paths)
+    queue: List[PipelineStep] = []
 
-    steps: List[PipelineStep] = []
-    corsika_steps = CorsikaStep.from_corsika_cards(corsika_card_paths)
-    batch_size = config.used_processes() if batched else len(corsika_steps)
-    for corsika_steps_batch in batches(corsika_steps, batch_size):
-        steps.extend(corsika_steps_batch)
+    add_tawiki_steps = bool(config.get_key("pipeline.produce_tawiki_dumps", default=False))
+    tawiki_dump_steps_by_log10Emin = defaultdict(list)
+    
+    legacy_c2g_step = bool(config.get_key("pipeline.legacy_corsika2geant", default=True))
+
+    try:
+        batch_size_multiplier = float(config.get_key("pipeline.batch_size_multiplier", default=2.0))
+    except ValueError:
+        batch_size_multiplier = 0
+    if disable_batching:  # explicit flag takes precedence over config value
+        batch_size = len(all_corsika_steps)
+    else:
+        batch_size = int(config.used_processes() * batch_size_multiplier) or len(all_corsika_steps)
+
+    for corsika_steps_batch in batches(all_corsika_steps, batch_size):
+        queue.extend(corsika_steps_batch)
         c2g_steps_batch: List[Union[Corsika2GeantStep, Corsika2GeantParallelMergeStep]] = []
         for corsika_step in corsika_steps_batch:
             particle_file_splitting = ParticleFileSplittingStep.from_corsika_step(corsika_step)
-            steps.append(particle_file_splitting)
+            queue.append(particle_file_splitting)
             dethinning_steps = DethinningStep.from_particle_file_splitting_step(particle_file_splitting)
             if legacy_c2g_step:
                 # all dethinnings are executed first, then converted to tile file in bulk with legacy corsika2geant
-                steps.extend(dethinning_steps)
+                queue.extend(dethinning_steps)
                 corsika2geant = Corsika2GeantStep.from_dethinning_steps(dethinning_steps)
             else:
                 # each dethinning step is immediately followed by c2g_parallel_process
@@ -73,42 +83,42 @@ def get_steps(
                 for dethinning_step in dethinning_steps:
                     c2g_process = Corsika2GeantParallelProcessStep.from_dethinning_step(dethinning_step)
                     c2g_process_steps.append(c2g_process)
-                    steps.append(dethinning_step)
-                    steps.append(c2g_process)
+                    queue.append(dethinning_step)
+                    queue.append(c2g_process)
                 corsika2geant = Corsika2GeantParallelMergeStep.from_c2g_parallel_process_steps(c2g_process_steps)
-            steps.append(corsika2geant)
+            queue.append(corsika2geant)
             c2g_steps_batch.append(corsika2geant)
         # after c2g, no cleanup is done between steps so we can launch them in batches again to avoid
         # pipeline jam (later steps sit in queue and just wait for the previous ones)
         tothrow_steps_batch = [TothrowGenerationStep.from_corsika2geant(c2g) for c2g in c2g_steps_batch]
-        steps.extend(tothrow_steps_batch)
+        queue.extend(tothrow_steps_batch)
         event_gen_steps_batch = [
             EventsGenerationStep.from_corsika2geant_with_tothrow(c2g, tothrow)
             for (c2g, tothrow) in zip(c2g_steps_batch, tothrow_steps_batch)
         ]
-        steps.extend(event_gen_steps_batch)
+        queue.extend(event_gen_steps_batch)
         # larger batch: original batch size * number of minimal energies to sample
         spectral_sampling_batch = list(
             chain.from_iterable(
                 SpectralSamplingStep.from_events_generation(event_gen) for event_gen in event_gen_steps_batch
             )
         )
-        steps.extend(spectral_sampling_batch)
+        queue.extend(spectral_sampling_batch)
         reconstruction_steps_batch = [
             ReconstructionStep.from_spectral_sampling(spectral_sampling)
             for spectral_sampling in spectral_sampling_batch
         ]
-        steps.extend(reconstruction_steps_batch)
+        queue.extend(reconstruction_steps_batch)
 
         if add_tawiki_steps:
             for reco in reconstruction_steps_batch:
                 tawiki_dump_step = TawikiDumpStep.from_reconstruction_step(reco)
                 tawiki_dump_steps_by_log10Emin[reco.input_.log10E_min].append(tawiki_dump_step)
-                steps.append(tawiki_dump_step)
+                queue.append(tawiki_dump_step)
     if add_tawiki_steps and include_aggregation_steps:
         for log10E_min, tawiki_dump_steps in tawiki_dump_steps_by_log10Emin.items():
-            steps.append(TawikiDumpsMergeStep.from_tawiki_dump_steps(tawiki_dump_steps, log10E_min))
-    return steps
+            queue.append(TawikiDumpsMergeStep.from_tawiki_dump_steps(tawiki_dump_steps, log10E_min))
+    return queue
 
 
 def with_pipelines_mask(steps: List[PipelineStep]) -> List[PipelineStep]:
@@ -122,18 +132,7 @@ def with_pipelines_mask(steps: List[PipelineStep]) -> List[PipelineStep]:
 def run_simulation(dry: bool = False):
     system.set_process_title("tasdmc main")
     fileio.save_main_process_pid()
-    steps = get_steps(corsika_card_paths=generate_corsika_cards())
-
-    # TEMP - this is needed only for runs to be forked
-    # print("Renaming old input hash files to a new relative path - based pattern")
-    # import shutil
-    # for step in steps:
-    #     for files in [step.input_, step.output]:
-    #         old_hash_path = files._get_stored_hash_path(use_absolute_paths=True)
-    #         new_hash_path = files._get_stored_hash_path(use_absolute_paths=False)
-    #         if old_hash_path.exists() and not new_hash_path.exists():
-    #             shutil.move(old_hash_path, new_hash_path)
-
+    steps = get_steps_queue(corsika_card_paths=generate_corsika_cards())
     steps = with_pipelines_mask(steps)
     config.validate(set(step.__class__ for step in steps))
 
