@@ -127,7 +127,7 @@ class PipelineProgress(LogData):
         # removing duplicates, leaving only first occurrence
         step_order = [name for i, name in enumerate(step_order) if name not in step_order[:i]]
 
-        completed_up_to_step = defaultdict(lambda: 0)
+        completed_up_to_step = dict.fromkeys(step_order, 0)
         for step_name in last_completed_step.values():
             completed_up_to_step[step_name] += 1
 
@@ -139,7 +139,7 @@ class PipelineProgress(LogData):
             running=running,
             pending=pending,
             failed=failed,
-            completed_up_to_step=dict(completed_up_to_step),
+            completed_up_to_step=completed_up_to_step,
             step_order=step_order,
             node_name=None,
         )
