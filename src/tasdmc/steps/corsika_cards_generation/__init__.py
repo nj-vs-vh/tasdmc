@@ -24,7 +24,7 @@ from .corsika_card import (
 def generate_corsika_cards(logging: bool = True, dry: bool = False) -> List[Path]:
     generated_card_paths: List[Path] = []
 
-    particle, particle_id = _particle_id_from_config()
+    particle, particle_id = particle_id_from_config()
     if logging:
         logs.cards_generation_info(f'Primary particle: {particle} (id {particle_id})')
 
@@ -39,7 +39,7 @@ def generate_corsika_cards(logging: bool = True, dry: bool = False) -> List[Path
     if logging:
         logs.cards_generation_info(f'Hadronic interactions models: {high_E_model}/{low_E_model}')
 
-    event_number_multiplier = _event_number_multiplier_from_config()
+    event_number_multiplier = event_number_multiplier_from_config()
     if logging:
         logs.cards_generation_info(f"Event numbers are multiplied by {event_number_multiplier:.3f} in each energy bin")
 
@@ -113,27 +113,9 @@ def generate_corsika_cards(logging: bool = True, dry: bool = False) -> List[Path
     return generated_card_paths
 
 
-def validate_config():
-    _particle_id_from_config()
-    log10E_bounds_from_config()
-    _event_number_multiplier_from_config()
-
-    for log10E in log10E_range_from_config():
-        get_cards_count_at_log10E(log10E)
-
-    card_index_range_from_config(1000)
-
-    allowed_high_E_models = ('QGSJETII', 'EPOS')
-    if config.get_key('corsika.high_E_hadronic_interactions_model') not in allowed_high_E_models:
-        raise ValueError(f"high_E_hadronic_interactions_model must be one of: {', '.join(allowed_high_E_models)}")
-    allowed_low_E_models = ('FLUKA', 'URQMD', 'GHEISHA')
-    if config.get_key('corsika.low_E_hadronic_interactions_model') not in allowed_low_E_models:
-        raise ValueError(f"low_E_hadronic_interactions_model must be one of: {', '.join(allowed_low_E_models)}")
-
-
 def get_cards_count_at_log10E(log10E: float):
     params = BTS_PAR[log10E]
-    event_number_multiplier = _event_number_multiplier_from_config()
+    event_number_multiplier = event_number_multiplier_from_config()
     cards_count = int(ceil(params[6] * event_number_multiplier))
 
     # NOTE: this limitation is eliminated in the latest corsika
@@ -146,19 +128,17 @@ def get_cards_count_at_log10E(log10E: float):
     return cards_count
 
 
-# config accessors with validation
-
-
 def is_subset_configured():
     return config.get_key('input_files.subset', default=None) is not None
 
 
 def card_index_range_from_config(cards_count: int) -> Iterable[int]:
-    """This function returns range(cards_count) for local runs and for distributed runs returns only"""
-    input_files_subset_config = config.get_key('input_files.subset', default=None)
-    if input_files_subset_config is None:  # i.e. this is local run config, generating all cards
+    """Returns simply range(cards_count) for local runs and particular node's range of
+    input card indexes for distributed runs."""
+    if not is_subset_configured():
         return range(cards_count)
 
+    input_files_subset_config = config.get_key('input_files.subset')
     all_weights = input_files_subset_config['all_weights']
     this_idx = input_files_subset_config['this_idx']
     weight_sum = sum(all_weights)
@@ -174,7 +154,7 @@ def card_index_range_from_config(cards_count: int) -> Iterable[int]:
     return range(*subset_bounds[this_idx])
 
 
-def _particle_id_from_config() -> Tuple[str, int]:
+def particle_id_from_config() -> Tuple[str, int]:
     particle = config.get_key('input_files.particle')
     try:
         return particle, PARTICLE_ID_BY_NAME[particle]
@@ -204,7 +184,7 @@ def log10E_range_from_config() -> Generator[float, None, None]:
         yield log10E_min + E_bin_i * LOG10_E_STEP
 
 
-def _event_number_multiplier_from_config() -> float:
+def event_number_multiplier_from_config() -> float:
     event_number_multiplier = config.get_key('input_files.event_number_multiplier', default=1.0)
     try:
         event_number_multiplier = float(event_number_multiplier)
@@ -214,3 +194,21 @@ def _event_number_multiplier_from_config() -> float:
         raise ValueError(
             f"Event number multiplier must be non-negative float, but {event_number_multiplier} is specified"
         )
+
+
+def validate_config():
+    particle_id_from_config()
+    log10E_bounds_from_config()
+    event_number_multiplier_from_config()
+
+    for log10E in log10E_range_from_config():
+        get_cards_count_at_log10E(log10E)
+
+    card_index_range_from_config(1000)
+
+    allowed_high_E_models = ('QGSJETII', 'EPOS')
+    if config.get_key('corsika.high_E_hadronic_interactions_model') not in allowed_high_E_models:
+        raise ValueError(f"high_E_hadronic_interactions_model must be one of: {', '.join(allowed_high_E_models)}")
+    allowed_low_E_models = ('FLUKA', 'URQMD', 'GHEISHA')
+    if config.get_key('corsika.low_E_hadronic_interactions_model') not in allowed_low_E_models:
+        raise ValueError(f"low_E_hadronic_interactions_model must be one of: {', '.join(allowed_low_E_models)}")

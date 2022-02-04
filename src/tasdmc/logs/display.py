@@ -12,13 +12,15 @@ import json
 from pathlib import Path
 from functools import partial
 from itertools import chain
+import math
 
-from typing import List, Optional, TypeVar, Type, Dict
+from typing import List, Optional, TypeVar, Type, Dict, Set
 
 from tasdmc import fileio
+from tasdmc.steps.corsika_cards_generation import generate_corsika_cards
+from tasdmc.pipeline import get_steps_queue
 from tasdmc.logs.step_progress import EventType, PipelineStepProgress
 from tasdmc.logs.utils import str2datetime, datetime2str, timedelta2str
-from tasdmc.logs import pipeline_progress
 
 
 def print_multiprocessing_log(n_messages: int):
@@ -71,70 +73,125 @@ class LogData:
 
 @dataclass
 class PipelineProgress(LogData):
-    total: int
     completed: int
     running: int
     pending: int
     failed: int
+    completed_up_to_step: Dict[str, int]
+    step_order: List[str]
 
     def __add__(self, other: PipelineProgress) -> PipelineProgress:
         if not isinstance(other, PipelineProgress):
             return NotImplemented
+        assert self.step_order == other.step_order, "Can't sum PipelineProgress with diferent step orderings"
         return PipelineProgress(
-            total=self.total + other.total,
             completed=self.completed + other.completed,
             running=self.running + other.running,
             pending=self.pending + other.pending,
             failed=self.failed + other.failed,
+            completed_up_to_step={
+                step_name: n + other.completed_up_to_step[step_name]
+                for step_name, n in self.completed_up_to_step.items()
+            },
+            step_order=self.step_order,
             node_name=(f"{self.node_name} + {other.node_name}") if self.node_name and other.node_name else None,
         )
 
     @classmethod
     def parse_from_log(cls) -> PipelineProgress:
-        pipeline_stack_by_id = defaultdict(set)
-        for pipeline_step_progress in PipelineStepProgress.load():
-            pipeline_id = pipeline_step_progress.pipeline_id
-            if pipeline_stack_by_id[pipeline_id] is None:  # pipeline has failed
-                continue
-            if pipeline_step_progress.event_type is EventType.STARTED:
-                pipeline_stack_by_id[pipeline_id].add(pipeline_step_progress.step_input_hash)
-            elif pipeline_step_progress.event_type is EventType.COMPLETED:
-                pipeline_stack_by_id[pipeline_id].discard(pipeline_step_progress.step_input_hash)
-            elif pipeline_step_progress.event_type is EventType.FAILED:
-                pipeline_stack_by_id[pipeline_id] = None
+        failed_pipelines: Set[str] = set()
+        started_pipelines: Set[str] = set()
+        last_completed_step: Dict[str, str] = dict()
+        for step_progress in PipelineStepProgress.load():
+            pipeline_id = step_progress.pipeline_id
+            event = step_progress.event_type
+            started_pipelines.add(pipeline_id)
+            if event is EventType.FAILED:
+                failed_pipelines.add(pipeline_id)
+            elif event is EventType.COMPLETED:
+                last_completed_step[pipeline_id] = step_progress.step_name
 
-        total = sum(1 for _ in fileio.corsika_input_files_dir().iterdir())
-        failed = 0
-        completed = 0
-        running = 0
-        for pipeline_id, stack in pipeline_stack_by_id.items():
-            if pipeline_progress.is_failed(pipeline_id) or stack is None:
-                failed += 1
-            elif len(stack) == 0:
-                completed += 1
-            else:
-                running += 1
-        pending = total - (failed + completed + running)
+        total = len(generate_corsika_cards(logging=False, dry=True))
+        failed = len(failed_pipelines)
+        pending = total - len(started_pipelines)
+        running_or_completed = len(started_pipelines.difference(failed_pipelines))
+
+        step_order = [
+            step.name
+            for step in get_steps_queue(
+                corsika_card_paths=[Path("dummy")],
+                include_aggregation_steps=False,
+                disable_batching=True,
+            )
+        ]
+        # removing duplicates, leaving only first occurrence
+        step_order = [name for i, name in enumerate(step_order) if name not in step_order[:i]]
+
+        completed_up_to_step = defaultdict(lambda: 0)
+        for step_name in last_completed_step.values():
+            completed_up_to_step[step_name] += 1
+
+        completed = completed_up_to_step[step_order[-1]]
+        running = len(running_or_completed) - completed
+
         return PipelineProgress(
-            total=total, completed=completed, running=running, pending=pending, failed=failed, node_name=None
+            completed=completed,
+            running=running,
+            pending=pending,
+            failed=failed,
+            completed_up_to_step=completed_up_to_step,
+            step_order=step_order,
+            node_name=None,
         )
 
     def print(self, with_node_name: bool = False):
         if with_node_name:
             self.echo_node_name()
-        display_data = [
-            ('completed', 'green', self.completed),
-            ('running', 'yellow', self.running),
-            ('pending', 'white', self.pending),
-            ('failed', 'red', self.failed),
-        ]
-        progress_bar_width = os.get_terminal_size().columns
-        for _, color, such_pipelines in display_data:
-            click.secho("█" * int(progress_bar_width * such_pipelines / self.total), nl=False, fg=color)
-        click.echo('')
-        for name, color, such_pipelines in display_data:
-            click.echo(click.style(" ■", fg=color) + f" {name} ({such_pipelines} / {self.total})")
 
+        colors = [
+            (104, 201, 107),  # green
+            (232, 230, 118),  # yellow
+            (234, 234, 234),  # light grey
+            (255, 115, 84),  # red
+        ]
+
+        def lerp_color(c1, c2, fraction: float):
+            lerp = []
+            for idx in range(3):
+                delta = c2[idx] - c1[idx]
+                lerp.append(int(c1[idx] + delta * fraction))
+            return tuple(lerp)
+
+        labels = [
+            "completed",
+            "running",
+            "pending",
+            "failed",
+        ]
+        pipeline_counts = [self.completed, self.running, self.pending, self.failed]
+
+        def to_char_counts(counts: List[int]):
+            total = sum(counts)
+            progress_bar_width = os.get_terminal_size().columns
+            char_counts = [math.ceil(progress_bar_width * count / total) for count in counts]
+            char_counts[char_counts.index(max(char_counts))] -= sum(char_counts) - progress_bar_width
+            return char_counts
+
+        for color, char_count in zip(colors, to_char_counts(pipeline_counts)):
+            click.secho("█" * char_count, nl=False, fg=color)
+        click.echo('')
+        for name, color, count in zip(labels, colors, pipeline_counts):
+            click.echo(click.style(" ■", fg=color) + f" {name} ({count} / {sum(pipeline_counts)})")
+        
+        click.echo("Running steps detailed:")
+        # from most to least completed (i.e. later to earlier steps "completed up to")
+        step_labels = self.step_order[:-1][::-1]
+        step_counts = [self.completed_up_to_step[l] for l in step_labels]
+        step_colors = [lerp_color(colors[1], colors[0], i / len(step_labels)) for i, _ in enumerate(step_labels)]
+        for step_color, char_count in zip(step_colors, to_char_counts(step_counts)):
+            click.secho("█" * char_count, nl=False, fg=step_color)
+        for step_label, step_color, step_count in zip(step_labels, step_colors, step_counts):
+            click.echo(click.style(" ■", fg=step_color) + f" {step_label} ({step_count} / {sum(step_counts)})")
 
 @dataclass
 class SystemResourcesTimeline(LogData):

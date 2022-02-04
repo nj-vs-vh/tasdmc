@@ -41,17 +41,21 @@ class PipelineStep(ABC):
         Must be overriden for the first step in the pipeline."""
         if not self.previous_steps:
             raise ValueError(
-                f"No previous steps found for {self.__class__.__name__}, can't get pipeline ID; "
+                f"No previous steps found for {self.name}, can't get pipeline ID; "
                 + "Override pipeline_id property or specify previous steps"
             )
         else:
             return self.previous_steps[0].pipeline_id
 
+    @property
+    def name(self):
+        return self.__class__.__name__
+
     def __str__(self) -> str:
         return self.get_id()
 
     def get_id(self) -> str:
-        return f'{self.__class__.__name__}:{self.input_.get_id()}:{self.output.get_id()}'
+        return f'{self.name}:{self.input_.get_id()}:{self.output.get_id()}'
 
     def set_index(self, i: int):
         self._step_status_index_in_shared_array = i
@@ -125,7 +129,7 @@ class PipelineStep(ABC):
             # actual step run
             logs.multiprocessing_info(f"{self.description}")
             try:
-                force_rerun = self.__class__.__name__ in config.get_key("debug.force_rerun_steps", default=[])
+                force_rerun = self.name in config.get_key("debug.force_rerun_steps", default=[])
                 trying_to_skip = not force_rerun and self.output.files_were_produced()
                 if config.Ephemeral.rerun_step_on_input_hash_mismatch:
                     # with this option on hash mismatch go to the actual run if arm

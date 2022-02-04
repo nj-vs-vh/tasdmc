@@ -8,7 +8,7 @@ from typing import Optional, Any, List
 
 from tasdmc import fileio
 
-# from tasdmc.steps.base import FileInFileOutPipelineStep
+# from tasdmc.steps.base import PipelineStep
 from .utils import datetime2str, str2datetime
 
 
@@ -74,7 +74,7 @@ class PipelineStepProgress:
 
     @classmethod
     def from_step(
-        cls, step: 'FileInFileOutPipelineStep', event_type: EventType, value: Optional[Any] = None  # type: ignore
+        cls, step: 'PipelineStep', event_type: EventType, value: Optional[Any] = None  # type: ignore
     ) -> PipelineStepProgress:
         try:
             input_hash = step.input_.contents_hash
@@ -82,7 +82,7 @@ class PipelineStepProgress:
             input_hash = "CAN'T CALCULATE INPUT HASH"
         return PipelineStepProgress(
             event_type,
-            step_name=step.__class__.__name__,
+            step_name=step.name,
             step_input_hash=input_hash,
             timestamp=datetime.utcnow(),
             pipeline_id=step.pipeline_id,
@@ -90,17 +90,17 @@ class PipelineStepProgress:
         )
 
 
-def started(step: 'FileInFileOutPipelineStep'):  # type: ignore
+def started(step: 'PipelineStep'):  # type: ignore
     PipelineStepProgress.from_step(step, EventType.STARTED).save()
 
 
-def skipped(step: 'FileInFileOutPipelineStep'):  # type: ignore
+def skipped(step: 'PipelineStep'):  # type: ignore
     PipelineStepProgress.from_step(step, EventType.SKIPPED).save()
 
 
-def completed(step: 'FileInFileOutPipelineStep', output_size_mb: int):  # type: ignore
+def completed(step: 'PipelineStep', output_size_mb: int):  # type: ignore
     PipelineStepProgress.from_step(step, EventType.COMPLETED, value=output_size_mb).save()
 
 
-def failed(step: 'FileInFileOutPipelineStep', errmsg: str):  # type: ignore
+def failed(step: 'PipelineStep', errmsg: str):  # type: ignore
     PipelineStepProgress.from_step(step, EventType.FAILED, value=errmsg.replace('\n', ' ')).save()
