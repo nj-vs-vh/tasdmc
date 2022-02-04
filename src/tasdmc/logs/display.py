@@ -149,10 +149,10 @@ class PipelineProgress(LogData):
             self.echo_node_name()
 
         colors = [
-            (104, 201, 107),  # green
-            (232, 230, 118),  # yellow
-            (234, 234, 234),  # light grey
-            (255, 115, 84),  # red
+            (111, 191, 113),  # green
+            (212, 202, 70),  # yellow
+            (186, 186, 186),  # light grey
+            (209, 118, 98),  # red
         ]
 
         def lerp_color(c1, c2, fraction: float):
@@ -195,7 +195,7 @@ class PipelineProgress(LogData):
         # from most to least completed (i.e. later to earlier steps "completed up to")
         step_labels = self.step_order[:-1][::-1]
         step_counts = [self.completed_up_to_step[l] for l in step_labels]
-        step_colors = [lerp_color(colors[0], colors[1], i / len(step_labels)) for i, _ in enumerate(step_labels)]
+        step_colors = [lerp_color(colors[0], colors[1], i / (len(step_labels) + 1)) for i, _ in enumerate(step_labels)]
         for step_color, char_count in zip(step_colors, to_char_counts(step_counts)):
             click.secho("█" * char_count, nl=False, fg=step_color)
 
@@ -205,7 +205,7 @@ class PipelineProgress(LogData):
             click.echo(click.style(" ■", fg=color) + f" {name} ({count} / {sum(pipeline_counts)})")
             if name == 'running':
                 for step_label, step_color, step_count in zip(step_labels, step_colors, step_counts):
-                    click.echo(click.style("   ■", fg=step_color) + f" {step_label} ({step_count} / {sum(step_counts)})")
+                    click.echo(click.style("    ■", fg=step_color) + f" {step_label} ({step_count} / {sum(step_counts)})")
         
 
 @dataclass
