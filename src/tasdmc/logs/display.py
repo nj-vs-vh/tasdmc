@@ -138,7 +138,7 @@ class PipelineProgress(LogData):
 
         running_now_count = dict.fromkeys(step_order, 0)
         for pipeline_id, last_started in last_started_step.items():
-            if pipeline_id in completed_pipelines:
+            if pipeline_id in completed_pipelines or pipeline_id in failed_pipelines:
                 continue
             last_completed = last_completed_step.get(pipeline_id)
             if last_started == last_completed:  # the step is waiting in queue, count nex step as started
@@ -223,7 +223,7 @@ class PipelineProgress(LogData):
             if name == 'running':
                 for step_label, step_color, step_count in zip(step_labels, step_colors, step_counts):
                     click.echo(
-                        click.style("    ■", fg=step_color) + f" after {step_label} ({step_count} / {sum(step_counts)})"
+                        click.style("   ■", fg=step_color) + f" {step_label} ({step_count} / {sum(step_counts)})"
                     )
 
 
