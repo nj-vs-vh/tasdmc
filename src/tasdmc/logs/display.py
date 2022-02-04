@@ -132,7 +132,7 @@ class PipelineProgress(LogData):
             completed_up_to_step[step_name] += 1
 
         completed = completed_up_to_step[step_order[-1]]
-        running = len(running_or_completed) - completed
+        running = running_or_completed - completed
 
         return PipelineProgress(
             completed=completed,
