@@ -170,28 +170,43 @@ class PipelineProgress(LogData):
         ]
         pipeline_counts = [self.completed, self.running, self.pending, self.failed]
 
+        screen_width = os.get_terminal_size().columns
         def to_char_counts(counts: List[int]):
             total = sum(counts)
-            progress_bar_width = os.get_terminal_size().columns
-            char_counts = [math.ceil(progress_bar_width * count / total) for count in counts]
-            char_counts[char_counts.index(max(char_counts))] -= sum(char_counts) - progress_bar_width
+            char_counts = [math.ceil(screen_width * count / total) for count in counts]
+            char_counts[char_counts.index(max(char_counts))] -= sum(char_counts) - screen_width
             return char_counts
 
-        for color, char_count in zip(colors, to_char_counts(pipeline_counts)):
+        pipeline_char_counts = to_char_counts(pipeline_counts)
+        for color, char_count in zip(colors, pipeline_char_counts):
             click.secho("█" * char_count, nl=False, fg=color)
-        click.echo('')
-        for name, color, count in zip(labels, colors, pipeline_counts):
-            click.echo(click.style(" ■", fg=color) + f" {name} ({count} / {sum(pipeline_counts)})")
-        
-        click.echo("Running steps detailed:")
+        click.echo()
+
+        click.echo(
+            "┌"
+            + "─" * (pipeline_char_counts[0] - 1)
+            + "┘"
+            + " " * (pipeline_char_counts[1] - 2)
+            + "└"
+            + "─" * (screen_width - pipeline_char_counts[0] - pipeline_char_counts[1])
+            + "┐"
+        )
+
         # from most to least completed (i.e. later to earlier steps "completed up to")
         step_labels = self.step_order[:-1][::-1]
         step_counts = [self.completed_up_to_step[l] for l in step_labels]
-        step_colors = [lerp_color(colors[1], colors[0], i / len(step_labels)) for i, _ in enumerate(step_labels)]
+        step_colors = [lerp_color(colors[0], colors[1], i / len(step_labels)) for i, _ in enumerate(step_labels)]
         for step_color, char_count in zip(step_colors, to_char_counts(step_counts)):
             click.secho("█" * char_count, nl=False, fg=step_color)
+
+        click.echo()
+
         for step_label, step_color, step_count in zip(step_labels, step_colors, step_counts):
             click.echo(click.style(" ■", fg=step_color) + f" {step_label} ({step_count} / {sum(step_counts)})")
+
+        for name, color, count in zip(labels, colors, pipeline_counts):
+            click.echo(click.style(" ■", fg=color) + f" {name} ({count} / {sum(pipeline_counts)})")
+        
 
 @dataclass
 class SystemResourcesTimeline(LogData):
