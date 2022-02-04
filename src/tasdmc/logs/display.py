@@ -108,7 +108,7 @@ class PipelineProgress(LogData):
             started_pipelines.add(pipeline_id)
             if event is EventType.FAILED:
                 failed_pipelines.add(pipeline_id)
-            elif event is EventType.COMPLETED:
+            elif event in {EventType.COMPLETED, EventType.SKIPPED}:
                 last_completed_step[pipeline_id] = step_progress.step_name
 
         total = len(generate_corsika_cards(logging=False, dry=True))
@@ -139,7 +139,7 @@ class PipelineProgress(LogData):
             running=running,
             pending=pending,
             failed=failed,
-            completed_up_to_step=completed_up_to_step,
+            completed_up_to_step=dict(completed_up_to_step),
             step_order=step_order,
             node_name=None,
         )
@@ -149,10 +149,10 @@ class PipelineProgress(LogData):
             self.echo_node_name()
 
         colors = [
-            (111, 191, 113),  # green
-            (212, 202, 70),  # yellow
+            (70, 171, 73),  # green
+            (212, 193, 23),  # yellow
             (186, 186, 186),  # light grey
-            (209, 118, 98),  # red
+            (199, 78, 52),  # red
         ]
 
         def lerp_color(c1, c2, fraction: float):
