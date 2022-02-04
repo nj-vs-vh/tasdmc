@@ -140,7 +140,7 @@ class PipelineProgress(LogData):
         for pipeline_id, last_started in last_started_step.items():
             if pipeline_id in completed_pipelines:
                 continue
-            last_completed = last_completed_step[pipeline_id]
+            last_completed = last_completed_step.get(pipeline_id)
             if last_started == last_completed:  # the step is waiting in queue, count nex step as started
                 running_now_step = step_order[step_order.index(last_started) + 1]
             else:
