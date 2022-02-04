@@ -77,7 +77,7 @@ class PipelineProgress(LogData):
     running: int
     pending: int
     failed: int
-    completed_up_to_step: Dict[str, int]
+    running_now_count: Dict[str, int]
     step_order: List[str]
 
     def __add__(self, other: PipelineProgress) -> PipelineProgress:
@@ -89,9 +89,9 @@ class PipelineProgress(LogData):
             running=self.running + other.running,
             pending=self.pending + other.pending,
             failed=self.failed + other.failed,
-            completed_up_to_step={
-                step_name: n + other.completed_up_to_step[step_name]
-                for step_name, n in self.completed_up_to_step.items()
+            running_now_count={
+                step_name: n + other.running_now_count[step_name]
+                for step_name, n in self.running_now_count.items()
             },
             step_order=self.step_order,
             node_name=(f"{self.node_name} + {other.node_name}") if self.node_name and other.node_name else None,
@@ -102,13 +102,15 @@ class PipelineProgress(LogData):
         failed_pipelines: Set[str] = set()
         started_pipelines: Set[str] = set()
         last_completed_step: Dict[str, str] = dict()
+        last_started_step: Dict[str, str] = dict()
         for step_progress in PipelineStepProgress.load():
             pipeline_id = step_progress.pipeline_id
-            event = step_progress.event_type
             started_pipelines.add(pipeline_id)
-            if event is EventType.FAILED:
+            if step_progress.event_type is EventType.FAILED:
                 failed_pipelines.add(pipeline_id)
-            elif event in {EventType.COMPLETED, EventType.SKIPPED}:
+            elif step_progress.event_type is EventType.STARTED:
+                last_started_step[pipeline_id] = step_progress.step_name
+            elif step_progress.event_type in {EventType.COMPLETED, EventType.SKIPPED}:
                 last_completed_step[pipeline_id] = step_progress.step_name
 
         total = len(generate_corsika_cards(logging=False, dry=True))
@@ -127,19 +129,30 @@ class PipelineProgress(LogData):
         # removing duplicates, leaving only first occurrence
         step_order = [name for i, name in enumerate(step_order) if name not in step_order[:i]]
 
-        completed_up_to_step = dict.fromkeys(step_order, 0)
-        for step_name in last_completed_step.values():
-            completed_up_to_step[step_name] += 1
-
-        completed = completed_up_to_step[step_order[-1]]
+        last_step = step_order[-1]
+        completed_pipelines = {
+            pipeline_id for pipeline_id, completed in last_completed_step.items() if completed == last_step
+        }
+        completed = len(completed_pipelines)
         running = running_or_completed - completed
 
+        running_now_count = dict.fromkeys(step_order, 0)
+        for pipeline_id, last_started in last_started_step.items():
+            if pipeline_id in completed_pipelines:
+                continue
+            last_completed = last_completed_step[pipeline_id]
+            if last_started == last_completed:  # the step is waiting in queue, count nex step as started
+                running_now_step = step_order[step_order.index(last_started) + 1]
+            else:
+                running_now_step = last_started
+            running_now_count[running_now_step] += 1
+            
         return PipelineProgress(
             completed=completed,
             running=running,
             pending=pending,
             failed=failed,
-            completed_up_to_step=completed_up_to_step,
+            running_now_count=running_now_count,
             step_order=step_order,
             node_name=None,
         )
@@ -171,6 +184,7 @@ class PipelineProgress(LogData):
         pipeline_counts = [self.completed, self.running, self.pending, self.failed]
 
         screen_width = os.get_terminal_size().columns
+
         def to_char_counts(counts: List[int]):
             total = sum(counts)
             char_counts = [math.ceil(screen_width * count / total) for count in counts]
@@ -192,10 +206,13 @@ class PipelineProgress(LogData):
             + "┐"
         )
 
-        # from most to least completed (i.e. later to earlier steps "completed up to")
-        step_labels = self.step_order[:-1][::-1]
-        step_counts = [self.completed_up_to_step[l] for l in step_labels]
-        step_colors = [lerp_color(colors[0], colors[1], i / (len(step_labels) + 1)) for i, _ in enumerate(step_labels)]
+        # from later to earlier steps
+        step_labels = self.step_order[::-1]
+        step_counts = [self.running_now_count[l] for l in step_labels]
+        step_colors = [
+            lerp_color(colors[0], colors[1], (i + 1) / (len(step_labels) + 2))
+            for i, _ in enumerate(step_labels)
+        ]
         for step_color, char_count in zip(step_colors, to_char_counts(step_counts)):
             click.secho("█" * char_count, nl=False, fg=step_color)
 
@@ -205,8 +222,10 @@ class PipelineProgress(LogData):
             click.echo(click.style(" ■", fg=color) + f" {name} ({count} / {sum(pipeline_counts)})")
             if name == 'running':
                 for step_label, step_color, step_count in zip(step_labels, step_colors, step_counts):
-                    click.echo(click.style("    ■", fg=step_color) + f" {step_label} ({step_count} / {sum(step_counts)})")
-        
+                    click.echo(
+                        click.style("    ■", fg=step_color) + f" after {step_label} ({step_count} / {sum(step_counts)})"
+                    )
+
 
 @dataclass
 class SystemResourcesTimeline(LogData):
