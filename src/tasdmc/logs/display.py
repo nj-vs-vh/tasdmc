@@ -188,7 +188,7 @@ class PipelineProgress(LogData):
             + "┘"
             + " " * (pipeline_char_counts[1] - 2)
             + "└"
-            + "─" * (screen_width - pipeline_char_counts[0] - pipeline_char_counts[1])
+            + "─" * (screen_width - pipeline_char_counts[0] - pipeline_char_counts[1] - 1)
             + "┐"
         )
 
@@ -201,11 +201,11 @@ class PipelineProgress(LogData):
 
         click.echo()
 
-        for step_label, step_color, step_count in zip(step_labels, step_colors, step_counts):
-            click.echo(click.style(" ■", fg=step_color) + f" {step_label} ({step_count} / {sum(step_counts)})")
-
         for name, color, count in zip(labels, colors, pipeline_counts):
             click.echo(click.style(" ■", fg=color) + f" {name} ({count} / {sum(pipeline_counts)})")
+            if name == 'running':
+                for step_label, step_color, step_count in zip(step_labels, step_colors, step_counts):
+                    click.echo(click.style("   ■", fg=step_color) + f" {step_label} ({step_count} / {sum(step_counts)})")
         
 
 @dataclass
