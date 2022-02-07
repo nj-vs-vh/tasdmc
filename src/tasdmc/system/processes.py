@@ -2,6 +2,7 @@ import psutil
 import setproctitle
 import click
 import signal
+from itertools import chain
 
 from typing import List, Optional
 
@@ -22,6 +23,14 @@ def is_alive(pid: int) -> bool:
         return True
     except psutil.NoSuchProcess:
         return False
+
+
+def kill_process(pid: int):
+    try:
+        p = psutil.Process(pid)
+        p.terminate()
+    except psutil.NoSuchProcess:
+        pass
 
 
 def abort_run_processes(main_pid: int, safe: bool):
@@ -57,10 +66,14 @@ def setup_safe_abort_signal_listener():
     signal.signal(signal.SIGUSR1, handler)
 
 
-def get_run_processes(main_pid: int) -> Optional[List[psutil.Process]]:
+def _get_grandchildren_processes(p: psutil.Process) -> List[psutil.Process]:
+    return list(chain.from_iterable(child.children() for child in p.children()))
+
+
+def get_core_layer_run_processes(main_pid: int) -> Optional[List[psutil.Process]]:
     try:
         main_process = psutil.Process(main_pid)
-        return [main_process, *main_process.children(recursive=True)]
+        return _get_grandchildren_processes(main_process)
     except psutil.NoSuchProcess:
         return None
 
@@ -72,17 +85,12 @@ def print_run_processes_status(main_pid: int, display_processes: bool):
     except psutil.NoSuchProcess:
         click.echo("Run is dead!")
         return
-    if not display_processes:
-        return
-    worker_process_ids = set()
-    click.secho("tasdmc processes:", bold=True)
-    for i, p in enumerate([main_process, *main_process.children()]):
-        worker_process_ids.add(p.pid)
-        click.echo(f"\t{i + 1}. {_proc2str(p)}")
 
-    click.secho("\nC routine processes:", bold=True)
-    i = 0
-    for p in main_process.children(recursive=True):
-        if p.pid not in worker_process_ids:
+    if display_processes:
+        click.secho("tasdmc processes:", bold=True)
+        for i, p in enumerate([main_process, *main_process.children()]):
             click.echo(f"\t{i + 1}. {_proc2str(p)}")
-            i += 1
+
+        click.secho("\nCore layer processes:", bold=True)
+        for i, p in enumerate(_get_grandchildren_processes(main_process)):
+            click.echo(f"\t{i + 1}. {_proc2str(p)}")

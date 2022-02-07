@@ -141,7 +141,7 @@ def run_simulation(dry: bool = False):
     if dry:
         return
 
-    run_in_background(monitor.run_system_monitor, keep_session=True)
+    sysmon_pid = run_in_background(monitor.run_system_monitor, keep_session=True)
 
     for idx, step in enumerate(steps):
         step.set_index(idx)
@@ -160,3 +160,5 @@ def run_simulation(dry: bool = False):
         for step in steps:
             step.schedule(executor, futures_queue)
         wait(futures_queue)
+
+    processes.kill_process(sysmon_pid)
