@@ -1,6 +1,7 @@
 import psutil
 import setproctitle
 import click
+import signal
 
 from typing import List, Optional
 
@@ -21,7 +22,7 @@ def process_alive(pid: int) -> bool:
         return False
 
 
-def abort_run(main_pid: int):
+def abort_run(main_pid: int, safe: bool):
     try:
         main_process = psutil.Process(main_pid)
     except psutil.NoSuchProcess:
@@ -34,10 +35,11 @@ def abort_run(main_pid: int):
     child_processes = main_process.children(recursive=True)
     for p in [*child_processes, main_process]:
         try:
-            p.terminate()
-            click.echo(f"Killed process {_proc2str(p)}")
+            p.send_signal(signal.SIGTERM if not safe else signal.SIGINT)
+            action_str = "Killed" if not safe else "Sent safe abort signal to"
+            click.echo(f"{action_str} process {_proc2str(p)}")
         except psutil.NoSuchProcess:
-            click.echo("Process already killed")
+            click.echo(f"Process already killed: {_proc2str(p)}")
 
 
 def get_run_processes(main_pid: int) -> Optional[List[psutil.Process]]:

@@ -49,9 +49,12 @@ def continue_run_cmd(rerun_step_on_input_hash_mismatch: bool, disable_input_hash
 
 @cli.command("abort", help="Abort execution of RUN_NAME")
 @click.option("--confirm", is_flag=True, default=False, help="Disable confirmation prompt")
+@click.option(
+    "--safe", is_flag=True, default=False, help="Safe abort - wait for all currently running steps to be finished"
+)
 @loading_run_by_name
 @error_catching
-def abort_run_cmd(confirm: bool):
+def abort_run_cmd(confirm: bool, safe: bool):
     if config.is_distributed_run():
         nodes.check_all()
     if not confirm:
@@ -60,11 +63,11 @@ def abort_run_cmd(confirm: bool):
         if config.is_local_run():
             saved_main_pid = fileio.get_saved_main_pid()
             if saved_main_pid is not None:
-                system.abort_run(saved_main_pid)
+                system.abort_run(saved_main_pid, safe)
             else:
                 click.echo("No saved main pid found for the run")
         else:
-            nodes.abort_all()
+            nodes.abort_all(safe)
     else:
         click.echo("Not this time...")
 
