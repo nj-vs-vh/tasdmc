@@ -69,11 +69,12 @@ def continue_all(rerun_step_on_input_hash_mismatch: bool, disable_input_hash_che
         raise RuntimeError(f"Continuing nodes failed: " + ", ".join([str(ex) for ex in failed_nodes]))
 
 
-def abort_all():
+def abort_all(safe: bool = False):
     click.echo(f"Aborting nodes...")
     for ex in node_executors_from_config():
         click.secho(f"\n{ex}", bold=True)
-        ex.run(f"tasdmc abort {ex.node_run_name} --confirm", check_result=False, echo_streams=True)
+        safe_opt = "--safe" if safe else ""
+        ex.run(f"tasdmc abort {ex.node_run_name} --confirm {safe_opt}", check_result=False, echo_streams=True)
 
 
 def update_configs(hard: bool, validate_only: bool):
