@@ -16,7 +16,7 @@ from ..utils import run_standard_pipeline_in_background, loading_run_by_name, er
     is_flag=True,
     default=False,
     help="By default on input hash mismatch step is marked as failed. If the mismatch is due to you changing run"
-    + "config 'on the fly', specify this option and steps with mismatching input hashes will be rerun"
+    + "config 'on the fly', specify this option and steps with mismatching input hashes will be rerun",
 )
 @click.option(
     "--disable-input-hash-checks",
@@ -25,7 +25,7 @@ from ..utils import run_standard_pipeline_in_background, loading_run_by_name, er
     help="Option to completely disable input hash checking (a mechanism to prevent pipeline desync). "
     + "If specified, hashes of input files will still be calculated and saved, hence subsequent 'continue's "
     + "will see pipelines as forcibly synced. Use this if you have a problem with hashes not"
-    + "related to configuration change, but due to some technical issue."
+    + "related to configuration change, but due to some technical issue.",
 )
 @loading_run_by_name
 @error_catching
@@ -72,12 +72,14 @@ def abort_run_cmd(confirm: bool):
 @cli.command(
     "fork",
     help="Create a new run by forking RUN_NAME at the specified pipeline step; "
-    + "This command does not copy any actual data but creates symlinks instead"
+    + "This command does not copy any actual data but creates symlinks instead",
 )
 @click.option(
-    "--after", "-a", "after",
+    "--after",
+    "-a",
+    "after",
     required=True,
-    help="A stage at which fork happens; currently may only be 'corsika' to fork after CORSIKA simulation step"
+    help="A stage at which fork happens; currently may only be 'corsika' to fork after CORSIKA simulation step",
 )
 @click.option("--fork-name", "-n", "fork_name", required=True, help="Name of the forked run")
 @loading_run_by_name
