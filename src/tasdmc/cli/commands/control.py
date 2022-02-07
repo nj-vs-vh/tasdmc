@@ -1,13 +1,14 @@
 import sys
 import click
 
-from tasdmc import config, system, fileio, nodes, fork
+from tasdmc import config, fileio, nodes, fork
+from tasdmc.system import processes
 from tasdmc.config.update import update_run_config
 from tasdmc.utils import user_confirmation_destructive
 
 from ..group import cli
 from ..options import run_config_option, nodes_config_option
-from ..utils import run_standard_pipeline_in_background, loading_run_by_name, error_catching
+from ..utils import run_simulation_in_background, loading_run_by_name, error_catching
 
 
 @cli.command("continue", help="Continue execution of aborted RUN_NAME")
@@ -37,11 +38,11 @@ def continue_run_cmd(rerun_step_on_input_hash_mismatch: bool, disable_input_hash
         config.Ephemeral.rerun_step_on_input_hash_mismatch = rerun_step_on_input_hash_mismatch
         config.Ephemeral.disable_input_hash_checks = disable_input_hash_checks
         saved_main_pid = fileio.get_saved_main_pid()
-        if saved_main_pid is not None and system.process_alive(saved_main_pid):
+        if saved_main_pid is not None and processes.is_alive(saved_main_pid):
             click.secho(f"Run already alive")
             sys.exit(1)
         fileio.prepare_run_dir(continuing=True)
-        run_standard_pipeline_in_background()
+        run_simulation_in_background()
     else:
         nodes.check_all()
         nodes.continue_all(rerun_step_on_input_hash_mismatch, disable_input_hash_checks)
@@ -63,7 +64,7 @@ def abort_run_cmd(confirm: bool, safe: bool):
         if config.is_local_run():
             saved_main_pid = fileio.get_saved_main_pid()
             if saved_main_pid is not None:
-                system.abort_run(saved_main_pid, safe)
+                processes.abort_run_processes(saved_main_pid, safe)
             else:
                 click.echo("No saved main pid found for the run")
         else:

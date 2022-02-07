@@ -5,7 +5,7 @@ from tasdmc import config, pipeline, fileio, nodes
 
 from tasdmc.cli.group import cli
 from ..options import run_config_option, nodes_config_option
-from ..utils import run_standard_pipeline_in_background, error_catching
+from ..utils import run_simulation_in_background, error_catching
 
 
 @cli.command("run-local", help="Run simulation on this machine")
@@ -34,7 +34,7 @@ def local_run_cmd(run_config_filename: str, dry: bool, remove_run_config_file: b
         finally:
             fileio.remove_run_dir()
     else:
-        run_standard_pipeline_in_background()
+        run_simulation_in_background()
 
 
 @cli.command("run-distributed", help="Run simulation distributed across several machines (nodes)")

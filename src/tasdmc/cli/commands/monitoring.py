@@ -1,8 +1,8 @@
 import click
 from time import sleep
-from tempfile import NamedTemporaryFile
 
-from tasdmc import config, system, fileio, nodes
+from tasdmc import config, fileio, nodes
+from tasdmc.system import processes
 from tasdmc.logs import display as display_logs
 
 from ..group import cli
@@ -99,7 +99,9 @@ def process_status_cmd(n_last_messages: int, display_processes: bool):
         if saved_main_pid is None:
             click.echo("Run was never launched (probably just forked?)")
         else:
-            system.print_process_status(fileio.get_saved_main_pid(), display_processes=display_processes)
+            processes.print_run_processes_status(
+                main_pid=fileio.get_saved_main_pid(), display_processes=display_processes
+            )
         if n_last_messages:
             display_logs.print_multiprocessing_log(n_last_messages)
     else:

@@ -11,7 +11,6 @@ import sys
 
 from typing import Any, Optional, List, Type
 
-from tasdmc.system import resources
 from tasdmc.utils import get_dot_notation, NO_DEFAULT
 from .exceptions import BadConfigValue
 from .storage import RunConfig, NodesConfig
@@ -38,22 +37,23 @@ class Global:
             sys.exit()
 
 
+Global.load()
+
+
 class Ephemeral:
     """Namespace class holding emphemeral (= not persistent) config values coming from command-line params"""
 
     rerun_step_on_input_hash_mismatch: bool = False
     disable_input_hash_checks: bool = False
-
-
-Global.load()
+    safe_abort_in_progress: bool = False
 
 
 def validate(step_classes: Optional[List[Type['PipelineStep']]] = None):  # type: ignore
     from tasdmc.steps.corsika_cards_generation import validate_config
 
-    assert not (Ephemeral.rerun_step_on_input_hash_mismatch and Ephemeral.disable_input_hash_checks), "Can't be both!"
-
     validate_config()
+
+    assert not (Ephemeral.rerun_step_on_input_hash_mismatch and Ephemeral.disable_input_hash_checks), "Can't be both!"
     if step_classes is None:
         from tasdmc.steps import all_steps as step_classes
     for Step in step_classes:
@@ -80,27 +80,3 @@ def is_distributed_run() -> bool:
 
 def is_local_run() -> bool:
     return not is_distributed_run()
-
-
-# resources usage computed from config values
-
-
-def used_processes() -> int:
-    max_processes_explicit = get_key('resources.max_processes', default=-1)
-    max_memory_explicit = get_key('resources.max_memory', default=-1)
-    if max_memory_explicit == max_processes_explicit == -1:
-        return 1  # if nothing specified, no parallelization is done
-    if 0 < max_memory_explicit < Global.memory_per_process_Gb:
-        raise BadConfigValue(
-            f"Memory constraint is too tight! {max_memory_explicit} Gb is less "
-            + f"than a single-thread requirement ({Global.memory_per_process_Gb} Gb)"
-        )
-    max_processes_inferred = int(max_memory_explicit / Global.memory_per_process_Gb)
-    max_processes_variants = [
-        np for np in [max_processes_explicit, max_processes_inferred, resources.n_cpu()] if np > 0
-    ]
-    return min(max_processes_variants)
-
-
-def used_ram() -> int:
-    return used_processes() * Global.memory_per_process_Gb
