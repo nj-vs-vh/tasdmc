@@ -7,7 +7,8 @@ from itertools import chain
 
 from typing import List, Union
 
-from tasdmc import config, fileio, system
+from tasdmc import config, fileio
+from tasdmc.system import monitor, resources, processes, run_in_background
 from tasdmc.steps import (
     CorsikaStep,
     ParticleFileSplittingStep,
@@ -24,7 +25,6 @@ from tasdmc.steps import (
     TawikiDumpsMergeStep,
 )
 from tasdmc.steps.corsika_cards_generation import generate_corsika_cards
-from tasdmc.system.monitor import run_system_monitor
 from tasdmc.steps.base.step_status_shared import set_step_statuses_array
 from tasdmc.utils import batches
 
@@ -64,7 +64,7 @@ def get_steps_queue(
     if disable_batching:  # explicit flag takes precedence over config value
         batch_size = len(all_corsika_steps)
     else:
-        batch_size = int(config.used_processes() * batch_size_multiplier) or len(all_corsika_steps)
+        batch_size = int(resources.used_processes() * batch_size_multiplier) or len(all_corsika_steps)
 
     for corsika_steps_batch in batches(all_corsika_steps, batch_size):
         queue.extend(corsika_steps_batch)
@@ -130,8 +130,10 @@ def with_pipelines_mask(steps: List[PipelineStep]) -> List[PipelineStep]:
 
 
 def run_simulation(dry: bool = False):
-    system.set_process_title("tasdmc main")
+    processes.set_process_title("tasdmc main")
+    processes.setup_safe_abort_signal_listener()
     fileio.save_main_process_pid()
+
     steps = get_steps_queue(corsika_card_paths=generate_corsika_cards())
     steps = with_pipelines_mask(steps)
     config.validate(set(step.__class__ for step in steps))
@@ -139,19 +141,18 @@ def run_simulation(dry: bool = False):
     if dry:
         return
 
-    system.run_in_background(run_system_monitor, keep_session=True)
+    run_in_background(monitor.run_system_monitor, keep_session=True)
 
     for idx, step in enumerate(steps):
         step.set_index(idx)
     shared_step_statuses_array = mp.Array(c_int8, len(steps), lock=True)  # initially all zeros = steps pending
 
     def init_worker_process(shared_array):
-        system.set_process_title("tasdmc worker")
+        processes.set_process_title("tasdmc worker")
         set_step_statuses_array(shared_array)
 
-    n_processes = config.used_processes()
     with ProcessPoolExecutor(
-        max_workers=n_processes,
+        max_workers=resources.used_processes(),
         initializer=init_worker_process,  # shared array is sent to each worker process here
         initargs=(shared_step_statuses_array,),
     ) as executor:

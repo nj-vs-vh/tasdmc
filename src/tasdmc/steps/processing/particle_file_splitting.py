@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List
 
 from tasdmc import config
-from tasdmc.system.resources import n_cpu
+from tasdmc.system import resources
 from tasdmc.subprocess_utils import execute_routine, Pipes
 
 from tasdmc.steps.base import NotAllRetainedFiles, PipelineStep, files_dataclass
@@ -70,7 +70,8 @@ class ParticleFileSplittingStep(PipelineStep):
 
 
 def _n_split_from_config() -> int:
-    n_split = config.get_key('dethinning.n_parallel', default=n_cpu())
+    # defaults to resources.n_cpu(), not resources.used_processes() because the latter can change with config update
+    n_split = config.get_key('dethinning.n_parallel', default=resources.n_cpu())
     if isinstance(n_split, int) and n_split > 0:
         return n_split
     else:

@@ -87,6 +87,9 @@ class PipelineStep(ABC):
 
     def run_in_executor(self):
         try:
+            if config.Ephemeral.safe_abort_in_progress:
+                # exiting as if step has not been started at all
+                return
             if self.previous_steps is not None:  # not the first step in a pipeline
                 # waiting for previous steps to complete
                 waiting_msg_logged = False

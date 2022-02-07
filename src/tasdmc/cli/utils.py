@@ -2,12 +2,13 @@ import click
 import sys
 import traceback
 
-from tasdmc import system, pipeline, config, fileio
+from tasdmc import pipeline, config, fileio
 from tasdmc.utils import user_confirmation
+from tasdmc.system import run_in_background
 
 
-def run_standard_pipeline_in_background():
-    system.run_in_background(pipeline.run_simulation)
+def run_simulation_in_background():
+    run_in_background(pipeline.run_simulation)
     click.echo(f"Running in the background. Use 'tasdmc status {config.run_name()}' to check run status")
 
 
