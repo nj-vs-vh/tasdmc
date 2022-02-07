@@ -90,8 +90,7 @@ class PipelineProgress(LogData):
             pending=self.pending + other.pending,
             failed=self.failed + other.failed,
             running_now_count={
-                step_name: n + other.running_now_count[step_name]
-                for step_name, n in self.running_now_count.items()
+                step_name: n + other.running_now_count[step_name] for step_name, n in self.running_now_count.items()
             },
             step_order=self.step_order,
             node_name=(f"{self.node_name} + {other.node_name}") if self.node_name and other.node_name else None,
@@ -101,22 +100,22 @@ class PipelineProgress(LogData):
     def parse_from_log(cls) -> PipelineProgress:
         failed_pipelines: Set[str] = set()
         started_pipelines: Set[str] = set()
-        last_completed_step: Dict[str, str] = dict()
-        last_started_step: Dict[str, str] = dict()
+        last_completed_step_by_pipeline: Dict[str, str] = dict()
+        last_started_step_by_pipeline: Dict[str, str] = dict()
         for step_progress in PipelineStepProgress.load():
             pipeline_id = step_progress.pipeline_id
             started_pipelines.add(pipeline_id)
             if step_progress.event_type is EventType.FAILED:
                 failed_pipelines.add(pipeline_id)
             elif step_progress.event_type is EventType.STARTED:
-                last_started_step[pipeline_id] = step_progress.step_name
+                last_started_step_by_pipeline[pipeline_id] = step_progress.step_name
             elif step_progress.event_type in {EventType.COMPLETED, EventType.SKIPPED}:
-                last_completed_step[pipeline_id] = step_progress.step_name
+                last_completed_step_by_pipeline[pipeline_id] = step_progress.step_name
 
-        total = len(generate_corsika_cards(logging=False, dry=True))
-        failed = len(failed_pipelines)
-        pending = total - len(started_pipelines)
-        running_or_completed = len(started_pipelines.difference(failed_pipelines))
+        n_total = len(generate_corsika_cards(logging=False, dry=True))
+        n_failed = len(failed_pipelines)
+        n_pending = n_total - len(started_pipelines)
+        n_running_and_completed = len(started_pipelines.difference(failed_pipelines))
 
         step_order = [
             step.name
@@ -129,46 +128,52 @@ class PipelineProgress(LogData):
         # removing duplicates, leaving only first occurrence
         step_order = [name for i, name in enumerate(step_order) if name not in step_order[:i]]
 
-        last_step = step_order[-1]
+        final_step = step_order[-1]
         completed_pipelines = {
-            pipeline_id for pipeline_id, completed in last_completed_step.items() if completed == last_step
+            pipeline_id
+            for pipeline_id, last_completed_step in last_completed_step_by_pipeline.items()
+            if last_completed_step == final_step
         }
-        completed = len(completed_pipelines)
-        running = running_or_completed - completed
+        n_completed = len(completed_pipelines)
+        n_running = n_running_and_completed - n_completed
 
-        running_now_count = dict.fromkeys(step_order, 0)
-        for pipeline_id, last_started in last_started_step.items():
+        n_running_by_step = dict.fromkeys(step_order, 0)
+
+        for pipeline_id in started_pipelines:
             if pipeline_id in completed_pipelines or pipeline_id in failed_pipelines:
                 continue
-            last_completed = last_completed_step.get(pipeline_id)
-            if last_started == last_completed:  # the step is waiting in queue, count nex step as started
-                running_now_step = step_order[step_order.index(last_started) + 1]
+            last_started_step = last_started_step_by_pipeline.get(pipeline_id)
+            last_completed_step = last_completed_step_by_pipeline.get(pipeline_id)
+            if last_started_step == last_completed_step:  # the step is waiting in queue, count nex step as started
+                running_now_step = step_order[step_order.index(last_started_step) + 1]
             else:
-                running_now_step = last_started
-            running_now_count[running_now_step] += 1
-            
+                running_now_step = last_started_step
+            n_running_by_step[running_now_step] += 1
+
         return PipelineProgress(
-            completed=completed,
-            running=running,
-            pending=pending,
-            failed=failed,
-            running_now_count=running_now_count,
+            completed=n_completed,
+            running=n_running,
+            pending=n_pending,
+            failed=n_failed,
+            running_now_count=n_running_by_step,
             step_order=step_order,
             node_name=None,
         )
 
-    def print(self, with_node_name: bool = False):
+    def print(self, with_node_name: bool = False, full_color: bool = True):
         if with_node_name:
             self.echo_node_name()
 
         colors = [
-            (70, 171, 73),  # green
-            (212, 193, 23),  # yellow
-            (186, 186, 186),  # light grey
-            (199, 78, 52),  # red
+            (22, 145, 25) if full_color else "green",
+            (232, 210, 9) if full_color else "yellow",
+            (186, 186, 186) if full_color else "white",
+            (199, 78, 52) if full_color else "red",
         ]
 
         def lerp_color(c1, c2, fraction: float):
+            if not full_color:
+                return c2
             lerp = []
             for idx in range(3):
                 delta = c2[idx] - c1[idx]
@@ -196,25 +201,30 @@ class PipelineProgress(LogData):
             click.secho("█" * char_count, nl=False, fg=color)
         click.echo()
 
-        click.echo(
-            "┌"
-            + "─" * (pipeline_char_counts[0] - 1)
-            + "┘"
-            + " " * (pipeline_char_counts[1] - 2)
-            + "└"
-            + "─" * (screen_width - pipeline_char_counts[0] - pipeline_char_counts[1] - 1)
-            + "┐"
-        )
-
         # from later to earlier steps
         step_labels = self.step_order[::-1]
         step_counts = [self.running_now_count[l] for l in step_labels]
         step_colors = [
-            lerp_color(colors[0], colors[1], (i + 1) / (len(step_labels) + 2))
-            for i, _ in enumerate(step_labels)
+            lerp_color(colors[0], colors[1], (i + 1) / (len(step_labels) + 2)) for i, _ in enumerate(step_labels)
         ]
-        for step_color, char_count in zip(step_colors, to_char_counts(step_counts)):
-            click.secho("█" * char_count, nl=False, fg=step_color)
+
+        def make_ascii_bracket_rows(row_idx: int) -> str:
+            return (
+                ("┌" if row_idx == 1 else (" " if row_idx == 0 else "|"))
+                + ("─" if row_idx == 1 else " ") * (pipeline_char_counts[0] - 1)
+                + ("┘" if row_idx == 1 else ("|" if row_idx == 0 else " "))
+                + " " * (pipeline_char_counts[1] - 2)
+                + ("└" if row_idx == 1 else ("|" if row_idx == 0 else " "))
+                + ("─" if row_idx == 1 else " ")
+                * (screen_width - pipeline_char_counts[0] - pipeline_char_counts[1] - 1)
+                + ("┐" if row_idx == 1 else (" " if row_idx == 0 else "|"))
+            )
+
+        if full_color:
+            for row_idx in range(3):
+                click.echo(make_ascii_bracket_rows(row_idx))
+            for step_color, char_count in zip(step_colors, to_char_counts(step_counts)):
+                click.secho("█" * char_count, nl=False, fg=step_color)
 
         click.echo()
 

@@ -52,23 +52,30 @@ def info_cmd():
     default=False,
     help="Print progress bar independently for each node of the distributed run",
 )
+@click.option(
+    "--ansi-colors",
+    is_flag=True,
+    default=False,
+    help="Disable full RGB print and use only default ANSI colors; useful for some terminals",
+)
 @loading_run_by_name
 @error_catching
-def progress_cmd(follow: bool, dump_json: bool, per_node: bool):
+def progress_cmd(follow: bool, dump_json: bool, per_node: bool, ansi_colors: bool):
+    full_color = not ansi_colors
     if config.is_local_run():
         if per_node:
             click.echo("-per-node option ignored for local run")
         if dump_json:
             click.echo(display_logs.PipelineProgress.parse_from_log().dump())
             return
-        display_logs.PipelineProgress.parse_from_log().print()
+        display_logs.PipelineProgress.parse_from_log().print(full_color=full_color)
         if follow:
             while True:
                 sleep(3)
                 click.echo("Updating...")
                 plp = display_logs.PipelineProgress.parse_from_log()
                 click.clear()
-                plp.print()
+                plp.print(full_color=full_color)
     else:
         if follow:
             click.echo("--follow option ignored for distributed run")
@@ -77,7 +84,7 @@ def progress_cmd(follow: bool, dump_json: bool, per_node: bool):
         plps = nodes.collect_progress_data()
         if per_node:
             for plp in plps:
-                plp.print(with_node_name=True)
+                plp.print(with_node_name=True, full_color=full_color)
         else:
             aggregated_plp = None
             for plp in plps:
@@ -85,7 +92,7 @@ def progress_cmd(follow: bool, dump_json: bool, per_node: bool):
                     aggregated_plp = plp
                 else:
                     aggregated_plp += plp
-            aggregated_plp.print()
+            aggregated_plp.print(full_color=full_color)
 
 
 @cli.command("status", help="Check status for run RUN_NAME")
