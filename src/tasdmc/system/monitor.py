@@ -1,7 +1,6 @@
 import time
 import psutil
 import os
-import sys
 
 from tasdmc import config, logs, fileio
 from .resources import available_disk_space, directory_size
@@ -11,6 +10,7 @@ from .utils import bytes2Gb
 
 def run_system_monitor():
     set_process_title("tasdmc system monitor")
+    logs.multiprocessing_info("Running system monitor")
     interval = config.get_key("resources.monitor_interval", default=60)
     if interval is None or interval == 0:
         return
@@ -22,9 +22,9 @@ def run_system_monitor():
         if saved_main_pid is not None:
             processes = get_run_processes(saved_main_pid)
             if processes is None:
-                sys.exit(0)
+                break
         else:
-            sys.exit(0)
+            break
         for _ in range(5):  # trying several times
             try:
                 running_processes = [
@@ -47,3 +47,5 @@ def run_system_monitor():
 
         time_after_measurement = time.time()
         time.sleep(max(1, interval - (time_after_measurement - time_before_measurement)))
+
+    logs.multiprocessing_info("Exiting system monitor")

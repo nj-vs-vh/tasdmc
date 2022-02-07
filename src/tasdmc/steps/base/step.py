@@ -95,6 +95,9 @@ class PipelineStep(ABC):
                 waiting_msg_logged = False
                 while True:
                     previous_step_statuses = [ps.runtime_status for ps in self.previous_steps]
+                    if config.Ephemeral.safe_abort_in_progress:
+                        logs.multiprocessing_info(f"Exiting '{self.description}' safe abort signal was received")
+                        return
                     if any(s is StepRuntimeStatus.FAILED for s in previous_step_statuses):
                         logs.multiprocessing_info(f"Exiting '{self.description}' one of its previous steps has failed")
                         raise StepFailedException()
