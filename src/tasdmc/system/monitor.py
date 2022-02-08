@@ -38,12 +38,12 @@ def run_system_monitor():
             if core_layer_processes is None:
                 logs.multiprocessing_info("Exiting system monitor: seems like main run process has died")
                 return
-            # pids that were active on last iteration but not anymore -- dropping them
+            # pids that were active on last iteration but not anymore
             obsolete_pids = set(stats_by_pid.keys()) - {p.pid for p in core_layer_processes}
             if stats_by_pid and not obsolete_pids:
                 break  # yay, no new processes spawned while we collected data from previous iteration
-            for pid in obsolete_pids:
-                stats_by_pid.pop(pid)
+            # for pid in obsolete_pids:
+            #     stats_by_pid.pop(pid)
             for p in core_layer_processes:
                 try:
                     if p.pid not in stats_by_pid:
@@ -54,23 +54,26 @@ def run_system_monitor():
                                 # used by the process. On UNIX it matches “top“‘s VIRT column.
                                 mem=bytes2Gb(p.memory_info().vms),
                             )
-                except Exception:
+                except Exception as e:
                     # happens when process has exited while we were collecting other processes' data
                     # it's ok, we have several iterations for that!
+                    e_str = str(e).replace('\n', '  ')
+                    logs.multiprocessing_info(f"System monitor error trying to measure proc {p.pid}: {e_str}")
                     pass
         else:
             logs.multiprocessing_info(
                 "Warning! System monitor was unable to collect adequate metrics for run processes"
             )
 
-        cpu_percents = [s.cpu for s in stats_by_pid.values()]
-        mem_usage = [s.mem for s in stats_by_pid.values()]
-        disk_used = directory_size(fileio.run_dir())
-        disk_available = available_disk_space(fileio.run_dir())
-        logs.system_resources_info(
-            "CPU "
-            + " ".join(f"{cp:.3f}" for cp in cpu_percents)
-            + " MEM "
-            + " ".join(f"{m:.3f}" for m in mem_usage)
-            + f" DISK {disk_used:.3f}/{disk_available:.3f}"
-        )
+        if stats_by_pid:
+            cpu_percents = [s.cpu for s in stats_by_pid.values()]
+            mem_usage = [s.mem for s in stats_by_pid.values()]
+            disk_used = directory_size(fileio.run_dir())
+            disk_available = available_disk_space(fileio.run_dir())
+            logs.system_resources_info(
+                "CPU "
+                + " ".join(f"{cp:.3f}" for cp in cpu_percents)
+                + " MEM "
+                + " ".join(f"{m:.3f}" for m in mem_usage)
+                + f" DISK {disk_used:.3f}/{disk_available:.3f}"
+            )
