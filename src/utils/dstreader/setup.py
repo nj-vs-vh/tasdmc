@@ -5,6 +5,8 @@ import shutil
 from pathlib import Path
 from setuptools import setup, Extension
 from setuptools.command.install import install
+import numpy
+
 from swig.generate_numpy_accessors import generate_accessors
 
 BANK_NAMES = ['rusdraw', 'rusdmc']
@@ -63,6 +65,7 @@ core_ext = Extension(
     library_dirs=[str(DST2K_TA_LIB_DIR)],
     libraries=['dst2k', 'm', 'c', 'z', 'bz2'],
     extra_compile_args=[dst2k_ta_include],
+    include_dirs=[numpy.get_include()],
 )
 
 setup(
