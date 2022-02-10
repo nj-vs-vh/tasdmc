@@ -53,10 +53,10 @@ class InstallWithSwig(install):
         #     print(res.stdout.decode("utf-8"))
         #     print(res.stderr.decode("utf-8"))
         #     sys.exit(1)
-        
-        swig_generated_module_in_src = SRC_DIR / SWIG_GENERATED_PY_MODULE.name
-        swig_generated_module_in_src.unlink(missing_ok=True)
-        shutil.move(SWIG_GENERATED_PY_MODULE, swig_generated_module_in_src)
+        # swig_generated_module_in_src = SRC_DIR / SWIG_GENERATED_PY_MODULE.name
+        # swig_generated_module_in_src.unlink(missing_ok=True)
+        # shutil.move(SWIG_GENERATED_PY_MODULE, swig_generated_module_in_src)
+
         install.run(self)
 
 
