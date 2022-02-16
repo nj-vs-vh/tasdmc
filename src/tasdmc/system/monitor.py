@@ -73,9 +73,9 @@ def run_system_monitor():
                 + " ".join(f"{s.mem:.3f}" for s in stats)
                 + f" DISK {disk_used:.3f}/{disk_available:.3f}"
                 + " DISKR "
-                + " ".join(f"{s.disk_read:2f}" for s in stats)
+                + " ".join(f"{s.disk_read:.2f}" for s in stats)
                 + " DISKW "
-                + " ".join(f"{s.disk_write:2f}" for s in stats)
+                + " ".join(f"{s.disk_write:.2f}" for s in stats)
             )
         else:
             logs.multiprocessing_info("System monitor was unable to collect any core layer process data")
