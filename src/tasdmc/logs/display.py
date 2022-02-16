@@ -239,7 +239,7 @@ class PipelineProgress(LogData):
         # legend for above progress bar/bars
         for name, color, count in zip(labels, colors, pipeline_counts):
             click.echo(click.style(" ■", fg=color) + f" {name} ({count} / {sum(pipeline_counts)})")
-            if name == 'running':
+            if name == 'running' and self.running > 0:
                 for step_label, step_color, step_count in zip(step_labels, step_colors, step_counts):
                     click.echo(
                         click.style("   ■", fg=step_color) + f" {step_label} ({step_count} / {sum(step_counts)})"
