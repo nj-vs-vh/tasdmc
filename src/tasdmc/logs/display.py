@@ -1,4 +1,5 @@
 from __future__ import annotations
+from multiprocessing.sharedctypes import Value
 
 import click
 import re
@@ -270,11 +271,15 @@ class SystemResourcesTimeline(LogData):
     def start_timestamp(self) -> datetime:
         return self.timestamps[0]
 
+    @property
+    def end_timestamp(self) -> datetime:
+        return self.timestamps[-1]
+
     def concatenate(
         self, other: SystemResourcesTimeline, ret_delay: timedelta = timedelta(minutes=1.0)
     ) -> SystemResourcesTimeline:
-        if other.start_timestamp < self.start_timestamp:
-            return other.concatenate(self)
+        # if other.start_timestamp < self.end_timestamp:
+        assert self.end_timestamp < other.start_timestamp, "Can concatenate only later non-overlapping timeline"
         other_ret_offsetted = [self.ret[-1] + ret_delay + td for td in other.ret]
         return SystemResourcesTimeline(
             timestamps=self.timestamps + other.timestamps,
@@ -292,6 +297,7 @@ class SystemResourcesTimeline(LogData):
         if include_previous_runs:
             logs_dirs_to_look_in.extend(fileio.get_previous_logs_dirs())
         srts = [cls._parse_from_log(logs_dir) for logs_dir in logs_dirs_to_look_in]
+        srts.sort(key=lambda srt: srt.start_timestamp)
         concatenated_srt = None
         for srt in srts:
             if srt is None:
