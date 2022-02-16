@@ -120,7 +120,7 @@ def process_status_cmd(n_last_messages: int, display_processes: bool):
     "--abstime",
     default=False,
     is_flag=True,
-    help="Use absolute datetime as X axis; by default Run Evaluation Time is used",
+    help="Use absolute datetime as X axis; by default run time is used",
 )
 @click.option(
     "--latest",

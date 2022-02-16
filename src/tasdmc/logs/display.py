@@ -378,10 +378,10 @@ class SystemResourcesTimeline(LogData):
                     click.secho(f"Can't parse system resources log entry: '{entry_line}': {e}")
         if len(timestamps) == 0:
             return None
-        run_eval_times = [t - timestamps[0] for t in timestamps]
+        run_times = [t - timestamps[0] for t in timestamps]
         return SystemResourcesTimeline(
             timestamps=timestamps,
-            ret=run_eval_times,
+            ret=run_times,
             cpu=cpu,
             mem=mem,
             disk_used=disk_used,
@@ -394,7 +394,7 @@ class SystemResourcesTimeline(LogData):
     @staticmethod
     def _get_plot_width_height():
         terminal_width, terminal_height = shutil.get_terminal_size()
-        return min(120, terminal_width), min(25, terminal_height)
+        return min(120, terminal_width), min(40, terminal_height)
 
     def display(self, absolute_x_axis: bool, with_node_name: bool = False):
         if with_node_name:
@@ -416,7 +416,7 @@ class SystemResourcesTimeline(LogData):
         else:
             xs = [td.total_seconds() for td in self.ret]
             tick_label_from_value = lambda x: timedelta2str(timedelta(seconds=x))
-            x_axis_label = "Run evaluation time"
+            x_axis_label = "Run time"
             plot_fn = plt.plot
 
         x_n = len(xs)
@@ -427,7 +427,7 @@ class SystemResourcesTimeline(LogData):
         plot_width, plot_height = self._get_plot_width_height()
 
         plt.clear_figure()
-        plt.subplots(3, 1)
+        plt.subplots(4, 1)
 
         # disk usage plot
         plt.subplot(1, 1)
@@ -439,7 +439,7 @@ class SystemResourcesTimeline(LogData):
                 [td[0] for td in max_disk_used_plot_data],
                 [td[1] for td in max_disk_used_plot_data],
                 color='red',
-                label="Max for run directory",
+                label="Run directory cap",
             )
         plt.title("Disk usage")
         plt.ylabel("Disk usage, Gb")
@@ -448,6 +448,15 @@ class SystemResourcesTimeline(LogData):
         plt.xticks(x_ticks, x_tick_labels)
 
         plt.subplot(2, 1)
+        plot_fn(xs, self.disk_read_speed, color='basil', label="read")
+        plot_fn(xs, self.disk_write_speed, color='tomato', label="write")
+        plt.title("Disk IO rates")
+        plt.ylabel("Mb/sec")
+        plt.xlabel(x_axis_label)
+        plt.plotsize(plot_width, plot_height)
+        plt.xticks(x_ticks, x_tick_labels)
+
+        plt.subplot(3, 1)
         plot_fn(xs, self.cpu, color='green')
         plt.title("CPU utilization")
         plt.ylabel("CPU, 100% per core")
@@ -455,7 +464,7 @@ class SystemResourcesTimeline(LogData):
         plt.plotsize(plot_width, plot_height)
         plt.xticks(x_ticks, x_tick_labels)
 
-        plt.subplot(3, 1)
+        plt.subplot(4, 1)
         plot_fn(xs, self.mem, color='teal')
         plt.title("Memory usage")
         plt.ylabel("RAM used, Gb")
