@@ -199,38 +199,44 @@ class PipelineProgress(LogData):
             char_counts[char_counts.index(max(char_counts))] -= sum(char_counts) - screen_width
             return char_counts
 
+        # general completed/running/pending/failed progress bar
         pipeline_char_counts = to_char_counts(pipeline_counts)
         for color, char_count in zip(colors, pipeline_char_counts):
             click.secho("█" * char_count, nl=False, fg=color)
         click.echo()
 
-        # from later to earlier steps
-        step_labels = self.step_order[::-1]
+        # detalization of 'running' category by steps
+        step_labels = self.step_order[::-1]  # from later to earlier steps
         step_counts = [self.running_now_count[l] for l in step_labels]
         step_colors = [
             lerp_color(colors[0], colors[1], (i + 1) / (len(step_labels) + 2)) for i, _ in enumerate(step_labels)
         ]
 
-        def make_ascii_bracket_rows(row_idx: int) -> str:
-            return (
-                ("┌" if row_idx == 1 else (" " if row_idx == 0 else "|"))
-                + ("─" if row_idx == 1 else " ") * (pipeline_char_counts[0] - 1)
-                + ("┘" if row_idx == 1 else ("|" if row_idx == 0 else " "))
-                + " " * (pipeline_char_counts[1] - 2)
-                + ("└" if row_idx == 1 else ("|" if row_idx == 0 else " "))
-                + ("─" if row_idx == 1 else " ")
-                * (screen_width - pipeline_char_counts[0] - pipeline_char_counts[1] - 1)
-                + ("┐" if row_idx == 1 else (" " if row_idx == 0 else "|"))
-            )
-
-        if full_color:
-            for row_idx in range(3):
-                click.echo(make_ascii_bracket_rows(row_idx))
+        # detalization of 'running' in a separate progress sub-bar, supported only when printing in full color
+        if self.running > 0 and full_color:
+            #   otherwise ascii bracket looks all jagged
+            if self.completed > 0 and self.pending + self.failed > 0:
+                for row_idx in range(3):
+                    ascii_bracket_row = (
+                        ("┌" if row_idx == 1 else (" " if row_idx == 0 else "|"))
+                        + ("─" if row_idx == 1 else " ") * (pipeline_char_counts[0] - 1)
+                        + ("┘" if row_idx == 1 else ("|" if row_idx == 0 else " "))
+                        + " " * (pipeline_char_counts[1] - 2)
+                        + ("└" if row_idx == 1 else ("|" if row_idx == 0 else " "))
+                        + ("─" if row_idx == 1 else " ")
+                        * (screen_width - pipeline_char_counts[0] - pipeline_char_counts[1] - 1)
+                        + ("┐" if row_idx == 1 else (" " if row_idx == 0 else "|"))
+                    )
+                    click.echo(ascii_bracket_row)
+            else:
+                click.echo("\nRunning steps:")
             for step_color, char_count in zip(step_colors, to_char_counts(step_counts)):
                 click.secho("█" * char_count, nl=False, fg=step_color)
+            click.echo()
 
         click.echo()
 
+        # legend for above progress bar/bars
         for name, color, count in zip(labels, colors, pipeline_counts):
             click.echo(click.style(" ■", fg=color) + f" {name} ({count} / {sum(pipeline_counts)})")
             if name == 'running':
