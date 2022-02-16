@@ -22,13 +22,12 @@ class ProcessStats:
     @classmethod
     def measure(cls, p: psutil.Process) -> Optional[ProcessStats]:
         try:
-            with p.oneshot():
-                return ProcessStats(
-                    cpu=p.cpu_percent(interval=0.3),
-                    # vms, aka “Virtual Memory Size”, this is the total amount of virtual memory
-                    # used by the process. On UNIX it matches “top“‘s VIRT column.
-                    mem=bytes2Gb(p.memory_info().vms),
-                )
+            return ProcessStats(
+                cpu=p.cpu_percent(interval=0.5),
+                # vms, aka “Virtual Memory Size”, this is the total amount of virtual memory
+                # used by the process. On UNIX it matches “top“‘s VIRT column.
+                mem=bytes2Gb(p.memory_info().vms),
+            )
         except Exception:
             return None
 
@@ -55,9 +54,8 @@ def run_system_monitor():
 
         # measuring all processes simultaneously in their own respective threads
         with ThreadPoolExecutor(max_workers=len(core_layer_processes)) as executor:
-            futures = executor.map(ProcessStats.measure, core_layer_processes)
-            future_results: List[Optional[ProcessStats]] = [f.result() for f in as_completed(futures)]
-            stats = [fr for fr in future_results if fr is not None]
+            maybe_stats = executor.map(ProcessStats.measure, core_layer_processes)
+            stats = [s for s in maybe_stats if s is not None]
 
         if stats:
             cpu_percents = [ps.cpu for ps in stats]
