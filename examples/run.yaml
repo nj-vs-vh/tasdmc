@@ -17,7 +17,7 @@ input_files:
   event_number_multiplier: 1.0
 
 corsika:
-  path: full/path/to/corsika/executable
+  path: /full/path/to/corsika/executable
   low_E_hadronic_interactions_model: GHEISHA
   high_E_hadronic_interactions_model: QGSJETII
   default_executable_name: True

@@ -33,6 +33,7 @@ def local_run_cmd(run_config_filename: str, dry: bool, remove_run_config_file: b
             pipeline.run_simulation(dry=True)
         finally:
             fileio.remove_run_dir()
+            click.echo("If you see no errors, the run is valid!")
     else:
         run_simulation_in_background()
 

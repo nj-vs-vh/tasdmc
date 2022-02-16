@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import os
 import shutil
+from tempfile import TemporaryDirectory
 
 from typing import List
 
@@ -10,7 +11,7 @@ from tasdmc import fileio, config
 from tasdmc.steps.base import Files, PipelineStep, files_dataclass
 from tasdmc.steps.exceptions import FilesCheckFailed
 from tasdmc.steps.utils import check_particle_file_contents, check_file_is_empty, check_last_line_contains
-from tasdmc.subprocess_utils import execute_routine, Pipes, UnlimitedStackSize, SignalResistantTemporaryDirectory
+from tasdmc.subprocess_utils import execute_routine, Pipes, UnlimitedStackSize
 
 
 @files_dataclass
@@ -75,7 +76,7 @@ class CorsikaStep(PipelineStep):
 
     def _run(self):
         # inspiration and partial credit: https://github.com/fact-project/corsika_wrapper
-        with SignalResistantTemporaryDirectory(prefix='corsika_') as tmp_dir:
+        with TemporaryDirectory(prefix='corsika_') as tmp_dir:
             tmp_run_dir = Path(tmp_dir) / 'run'
             corsika_executable = Path(config.get_key('corsika.path'))
             shutil.copytree(corsika_executable.parent, tmp_run_dir, symlinks=False)
