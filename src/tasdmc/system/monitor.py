@@ -2,31 +2,37 @@ from __future__ import annotations
 
 import time
 import psutil
-import os
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
-from typing import Dict, Optional, List
+from typing import Optional
 
 from tasdmc import config, logs, fileio
 from .resources import available_disk_space, directory_size
 from .processes import set_process_title, get_core_layer_run_processes
-from .utils import bytes2Gb
+from .utils import bytes2Gb, bytes2Mb
 
 
 @dataclass(frozen=True)
 class ProcessStats:
-    cpu: int
-    mem: int
+    cpu: float
+    mem: float
+    disk_read: float  # Mb/sec
+    disk_write: float  # Mb/sec
 
     @classmethod
     def measure(cls, p: psutil.Process) -> Optional[ProcessStats]:
         try:
+            io_ctrs_start = p.io_counters()
+            time.sleep(1.0)
+            io_ctrs_end = p.io_counters()
             return ProcessStats(
                 cpu=p.cpu_percent(interval=0.5),
                 # vms, aka “Virtual Memory Size”, this is the total amount of virtual memory
                 # used by the process. On UNIX it matches “top“‘s VIRT column.
                 mem=bytes2Gb(p.memory_info().vms),
+                disk_read=bytes2Mb(io_ctrs_end.read_bytes - io_ctrs_start.read_bytes),
+                disk_write=bytes2Mb(io_ctrs_end.write_bytes - io_ctrs_start.write_bytes),
             )
         except Exception:
             return None
@@ -49,7 +55,7 @@ def run_system_monitor():
 
         core_layer_processes = get_core_layer_run_processes(saved_main_pid)
         if core_layer_processes is None:
-            logs.multiprocessing_info("Exiting system monitor: seems like main run process has died")
+            logs.multiprocessing_info("Exiting system monitor: seems like the main run process is dead")
             return
 
         # measuring all processes simultaneously in their own respective threads
@@ -58,16 +64,18 @@ def run_system_monitor():
             stats = [s for s in maybe_stats if s is not None]
 
         if stats:
-            cpu_percents = [ps.cpu for ps in stats]
-            mem_usage = [ps.mem for ps in stats]
             disk_used = directory_size(fileio.run_dir())
             disk_available = available_disk_space(fileio.run_dir())
             logs.system_resources_info(
                 "CPU "
-                + " ".join(f"{cp:.3f}" for cp in cpu_percents)
+                + " ".join(f"{s.cpu:.1f}" for s in stats)
                 + " MEM "
-                + " ".join(f"{m:.3f}" for m in mem_usage)
+                + " ".join(f"{s.mem:.3f}" for s in stats)
                 + f" DISK {disk_used:.3f}/{disk_available:.3f}"
+                + " DISKR "
+                + " ".join(f"{s.disk_read:2f}" for s in stats)
+                + " DISKW "
+                + " ".join(f"{s.disk_write:2f}" for s in stats)
             )
         else:
             logs.multiprocessing_info("System monitor was unable to collect any core layer process data")

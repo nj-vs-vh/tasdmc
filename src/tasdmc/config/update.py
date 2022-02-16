@@ -108,6 +108,6 @@ def update_run_config(new_config_path: str, hard: bool, validate_only: bool):
     if not validate_only:
         if hard or user_confirmation("Apply?", yes="yes", default=False):
             config.RunConfig.dump(fileio.saved_run_config_file())
-            click.echo(f"You will need to abort-continue run {config.run_name()} for changes to take effect")
+            click.echo(f"If the run is active, you will need to abort and continue it for changes to take effect")
         else:
-            click.echo("Aborted")
+            click.echo("Config changes not applied")
