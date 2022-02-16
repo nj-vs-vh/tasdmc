@@ -145,7 +145,9 @@ class PipelineProgress(LogData):
                 continue
             last_started_step = last_started_step_by_pipeline.get(pipeline_id)
             last_completed_step = last_completed_step_by_pipeline.get(pipeline_id)
-            if last_started_step is None or last_started_step == last_completed_step:  # the step is waiting in queue, count nex step as started
+            if (
+                last_started_step is None or last_started_step == last_completed_step
+            ):  # the step is waiting in queue, count nex step as started
                 running_now_step = step_order[step_order.index(last_completed_step) + 1]
             else:
                 running_now_step = last_started_step
@@ -246,10 +248,20 @@ class SystemResourcesTimeline(LogData):
     mem: List[float]
     disk_used: List[float]
     disk_avl: List[float]
+    disk_read_speed: List[float]
+    disk_write_speed: List[float]
 
     def __post_init__(self):
         assert len(self.timestamps) > 0, f"{self.__class__.__name__} must contain at least one measurement"
-        for timeseries in (self.ret, self.cpu, self.mem, self.disk_used, self.disk_avl):
+        for timeseries in (
+            self.ret,
+            self.cpu,
+            self.mem,
+            self.disk_used,
+            self.disk_avl,
+            self.disk_read_speed,
+            self.disk_write_speed,
+        ):
             assert len(timeseries) == len(
                 self.timestamps
             ), f"{self.__class__.__name__} must contain length-aligned lists"
@@ -278,7 +290,6 @@ class SystemResourcesTimeline(LogData):
     def concatenate(
         self, other: SystemResourcesTimeline, ret_delay: timedelta = timedelta(minutes=1.0)
     ) -> SystemResourcesTimeline:
-        # if other.start_timestamp < self.end_timestamp:
         assert self.end_timestamp < other.start_timestamp, "Can concatenate only later non-overlapping timeline"
         other_ret_offsetted = [self.ret[-1] + ret_delay + td for td in other.ret]
         return SystemResourcesTimeline(
@@ -288,6 +299,8 @@ class SystemResourcesTimeline(LogData):
             mem=self.mem + other.mem,
             disk_used=self.disk_used + other.disk_used,
             disk_avl=self.disk_avl + other.disk_avl,
+            disk_read_speed=self.disk_read_speed + other.disk_read_speed,
+            disk_write_speed=self.disk_write_speed + other.disk_write_speed,
             node_name=self.node_name,
         )
 
@@ -297,18 +310,21 @@ class SystemResourcesTimeline(LogData):
         if include_previous_runs:
             logs_dirs_to_look_in.extend(fileio.get_previous_logs_dirs())
         srts = [cls._parse_from_log(logs_dir) for logs_dir in logs_dirs_to_look_in]
+        srts = [srt for srt in srts if srt is not None]
+        if not srts:
+            raise ValueError("No system resources logs parsed")
         srts.sort(key=lambda srt: srt.start_timestamp)
-        concatenated_srt = None
+        concat_srt = None
         for srt in srts:
             if srt is None:
                 continue
-            if concatenated_srt is None:
-                concatenated_srt = srt
+            if concat_srt is None:
+                concat_srt = srt
             else:
-                concatenated_srt = concatenated_srt.concatenate(srt)
-        if concatenated_srt is None:
-            raise ValueError("Can't parse logs!")
-        return concatenated_srt
+                concat_srt = concat_srt.concatenate(srt)
+        if concat_srt is None:
+            raise ValueError("Error concatenating several system resources timelines")
+        return concat_srt
 
     @classmethod
     def _parse_from_log(cls, logs_dir: Path) -> Optional[SystemResourcesTimeline]:
@@ -321,33 +337,45 @@ class SystemResourcesTimeline(LogData):
         mem: List[float] = []
         disk_used: List[float] = []
         disk_avl: List[float] = []
+        disk_read: List[float] = []
+        disk_write: List[float] = []
 
         entry_re = re.compile(
             r"^\[(?P<timestamp>.*?)\] CPU (?P<cpu_perc>.*?) MEM (?P<mem_usage>.*?) "
-            + r"DISK (?P<disk_used_by_run>.*?)/(?P<disk_available>.*?)$"
+            + r"DISK (?P<disk_used_by_run>.*?)/(?P<disk_available>.*?)"
+            + r"( DISKR (?P<disk_read>.*?) DISKW (?P<disk_write>.*?))?"  # optional: missing for old logs
+            + r"$"
         )
 
         with open(system_resources_log, 'r') as srl:
             for entry_line in srl:
-                m = entry_re.match(entry_line.strip())
+                entry_line = entry_line.strip()
+                m = entry_re.match(entry_line)
                 try:
-                    timestamp_entry = str2datetime(m.group('timestamp'))
-                    cpu_entry = sum(
-                        [float(cpu_per_worker) for cpu_per_worker in m.group('cpu_perc').split() if cpu_per_worker]
-                    )
-                    mem_entry = sum(
-                        [float(mem_per_worker) for mem_per_worker in m.group('mem_usage').split() if mem_per_worker]
-                    )
+
+                    def sum_proc_values_from_group(groupname: str) -> float:
+                        group_match: Optional[str] = m.group(groupname)
+                        if group_match is None:
+                            return 0.0  # default for missing fields
+                        return sum(float(proc_value) for proc_value in group_match.split() if proc_value)
+
+                    timestamps_entry = str2datetime(m.group('timestamp'))
+                    cpu_entry = sum_proc_values_from_group("cpu_perc")
+                    mem_entry = sum_proc_values_from_group("mem_usage")
                     disk_used_entry = float(m.group('disk_used_by_run'))
                     disk_avl_entry = float(m.group('disk_available'))
+                    disk_read_entry = sum_proc_values_from_group("disk_read")
+                    disk_write_entry = sum_proc_values_from_group("disk_write")
 
-                    timestamps.append(timestamp_entry)
+                    timestamps.append(timestamps_entry)
                     cpu.append(cpu_entry)
                     mem.append(mem_entry)
                     disk_used.append(disk_used_entry)
                     disk_avl.append(disk_avl_entry)
-                except Exception:
-                    click.secho(f"Can't parse system resources log entry: '{entry_line}'")
+                    disk_read.append(disk_read_entry)
+                    disk_write.append(disk_write_entry)
+                except Exception as e:
+                    click.secho(f"Can't parse system resources log entry: '{entry_line}': {e}")
         if len(timestamps) == 0:
             return None
         run_eval_times = [t - timestamps[0] for t in timestamps]
@@ -358,6 +386,8 @@ class SystemResourcesTimeline(LogData):
             mem=mem,
             disk_used=disk_used,
             disk_avl=disk_avl,
+            disk_read_speed=disk_read,
+            disk_write_speed=disk_write,
             node_name=None,
         )
 
@@ -372,7 +402,8 @@ class SystemResourcesTimeline(LogData):
         click.echo(f"System resources (as last monitored at {datetime2str(self.timestamps[-1])}):")
         click.echo(f"Total CPU utilization (100% is 1 core): {self.cpu[-1]:.2f}%")
         click.echo(f"Total memory consumed: {self.mem[-1]:.2f} Gb")
-        click.echo(f"Disk used: {self.disk_used[-1]:.2f} Gb")
+        click.echo(f"Disk usage: {self.disk_used[-1]:.2f} / {self.disk_avl[-1]:.2f} Gb")
+        click.echo(f"Disk IO rates: read {self.disk_read_speed[-1]:.2f}, write {self.disk_write_speed[-1]:.2f} Mb/sec")
         if len(self.timestamps) < 5:
             click.echo("Plots are not available for less than 5 recorded data points")
             return
