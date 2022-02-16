@@ -215,7 +215,7 @@ class PipelineProgress(LogData):
         # detalization of 'running' in a separate progress sub-bar, supported only when printing in full color
         if self.running > 0 and full_color:
             #   otherwise ascii bracket looks all jagged
-            if self.completed > 0 and self.pending + self.failed > 0:
+            if pipeline_char_counts[1] >= 2 and self.completed > 0 and self.pending + self.failed > 0:
                 for row_idx in range(3):
                     ascii_bracket_row = (
                         ("┌" if row_idx == 1 else (" " if row_idx == 0 else "|"))
