@@ -38,6 +38,16 @@ class NodeExecutorResult:
             msg=str(exc),
         )
 
+    @staticmethod
+    def format_stream(stream: str, is_err: bool = False, title: Optional[str] = None) -> str:
+        if not stream:
+            return ""
+        color = "red" if is_err else "blue"
+        formatted = '\n'.join([click.style('\t| ', fg=color) + line for line in stream.splitlines()])
+        if title is not None:
+            formatted = "\t" + click.style(title, bold=True, fg=color) + "\n" + formatted
+        return formatted
+
     @classmethod
     def from_invoke_result(cls, res: Optional[Result], node_executor: NodeExecutor) -> NodeExecutorResult:
         if res is None:
@@ -49,22 +59,13 @@ class NodeExecutorResult:
             stream = stream.replace("tput: No value for $TERM and no -T specified", "")  # annoying terminal error
             return "\n".join([line for line in stream.splitlines() if line])
 
-        def _format_stream(stream: str, is_err: bool = False, title: Optional[str] = None) -> str:
-            if not stream:
-                return ""
-            color = "red" if is_err else "blue"
-            formatted = '\n'.join([click.style('\t| ', fg=color) + line for line in stream.splitlines()])
-            if title is not None:
-                formatted = "\t" + click.style(title, bold=True, fg=color) + "\n" + formatted
-            return formatted
-
         stdout = _postprocess_stream(res.stdout)
         stderr = _postprocess_stream(res.stderr)
-        msg = "" if success else f"Command on node exit with error (core {res.return_code})"
+        msg = "" if success else f"Command on node exit with error (core {res.return_code})\n"
         if stdout:
-            msg += "\n" + _format_stream(stdout, title="stdout")
+            msg += cls.format_stream(stdout, title="stdout")
         if stderr and stderr != stdout:
-            msg += "\n" + _format_stream(stderr, title="stderr", is_err=True)
+            msg += "\n" + cls.format_stream(stderr, title="stderr", is_err=True)
 
         return NodeExecutorResult(
             success=success,
@@ -153,6 +154,8 @@ class NodeExecutor(ABC):
         """Returns path to file on the node"""
         pass
 
+    DISOWNED_COMMAND_LOG = "/tmp/tasdmc-disowned.log"
+
     def run(self, cmd: str, with_activation: bool = True, **kwargs) -> Optional[Result]:
         for fabric_param_name, default_value in [
             ('hide', 'both'),
@@ -165,7 +168,7 @@ class NodeExecutor(ABC):
             if self.activation_cmd is not None:
                 cmd = f"{self.activation_cmd} && {cmd}"
         if kwargs.get('disown') == True:
-            cmd = cmd + " &> /tmp/tasdmc-disowned.log"
+            cmd = f"{cmd} &> {self.DISOWNED_COMMAND_LOG}"
         return self._run(cmd, **kwargs)
 
     @abstractmethod

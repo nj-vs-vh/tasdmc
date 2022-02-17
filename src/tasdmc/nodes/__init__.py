@@ -1,7 +1,10 @@
 import click
 from concurrent.futures import ThreadPoolExecutor
+import time
 
 from typing import Callable, Generator, List
+
+from matplotlib.pyplot import title
 
 from tasdmc import config, fileio
 from tasdmc.utils import user_confirmation
@@ -74,11 +77,18 @@ def continue_all(rerun_step_on_input_hash_mismatch: bool, disable_input_hash_che
 
     def continue_(ex: NodeExecutor) -> NodeExecutorResult:
         ex.run(f"tasdmc continue {ex.node_run_name} {cmdline_flags}", disown=True)
-        return NodeExecutorResult(True, str(ex))  # can't actually check anything here
+        time.sleep(1.0)  # waiting before trying to retrieve disowned command log
+        res = ex.run(f"cat {ex.DISOWNED_COMMAND_LOG}", with_activation=False)
+        if res.return_code == 0:
+            msg = NodeExecutorResult.format_stream(res.stdout, title="command log")
+        else:
+            msg = "\tUnable to retrieve contents of command log"
+        return NodeExecutorResult(True, str(ex), msg)
 
     click.echo(f"Continuing nodes...")
     for result in _run_on_nodes_in_parallel(continue_):
         click.secho(f"{result.node_exec_name}", bold=True)
+        click.echo(result.msg)
 
 
 def abort_all(safe: bool = False):
