@@ -31,7 +31,7 @@ def check_all():
         _echo_fail()
         for res in failed_results:
             click.echo(
-                f"{click.style(res.node_name, bold=True)}: {res.msg}"
+                f"{click.style(res.ne_name, bold=True)}: {res.msg}"
             )
         raise RuntimeError(f"Nodes check failed")
     else:

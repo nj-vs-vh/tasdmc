@@ -4,7 +4,6 @@ from pathlib import Path
 from io import StringIO
 import click
 import copy
-from matplotlib.pyplot import title
 import yaml
 import re
 from uuid import uuid4
@@ -25,7 +24,7 @@ class NodeExecutorResult:
     """Object to return from thread-parallelized code"""
 
     success: bool
-    node_name: str
+    ne_name: str
     msg: Optional[str] = None
 
 
@@ -144,8 +143,8 @@ class NodeExecutor(ABC):
         if res.return_code != 0:
             errmsg = f"Command on node {self} exited with error (code {res.return_code})"
             for stream_contents in [
-                _format_stream(res.stdout, title='stdout'),
-                _format_stream(res.stderr, title='stderr', is_err=True),
+                _format_stream(_postprocess_stream(res.stdout), title='stdout'),
+                _format_stream(_postprocess_stream(res.stderr), title='stderr', is_err=True),
             ]:
                 if stream_contents:
                     errmsg += f'\n{stream_contents}\n'
@@ -169,9 +168,9 @@ class RemoteNodeExecutor(NodeExecutor):
                 assert (
                     remote_node_version == __version__
                 ), f"Mismatching version '{remote_node_version}', expected '{__version__}'"
-            return NodeExecutorResult(success=True, node_name=self.node_entry.name)
+            return NodeExecutorResult(success=True, ne_name=str(self))
         except Exception as e:
-            return NodeExecutorResult(success=False, node_name=self.node_entry.name, msg=str(e))
+            return NodeExecutorResult(success=False, ne_name=str(self), msg=str(e))
 
     @property
     def node_run_name(self) -> str:
@@ -192,7 +191,7 @@ class RemoteNodeExecutor(NodeExecutor):
 
 class LocalNodeExecutor(NodeExecutor):
     def check(self) -> bool:
-        return NodeExecutorResult(success=True, node_name=self.node_entry.name)
+        return NodeExecutorResult(success=True, ne_name=str(self))
 
     @property
     def node_run_name(self) -> str:
@@ -233,6 +232,8 @@ def _postprocess_stream(stream: str) -> str:
 
 
 def _format_stream(stream: str, is_err: bool = False, title: Optional[str] = None) -> str:
+    if not stream:
+        return ""
     color = "red" if is_err else "blue"
     formatted = '\n'.join([click.style('\t| ', fg=color) + line for line in stream.splitlines()])
     if title is not None:
