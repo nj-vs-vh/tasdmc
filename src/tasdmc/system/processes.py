@@ -49,7 +49,7 @@ def abort_run_processes(main_pid: int, safe: bool):
     child_processes = main_process.children(recursive=(not safe))
     for p in [*child_processes, main_process]:
         try:
-            p.send_signal(signal.SIGINT if not safe else signal.SIGUSR1)
+            p.send_signal(signal.SIGTERM if not safe else signal.SIGUSR1)
             action_str = "Killed" if not safe else "Sent safe abort signal to"
             click.echo(f"{action_str} process {_proc2str(p)}")
         except psutil.NoSuchProcess:
