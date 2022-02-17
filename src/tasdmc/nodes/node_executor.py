@@ -21,6 +21,15 @@ from tasdmc.utils import get_dot_notation, set_dot_notation, items_dot_notation
 
 
 @dataclass
+class NodeExecutorResult:
+    """Object to return from thread-parallelized code"""
+
+    success: bool
+    node_name: str
+    msg: Optional[str] = None
+
+
+@dataclass
 class NodeExecutor(ABC):
     node_entry: NodeEntry
     index: int
@@ -79,7 +88,7 @@ class NodeExecutor(ABC):
             self.remove_from_node(new_node_run_config)
 
     @abstractmethod
-    def check(self) -> bool:
+    def check(self) -> NodeExecutorResult:
         pass
 
     @property
@@ -116,13 +125,12 @@ class NodeExecutor(ABC):
         if check_result:
             self._check_command_result(res)
         if echo_streams:
-            stdout = _format_stream(res.stdout, title="stdout")
+            stdout = res.stdout.strip()
+            stderr = res.stderr.strip()
             if stdout:
-                click.echo(stdout)
-            if res.stderr != res.stdout:
-                stderr = _format_stream(res.stdout, title="stderr", is_err=True)
-                if stderr:
-                    click.secho(stderr)
+                click.echo(_format_stream(stdout, title="stdout"))
+            if stderr and stderr != stdout:
+                click.echo(_format_stream(res.stdout, title="stderr", is_err=True))
         return res
 
     @abstractmethod
@@ -151,7 +159,7 @@ class RemoteNodeExecutor(NodeExecutor):
     def __del__(self):
         self.connection.close()
 
-    def check(self) -> bool:
+    def check(self) -> NodeExecutorResult:
         try:
             with self.connection:
                 res: Result = self.run("tasdmc --version", pty=False)
@@ -161,10 +169,9 @@ class RemoteNodeExecutor(NodeExecutor):
                 assert (
                     remote_node_version == __version__
                 ), f"Mismatching version '{remote_node_version}', expected '{__version__}'"
-            return True
+            return NodeExecutorResult(success=True, node_name=self.node_entry.name)
         except Exception as e:
-            click.echo(f"\n{e}")
-            return False
+            return NodeExecutorResult(success=False, node_name=self.node_entry.name, msg=str(e))
 
     @property
     def node_run_name(self) -> str:
@@ -185,7 +192,7 @@ class RemoteNodeExecutor(NodeExecutor):
 
 class LocalNodeExecutor(NodeExecutor):
     def check(self) -> bool:
-        return True
+        return NodeExecutorResult(success=True, node_name=self.node_entry.name)
 
     @property
     def node_run_name(self) -> str:

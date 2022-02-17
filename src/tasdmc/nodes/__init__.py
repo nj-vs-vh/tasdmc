@@ -1,11 +1,12 @@
 import click
+from concurrent.futures import ThreadPoolExecutor
 
 from typing import List
 
 from tasdmc import config, fileio
 from tasdmc.utils import user_confirmation
 from tasdmc.logs.display import PipelineProgress, SystemResourcesTimeline
-from .node_executor import node_executors_from_config
+from .node_executor import NodeExecutor, NodeExecutorResult, node_executors_from_config
 
 
 def _echo_ok():
@@ -18,13 +19,21 @@ def _echo_fail():
 
 def check_all():
     click.echo("Checking nodes connectivity... ", nl=False)
-    failed_nodes = []
-    for ex in node_executors_from_config():
-        if not ex.check():
-            failed_nodes.append(ex)
-    if len(failed_nodes) > 0:
+    node_executors = node_executors_from_config()
+
+    def check(ne: NodeExecutor) -> NodeExecutorResult:
+        return ne.check()
+
+    with ThreadPoolExecutor(max_workers=len(node_executors)) as e:
+        failed_results = [ne_res for ne_res in e.map(check, node_executors) if not ne_res.success]
+
+    if len(failed_results) > 0:
         _echo_fail()
-        raise RuntimeError(f"Nodes check failed: " + ", ".join([str(ex) for ex in failed_nodes]))
+        for res in failed_results:
+            click.echo(
+                f"{click.style(res.node_name, bold=True)}: {res.msg}"
+            )
+        raise RuntimeError(f"Nodes check failed")
     else:
         _echo_ok()
 
