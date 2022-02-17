@@ -148,12 +148,20 @@ class EventsGenerationStep(PipelineStep):
         smear_energies = _smear_energies_from_config()
         _, n_particles_per_epoch = self.input_.tothrow.get_showlib_and_nparticles()
         with open(self.output.log, 'w') as log, open(self.output.errorlog, 'w') as errorlog:
-            log.write(f"Poissonian mean N particles: {n_particles_per_epoch}\n")
-            # generating event file for each epoch
+            log.write(f"Poissonian mean N particles per epoch: {n_particles_per_epoch}\n")
+            # event generation happens on a per-epoch basis: for each calibration epoch found in calibration
+            # directory sdmc_spctr program is run
             events_thrown_by_file = dict()
             for epoch, epoch_events_file, epoch_log_file, sdcalib_file in self.output.per_epoch_files():
                 if (
+                    # it is possible for this step to be partially completed
+                    # this is probably not the best use of "step" abstraction, but here we are
+                    # when this hapens we attempt to spot per-epoch events that are already there
+                    # and not rerun them; no hashing is done here, we rely on following checks:
+                    # * log exists and ends with "Done"
+                    # * dst file exists and contains the same number of events as mentioned in the log (see later)
                     epoch_log_file.exists()
+                    and check_last_line_contains(epoch_log_file, "Done")
                     and epoch_events_file.exists()
                     and check_dst_file_not_empty(epoch_events_file)
                 ):
@@ -161,6 +169,7 @@ class EventsGenerationStep(PipelineStep):
                 else:
                     log.write(f'Generating events for epoch {epoch} ({sdcalib_file.name})\n')
                     epoch_log_file.unlink(missing_ok=True)
+                    epoch_events_file.unlink(missing_ok=True)
                     for i_try in range(1, n_try + 1):
                         log.write(f'\tAttempt {i_try}/{n_try}\n')
                         with UnlimitedStackSize(), Pipes(epoch_log_file, epoch_log_file, append=True) as (
@@ -190,7 +199,7 @@ class EventsGenerationStep(PipelineStep):
                     else:
                         errorlog.write(f'Events for epoch {epoch} not generated after {n_try} attempts\n')
                         epoch_events_file.unlink(missing_ok=True)
-                        continue
+                        continue  # still trying to generate other epochs before failing the step completely
 
                 # counting how many events were actually thrown in the succesfull sdmc_spctr call
                 # NOTE: the distribution of N events thrown may not be actually Poisson due to many attempts made;
@@ -206,7 +215,10 @@ class EventsGenerationStep(PipelineStep):
                 events_thrown_from_log = int(events_thrown_match[-1])
                 events_thrown_from_dst = len(list_events_in_dst_file(epoch_events_file))
                 if events_thrown_from_log != events_thrown_from_dst:
-                    errorlog.write(f'N events thrown according to log differs from N events in {epoch_events_file}\n')
+                    errorlog.write(
+                        f'N events thrown according to log ({events_thrown_from_log}) differs from N events in '
+                        + f'{epoch_events_file.name} ({events_thrown_from_dst})\n'
+                    )
                     epoch_events_file.unlink(missing_ok=True)
                     continue
                 events_thrown = events_thrown_from_dst
@@ -216,7 +228,6 @@ class EventsGenerationStep(PipelineStep):
 
                 # if >0 events thrown, sort them by time
                 if events_thrown > 0:
-                    # epoch_events_file_sorted_temp = Path(str(epoch_events_file) + '.timesorted')
                     epoch_events_file_stem = epoch_events_file.name.split('.')[0]
                     epoch_events_file_unsorted = epoch_events_file.parent / (
                         epoch_events_file_stem + '_unsorted.dst.gz'
@@ -234,13 +245,14 @@ class EventsGenerationStep(PipelineStep):
                     epoch_events_file_unsorted.unlink(missing_ok=True)
                     if tsort_res.returncode != 0:
                         errorlog.write(
-                            f'Time-sorting of events in {epoch_events_file.name} failed, see details in {epoch_log_file}\n'
+                            f'Time-sorting of events in {epoch_events_file.name} failed, '
+                            + f'see details in {epoch_log_file.name}\n'
                         )
                         epoch_events_file.unlink(missing_ok=True)
 
             # if events for all epochs were generated, merge them into one final file
             if not all(epoch_events_file.exists() for _, epoch_events_file, *_ in self.output.per_epoch_files()):
-                errorlog.write('Some epoch events were not generated\n')
+                errorlog.write('Events for some epochs were not generated\n')
             else:
                 epoch_event_files_to_merge = [
                     epoch_events_file
