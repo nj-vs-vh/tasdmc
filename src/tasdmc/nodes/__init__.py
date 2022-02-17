@@ -134,3 +134,16 @@ def collect_system_resources_timelines(latest: bool):
         srt.node_name = str(ex)
         srts.append(srt)
     return srts
+
+
+def update_tasdmc_on_nodes():
+    click.echo(f"Updating tasdmc version on nodes")
+    for ex in node_executors_from_config():
+        click.secho(f"\n{ex}", bold=True)
+        ex.run(
+            "test -z $TASDMC_SRC_DIR && "
+            "cd $TASDMC_SRC_DIR && "
+            + "git pull && "
+            + ". scripts/reinstall.sh --no-clear",
+            echo_streams=True,
+        )

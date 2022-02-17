@@ -1,12 +1,35 @@
+from email.policy import default
 import click
 from pathlib import Path
 import gdown
 from gdown.cached_download import assert_md5sum
 
-from tasdmc import fileio, extract_calibration
+from tasdmc import fileio, extract_calibration, config, nodes
 
-from ..group import cli
-from ..utils import error_catching
+from tasdmc.utils import user_confirmation
+from tasdmc import __version__
+from tasdmc.cli.group import cli
+from tasdmc.cli.utils import error_catching, loading_run_by_name
+
+
+@cli.command(
+    "update-tasdmc-on-nodes",
+    help="Update tasdmc to the latest version on all distributed run nodes"
+)
+@loading_run_by_name
+def update_nodes():
+    if not config.is_distributed_run():
+        click.echo("Command is only available for distributed runs")
+    if not user_confirmation(
+        "Please make sure this machine is running the up-to-date version from 'main' branch.\n"
+        + "If in doubt, update with 'git pull' and 'source scripts/reinstall'.\n"
+        + f"Current version is {__version__}",
+        yes="yes",
+        no="no",
+        default=False,
+    ):
+        return
+    nodes.update_tasdmc_on_nodes()
 
 
 @cli.command(

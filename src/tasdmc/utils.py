@@ -18,11 +18,11 @@ def user_confirmation(
         raise ValueError("At least one expected answer must be specified")
     answer_option_strs = []
     if yes is not None:
-        yes_answer_str = click.style(yes, underline=True) if default is True else yes
+        yes_answer_str = click.style(yes, underline=(default is True))
         answer_option_strs.append(f'"{yes_answer_str}" to confirm')
     if no is not None:
-        no_answer_str = click.style(no, underline=True) if default is False else no
-        answer_option_strs.append(f'"{no_answer_str}" to decline')
+        no_answer_str = click.style(no, underline=(default is False))
+        answer_option_strs.append(f'"{no_answer_str}" to deny')
     answers_str = ', '.join(answer_option_strs)
     click.echo(f"{prompt} [{answers_str}]")
     while True:

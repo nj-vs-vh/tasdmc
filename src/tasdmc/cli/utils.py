@@ -12,7 +12,7 @@ def run_simulation_in_background():
     click.echo(f"Running in the background. Use 'tasdmc status {config.run_name()}' to check run status")
 
 
-def load_config_by_run_name(name: str) -> bool:
+def _load_config_by_run_name(name: str) -> bool:
     config_paths = None
     try:
         assert len(name), "No run name specified"
@@ -46,7 +46,7 @@ def with_run_name_argument():
 def loading_run_by_name(cmd_func):
     @with_run_name_argument()
     def wrapped_cmd_func(run_name: str, *args, **kwargs):
-        if not load_config_by_run_name(run_name):
+        if not _load_config_by_run_name(run_name):
             return
         cmd_func(*args, **kwargs)
 
