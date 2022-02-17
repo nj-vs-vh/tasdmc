@@ -125,8 +125,8 @@ class NodeExecutor(ABC):
         if check_result:
             self._check_command_result(res)
         if echo_streams:
-            stdout = res.stdout.strip()
-            stderr = res.stderr.strip()
+            stdout = _postprocess_stream(res.stdout)
+            stderr = _postprocess_stream(res.stderr)
             if stdout:
                 click.echo(_format_stream(stdout, title="stdout"))
             if stderr and stderr != stdout:
@@ -227,9 +227,12 @@ def _node_entries_from_config() -> List[NodeEntry]:
     return NodesConfig.loaded().contents
 
 
-def _format_stream(stream: str, is_err: bool = False, title: Optional[str] = None) -> str:
+def _postprocess_stream(stream: str) -> str:
     stream = stream.replace("tput: No value for $TERM and no -T specified", "")  # annoying terminal error
-    stream = stream.strip()
+    return "\n".join([line for line in stream.splitlines()])
+
+
+def _format_stream(stream: str, is_err: bool = False, title: Optional[str] = None) -> str:
     color = "red" if is_err else "blue"
     formatted = '\n'.join([click.style('\t| ', fg=color) + line for line in stream.splitlines()])
     if title is not None:
