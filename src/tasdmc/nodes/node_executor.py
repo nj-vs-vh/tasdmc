@@ -116,12 +116,13 @@ class NodeExecutor(ABC):
         if check_result:
             self._check_command_result(res)
         if echo_streams:
-            stdout = _postprocess_stream(res.stdout, title="stdout")
+            stdout = _format_stream(res.stdout, title="stdout")
             if stdout:
                 click.echo(stdout)
-            stderr = _postprocess_stream(res.stdout, title="stderr", is_err=True)
-            if stderr:
-                click.secho(stderr)
+            if res.stderr != res.stdout:
+                stderr = _format_stream(res.stdout, title="stderr", is_err=True)
+                if stderr:
+                    click.secho(stderr)
         return res
 
     @abstractmethod
@@ -134,12 +135,12 @@ class NodeExecutor(ABC):
             return
         if res.return_code != 0:
             errmsg = f"Command on node {self} exited with error (code {res.return_code})"
-            for stream_contents, stream_name in [
-                (_postprocess_stream(res.stdout), 'stdout'),
-                (_postprocess_stream(res.stderr), 'stderr'),
+            for stream_contents in [
+                _format_stream(res.stdout, title='stdout'),
+                _format_stream(res.stderr, title='stderr', is_err=True),
             ]:
                 if stream_contents:
-                    errmsg += f'\n\tCaptured {stream_name}:\n{stream_contents}'
+                    errmsg += f'\n{stream_contents}\n'
             raise RuntimeError(errmsg)
 
 
@@ -219,11 +220,11 @@ def _node_entries_from_config() -> List[NodeEntry]:
     return NodesConfig.loaded().contents
 
 
-def _postprocess_stream(stream: str, is_err: bool = False, title: Optional[str] = None) -> str:
+def _format_stream(stream: str, is_err: bool = False, title: Optional[str] = None) -> str:
     stream = stream.replace("tput: No value for $TERM and no -T specified", "")  # annoying terminal error
     stream = stream.strip()
-    line_color = "red" if is_err else "blue"
-    formatted = '\n'.join([click.style('\t| ', fg=line_color) + line for line in stream.splitlines()])
+    color = "red" if is_err else "blue"
+    formatted = '\n'.join([click.style('\t| ', fg=color) + line for line in stream.splitlines()])
     if title is not None:
-        formatted = "\t" + click.style(title, bold=True) + "\n" + formatted
+        formatted = "\t" + click.style(title, bold=True, fg=color) + "\n" + formatted
     return formatted
