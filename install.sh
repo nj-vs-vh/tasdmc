@@ -6,6 +6,12 @@ Aborting"
     return 1
 fi
 
+if ! [ -f setup.py -f README.md -f install.sh ]; then
+    echo "install.sh script assumes running from tasdmc directory, please first 'cd' there"
+    return 1
+fi
+
+
 function reactivate_conda_env() {
     echo "Reactivating conda environment"
     ENV_NAME=$CONDA_DEFAULT_ENV
@@ -17,10 +23,10 @@ function reactivate_conda_env() {
 echo "
 This is tasdmc - Telescope Array Surface Detector Monte Carlo simulation pipeline package
 
-It includes C routines for various low-level data processing tasks and a Python package
-providing high-level interface, pipeline management, parallelization, etc.
+It includes core C programs for various low-level tasks and a Python package
+with high-level interface, pipeline management, process and cluster node parallelization, etc.
 
-See https://github.com/nj-vs-vh/tasdmc for documentation and instructions"
+Refer to https://github.com/nj-vs-vh/tasdmc for documentation and instructions"
 
 echo "
 1. Preparing conda environment - installing CERN ROOT and GNU Scientific Library
@@ -120,11 +126,11 @@ mkdir -p $TASDMC_RUNS_DIR $TASDMC_DATA_DIR
 ACTIVATION_SCRIPTS_DIR=$CONDA_PREFIX/etc/conda/activate.d
 mkdir -p $ACTIVATION_SCRIPTS_DIR
 ACTIVATION_SCRIPT=$ACTIVATION_SCRIPTS_DIR/tasdmc-activate-configured.sh
-touch $ACTIVATION_SCRIPT
-echo "export TASDMC_STORAGE_DIR=$TASDMC_STORAGE_DIR" > $ACTIVATION_SCRIPT
+echo "export TASDMC_SRC_DIR=($pwd)" > $ACTIVATION_SCRIPT
+echo "export TASDMC_STORAGE_DIR=$TASDMC_STORAGE_DIR" >> $ACTIVATION_SCRIPT
 echo "export TASDMC_DATA_DIR=$TASDMC_STORAGE_DIR/data" >> $ACTIVATION_SCRIPT
 echo "export TASDMC_RUNS_DIR=$TASDMC_STORAGE_DIR/runs" >> $ACTIVATION_SCRIPT
-echo "export SDANALYSIS_DIR=$(pwd)/src/sdanalysis"
+echo "export SDANALYSIS_DIR=$(pwd)/src/sdanalysis" >> $ACTIVATION_SCRIPT
 
 cp scripts/activation/* $ACTIVATION_SCRIPTS_DIR
 
