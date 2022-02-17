@@ -51,31 +51,34 @@ def run_system_monitor():
         logs.multiprocessing_info("Error in system monitor: main process pid not found")
         return
     while True:  # main measurement cycle
-        time.sleep(interval)
+        try:
+            time.sleep(interval)
+            core_layer_processes = get_core_layer_run_processes(saved_main_pid)
+            if core_layer_processes is None:
+                logs.multiprocessing_info("Exiting system monitor: seems like the main run process is dead")
+                return
 
-        core_layer_processes = get_core_layer_run_processes(saved_main_pid)
-        if core_layer_processes is None:
-            logs.multiprocessing_info("Exiting system monitor: seems like the main run process is dead")
+            # measuring all processes simultaneously in their own respective threads
+            with ThreadPoolExecutor(max_workers=len(core_layer_processes)) as executor:
+                maybe_stats = executor.map(ProcessStats.measure, core_layer_processes)
+                stats = [s for s in maybe_stats if s is not None]
+
+            if stats:
+                disk_used = directory_size(fileio.run_dir())
+                disk_available = available_disk_space(fileio.run_dir())
+                logs.system_resources_info(
+                    "CPU "
+                    + " ".join(f"{s.cpu:.1f}" for s in stats)
+                    + " MEM "
+                    + " ".join(f"{s.mem:.3f}" for s in stats)
+                    + f" DISK {disk_used:.3f}/{disk_available:.3f}"
+                    + " DISKR "
+                    + " ".join(f"{s.disk_read:.2f}" for s in stats)
+                    + " DISKW "
+                    + " ".join(f"{s.disk_write:.2f}" for s in stats)
+                )
+            else:
+                logs.multiprocessing_info("System monitor was unable to collect any core layer process data")
+        except Exception as e:
+            logs.multiprocessing_info(f"System monitor experienced unexpected error, exiting: {e}")
             return
-
-        # measuring all processes simultaneously in their own respective threads
-        with ThreadPoolExecutor(max_workers=len(core_layer_processes)) as executor:
-            maybe_stats = executor.map(ProcessStats.measure, core_layer_processes)
-            stats = [s for s in maybe_stats if s is not None]
-
-        if stats:
-            disk_used = directory_size(fileio.run_dir())
-            disk_available = available_disk_space(fileio.run_dir())
-            logs.system_resources_info(
-                "CPU "
-                + " ".join(f"{s.cpu:.1f}" for s in stats)
-                + " MEM "
-                + " ".join(f"{s.mem:.3f}" for s in stats)
-                + f" DISK {disk_used:.3f}/{disk_available:.3f}"
-                + " DISKR "
-                + " ".join(f"{s.disk_read:.2f}" for s in stats)
-                + " DISKW "
-                + " ".join(f"{s.disk_write:.2f}" for s in stats)
-            )
-        else:
-            logs.multiprocessing_info("System monitor was unable to collect any core layer process data")

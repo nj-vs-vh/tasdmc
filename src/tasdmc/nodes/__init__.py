@@ -152,6 +152,7 @@ def collect_progress_data() -> List[PipelineProgress]:
             plps.append(plp)
         else:
             _echo_fail()
+            click.echo(res.msg)
             some_failed = True
     if some_failed:
         click.secho("Error collecting data from some nodes, results are incomplete", fg="red")
@@ -202,6 +203,7 @@ def collect_system_resources_timelines(latest: bool):
             srts.append(srt)
         else:
             _echo_fail()
+            click.echo(res.msg)
             some_failed = True
     if some_failed:
         click.secho("Error collecting data from some nodes, results are incomplete", fg="red")
