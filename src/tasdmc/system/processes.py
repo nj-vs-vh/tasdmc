@@ -14,7 +14,10 @@ def set_process_title(title: str):
 
 
 def _proc2str(p: psutil.Process) -> str:
-    return f"{p.pid} ({p.name()})"
+    try:
+        return f"{p.pid} ({p.name()})"
+    except psutil.NoSuchProcess:
+        return f"{p.pid} was short-lived and died until displayed"
 
 
 def is_alive(pid: int) -> bool:

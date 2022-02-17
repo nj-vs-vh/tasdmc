@@ -57,6 +57,9 @@ def run_system_monitor():
             if core_layer_processes is None:
                 logs.multiprocessing_info("Exiting system monitor: seems like the main run process is dead")
                 return
+            
+            if len(core_layer_processes) == 0:
+                continue
 
             # measuring all processes simultaneously in their own respective threads
             with ThreadPoolExecutor(max_workers=len(core_layer_processes)) as executor:
