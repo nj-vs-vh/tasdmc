@@ -3,3 +3,6 @@
 # specified commit, run this script
 
 git submodule update --init
+cd src/sdanalysis
+git checkout main
+cd ../..
