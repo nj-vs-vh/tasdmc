@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
@@ -12,7 +14,7 @@ import invoke
 import socket
 from fabric import Connection, Result
 
-from typing import TextIO, List, Optional, Dict, Any
+from typing import TextIO, List, Optional, Any
 
 from tasdmc import __version__, config
 from tasdmc.config.storage import NodeEntry, NodesConfig, RunConfig
@@ -24,8 +26,52 @@ class NodeExecutorResult:
     """Object to return from thread-parallelized code"""
 
     success: bool
-    ne_name: str
+    node_exec_name: str
     msg: Optional[str] = None
+    data: Optional[Any] = None
+
+    @classmethod
+    def from_exception(cls, exc: Exception, node_executor: NodeExecutor) -> NodeExecutorResult:
+        return NodeExecutorResult(
+            success=False,
+            node_exec_name=str(node_executor),
+            msg=str(exc),
+        )
+
+    @classmethod
+    def from_invoke_result(cls, res: Optional[Result], node_executor: NodeExecutor) -> NodeExecutorResult:
+        if res is None:
+            return NodeExecutorResult(False, str(node_executor), "Unexpected None instead of invoke.Result")
+
+        success = res.return_code == 0
+
+        def _postprocess_stream(stream: str) -> str:
+            stream = stream.replace("tput: No value for $TERM and no -T specified", "")  # annoying terminal error
+            return "\n".join([line for line in stream.splitlines() if line])
+
+        def _format_stream(stream: str, is_err: bool = False, title: Optional[str] = None) -> str:
+            if not stream:
+                return ""
+            color = "red" if is_err else "blue"
+            formatted = '\n'.join([click.style('\t| ', fg=color) + line for line in stream.splitlines()])
+            if title is not None:
+                formatted = "\t" + click.style(title, bold=True, fg=color) + "\n" + formatted
+            return formatted
+
+        stdout = _postprocess_stream(res.stdout)
+        stderr = _postprocess_stream(res.stderr)
+        msg = "" if success else f"Command on node exit with error (core {res.return_code})"
+        if stdout:
+            msg += "\n" + _format_stream(stdout, title="stdout")
+        if stderr and stderr != stdout:
+            msg += "\n" + _format_stream(stderr, title="stderr", is_err=True)
+
+        return NodeExecutorResult(
+            success=success,
+            node_exec_name=str(node_executor),
+            msg=msg,
+            data=res.stdout,
+        )
 
 
 @dataclass
@@ -69,20 +115,22 @@ class NodeExecutor(ABC):
         self.run(f"rm {file}", with_activation=False)
 
     def run_simulation(self, dry: bool = False):
-        node_run_config_path = self.save_run_config_to_node()
-        dry_opt = '--dry' if dry else ''
-        self.run(f"tasdmc run-local -r {node_run_config_path} --remove-run-config-file {dry_opt}", disown=(not dry))
+        try:
+            node_run_config_path = self.save_run_config_to_node()
+            dry_opt = '--dry' if dry else ''
+            self.run(f"tasdmc run-local -r {node_run_config_path} --remove-run-config-file {dry_opt}", disown=(not dry))
+            return NodeExecutorResult(True, str(self))
+        except Exception as e:
+            return NodeExecutorResult.from_exception(e, self)
 
-    def update_config(self, dry: bool = False) -> bool:
+    def update_config(self, dry: bool = False) -> NodeExecutorResult:
         new_node_run_config = self.save_run_config_to_node()
         try:
             opt = "--validate-only" if dry else "--hard"
             res = self.run(
                 f"tasdmc update-config {self.node_run_name} -r {new_node_run_config} {opt}",
-                check_result=(not dry),
-                echo_streams=(dry),
             )
-            return res is not None and res.return_code == 0
+            return NodeExecutorResult.from_invoke_result(res, self)
         finally:
             self.remove_from_node(new_node_run_config)
 
@@ -105,9 +153,7 @@ class NodeExecutor(ABC):
         """Returns path to file on the node"""
         pass
 
-    def run(
-        self, cmd: str, with_activation: bool = True, check_result: bool = True, echo_streams: bool = False, **kwargs
-    ) -> Optional[Result]:
+    def run(self, cmd: str, with_activation: bool = True, **kwargs) -> Optional[Result]:
         for fabric_param_name, default_value in [
             ('hide', 'both'),
             ('warn', True),
@@ -120,35 +166,12 @@ class NodeExecutor(ABC):
                 cmd = f"{self.activation_cmd} && {cmd}"
         if kwargs.get('disown') == True:
             cmd = cmd + " &> /tmp/tasdmc-disowned.log"
-        res = self._run(cmd, **kwargs)
-        if check_result:
-            self._check_command_result(res)
-        if echo_streams:
-            stdout = _postprocess_stream(res.stdout)
-            stderr = _postprocess_stream(res.stderr)
-            if stdout:
-                click.echo(_format_stream(stdout, title="stdout"))
-            if stderr and stderr != stdout:
-                click.echo(_format_stream(stderr, title="stderr", is_err=True))
-        return res
+        return self._run(cmd, **kwargs)
 
     @abstractmethod
     def _run(self, cmd: str, **kwargs) -> Optional[Result]:
         """Run shell command on the node"""
         pass
-
-    def _check_command_result(self, res: Optional[Result]):
-        if res is None:
-            return
-        if res.return_code != 0:
-            errmsg = f"Command on node {self} exited with error (code {res.return_code})"
-            for stream_contents in [
-                _format_stream(_postprocess_stream(res.stdout), title='stdout'),
-                _format_stream(_postprocess_stream(res.stderr), title='stderr', is_err=True),
-            ]:
-                if stream_contents:
-                    errmsg += f'\n{stream_contents}\n'
-            raise RuntimeError(errmsg)
 
 
 @dataclass
@@ -168,9 +191,9 @@ class RemoteNodeExecutor(NodeExecutor):
                 assert (
                     remote_node_version == __version__
                 ), f"Mismatching version '{remote_node_version}', expected '{__version__}'"
-            return NodeExecutorResult(success=True, ne_name=str(self))
+            return NodeExecutorResult(success=True, node_exec_name=str(self))
         except Exception as e:
-            return NodeExecutorResult(success=False, ne_name=str(self), msg=str(e))
+            return NodeExecutorResult(success=False, node_exec_name=str(self), msg=str(e))
 
     @property
     def node_run_name(self) -> str:
@@ -191,7 +214,7 @@ class RemoteNodeExecutor(NodeExecutor):
 
 class LocalNodeExecutor(NodeExecutor):
     def check(self) -> bool:
-        return NodeExecutorResult(success=True, ne_name=str(self))
+        return NodeExecutorResult(success=True, node_exec_name=str(self))
 
     @property
     def node_run_name(self) -> str:
@@ -208,7 +231,6 @@ class LocalNodeExecutor(NodeExecutor):
         return remote_tmp
 
     def _run(self, cmd: str, **kwargs) -> Optional[Result]:
-        # print(f"\n\n{cmd}\n\n")
         return invoke.run(cmd, **kwargs)
 
 
@@ -224,18 +246,3 @@ def node_executors_from_config() -> List[NodeExecutor]:
 
 def _node_entries_from_config() -> List[NodeEntry]:
     return NodesConfig.loaded().contents
-
-
-def _postprocess_stream(stream: str) -> str:
-    stream = stream.replace("tput: No value for $TERM and no -T specified", "")  # annoying terminal error
-    return "\n".join([line for line in stream.splitlines() if line])
-
-
-def _format_stream(stream: str, is_err: bool = False, title: Optional[str] = None) -> str:
-    if not stream:
-        return ""
-    color = "red" if is_err else "blue"
-    formatted = '\n'.join([click.style('\t| ', fg=color) + line for line in stream.splitlines()])
-    if title is not None:
-        formatted = "\t" + click.style(title, bold=True, fg=color) + "\n" + formatted
-    return formatted

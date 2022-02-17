@@ -1,7 +1,7 @@
 import click
 from concurrent.futures import ThreadPoolExecutor
 
-from typing import List
+from typing import Callable, Generator, List
 
 from tasdmc import config, fileio
 from tasdmc.utils import user_confirmation
@@ -17,22 +17,27 @@ def _echo_fail():
     click.secho("FAIL", fg='red')
 
 
+def _run_on_nodes_in_parallel(
+    func: Callable[[NodeExecutor], NodeExecutorResult]
+) -> Generator[NodeExecutorResult, None, None]:
+    node_executors = node_executors_from_config()
+    with ThreadPoolExecutor(max_workers=len(node_executors)) as e:
+        for res in e.map(func, node_executors):
+            yield res
+
+
 def check_all():
     click.echo("Checking nodes connectivity... ", nl=False)
-    node_executors = node_executors_from_config()
 
     def check(ne: NodeExecutor) -> NodeExecutorResult:
         return ne.check()
 
-    with ThreadPoolExecutor(max_workers=len(node_executors)) as e:
-        failed_results = [ne_res for ne_res in e.map(check, node_executors) if not ne_res.success]
+    failed_results = [r for r in _run_on_nodes_in_parallel(check) if not r.success]
 
-    if len(failed_results) > 0:
+    if failed_results:
         _echo_fail()
         for res in failed_results:
-            click.echo(
-                f"{click.style(res.ne_name, bold=True)}: {res.msg}"
-            )
+            click.echo(f"{click.style(res.node_exec_name, bold=True)}: {res.msg}")
         raise RuntimeError(f"Nodes check failed")
     else:
         _echo_ok()
@@ -40,119 +45,175 @@ def check_all():
 
 def run_all_dry():
     click.echo(f"Checking if nodes are ready to run their parts of the simulation...")
-    for ex in node_executors_from_config():
-        click.secho(f"{ex}: ", nl=False, bold=True)
-        try:
-            ex.run_simulation(dry=True)
+    failed_nodes = []
+    for result in _run_on_nodes_in_parallel(lambda ex: ex.run_simulation(dry=True)):
+        click.secho(f"{result.node_exec_name}: ", nl=False, bold=True)
+        if result.success:
             _echo_ok()
-        except Exception as e:
+        else:
             _echo_fail()
-            raise e
+            click.echo(result.msg)
+            failed_nodes.append(result.node_exec_name)
+    if failed_nodes:
+        raise RuntimeError("Run on following nodes failed: " + ", ".join(failed_nodes))
 
 
 def run_all():
     click.echo(f"Running...")
-    for ex in node_executors_from_config():
-        click.secho(ex, bold=True)
-        ex.run_simulation()
+    for result in _run_on_nodes_in_parallel(lambda ex: ex.run_simulation(dry=False)):
+        if not result.success:
+            click.secho(f"Failed to run {result.node_exec_name}: {result.msg}", fg="red")
 
 
 def continue_all(rerun_step_on_input_hash_mismatch: bool, disable_input_hash_checks: bool):
-    click.echo(f"Continuing nodes...")
-    failed_nodes = []
     cmdline_flags = ""
     if rerun_step_on_input_hash_mismatch:
         cmdline_flags += "--rerun-step-on-input-hash-mismatch "
     if disable_input_hash_checks:
         cmdline_flags += "--disable-input-hash-checks "
-    for ex in node_executors_from_config():
-        click.secho(f"{ex}: ", nl=False, bold=True)
-        try:
-            ex.run(f"tasdmc continue {ex.node_run_name} {cmdline_flags}", disown=True)
-            _echo_ok()
-        except Exception as e:
-            _echo_fail()
-            click.echo(e)
-            failed_nodes.append(ex)
-    if len(failed_nodes) > 0:
-        raise RuntimeError(f"Continuing nodes failed: " + ", ".join([str(ex) for ex in failed_nodes]))
+
+    def continue_(ex: NodeExecutor) -> NodeExecutorResult:
+        ex.run(f"tasdmc continue {ex.node_run_name} {cmdline_flags}", disown=True)
+        return NodeExecutorResult(True, str(ex))  # can't actually check anything here
+
+    click.echo(f"Continuing nodes...")
+    for result in _run_on_nodes_in_parallel(continue_):
+        click.secho(f"{result.node_exec_name}", bold=True)
 
 
 def abort_all(safe: bool = False):
+    safe_opt = "--safe" if safe else ""
+
+    def abort(ex: NodeExecutor) -> NodeExecutorResult:
+        return NodeExecutorResult.from_invoke_result(
+            ex.run(f"tasdmc abort {ex.node_run_name} --confirm {safe_opt}"), ex
+        )
+
     click.echo(f"Aborting nodes...")
-    for ex in node_executors_from_config():
-        click.secho(f"\n{ex}", bold=True)
-        safe_opt = "--safe" if safe else ""
-        ex.run(f"tasdmc abort {ex.node_run_name} --confirm {safe_opt}", check_result=False, echo_streams=True)
+    failed_nodes = []
+    for result in _run_on_nodes_in_parallel(abort):
+        click.secho(f"\n{result.node_exec_name}", bold=True)
+        click.echo(result.msg)
+        if not result.success:
+            failed_nodes.append(result.node_exec_name)
+    if failed_nodes:
+        raise RuntimeError("Abort on following nodes failed: " + ", ".join(failed_nodes))
 
 
 def update_configs(hard: bool, validate_only: bool):
     click.echo(f"Checking node configs...")
-    failed = []
-    for ex in node_executors_from_config():
-        click.secho(f"\n{ex}", bold=True)
-        if not ex.update_config(dry=True):
-            failed.append(ex)
-    if len(failed) > 0:
-        raise RuntimeError("Some nodes refused to update configs: " + ", ".join([str(ex) for ex in failed]))
+
+    failed_nodes = []
+    for result in _run_on_nodes_in_parallel(lambda ex: ex.update_config(dry=True)):
+        click.secho(f"\n{result.node_exec_name}", bold=True)
+        click.echo(result.msg)
+        if not result.success:
+            failed_nodes.append(result.node_exec_name)
+
+    if failed_nodes:
+        raise RuntimeError("Some nodes refused to update confis: " + ", ".join(failed_nodes))
+
     if not validate_only and (hard or user_confirmation("Apply?", yes="yes", default=False)):
-        for ex in node_executors_from_config():
-            ex.update_config()
-        config.RunConfig.dump(fileio.saved_run_config_file())
-        config.NodesConfig.dump(fileio.saved_nodes_config_file())
+        click.echo("Applying changes...")
+        all_updated_successfully = True
+        for result in _run_on_nodes_in_parallel(lambda ex: ex.update_config(dry=False)):
+            if not result.success:
+                click.echo(f"Failed to apply changes on {result.node_exec_name}", fg="red")
+                all_updated_successfully = False
+        # this guard is likely redundant since we are performing dry run first, but still, to be safe...
+        if all_updated_successfully:
+            config.RunConfig.dump(fileio.saved_run_config_file())
+            config.NodesConfig.dump(fileio.saved_nodes_config_file())
 
 
 def collect_progress_data() -> List[PipelineProgress]:
+    def collect(ex: NodeExecutor) -> NodeExecutorResult:
+        return NodeExecutorResult.from_invoke_result(ex.run(f"tasdmc progress {ex.node_run_name} --dump-json"), ex)
+
     click.echo(f"Collecting progress data from nodes...")
     plps: List[PipelineProgress] = []
-    for ex in node_executors_from_config():
-        click.secho(f"{ex}: ", bold=True, nl=False)
-        res = ex.run(f"tasdmc progress {ex.node_run_name} --dump-json")
-        _echo_ok()
-        plp = PipelineProgress.load(res.stdout)
-        plp.node_name = str(ex)
-        plps.append(plp)
+    some_failed = False
+    for res in _run_on_nodes_in_parallel(collect):
+        click.secho(f"{res.node_exec_name}: ", bold=True, nl=False)
+        if res.success:
+            _echo_ok()
+            plp = PipelineProgress.load(res.data)
+            plp.node_name = str(res.node_exec_name)
+            plps.append(plp)
+        else:
+            _echo_fail()
+            some_failed = True
+    if some_failed:
+        click.secho("Error collecting data from some nodes, results are incomplete", fg="red")
     return plps
 
 
 def print_statuses(n_last_messages: int, display_processes: bool):
     click.echo(f"Checking nodes' statuses...")
-    for ex in node_executors_from_config():
-        click.secho(f"\n{ex}", bold=True)
-        ex.run(
+
+    def status(ex: NodeExecutor) -> NodeExecutorResult:
+        res = ex.run(
             f"tasdmc status {ex.node_run_name} -n {n_last_messages} {'-p' if display_processes else ''}",
-            echo_streams=True,
         )
+        return NodeExecutorResult.from_invoke_result(res, ex)
+
+    for res in _run_on_nodes_in_parallel(status):
+        click.secho(f"\n{res.node_exec_name}", bold=True)
+        click.echo(res.msg)
 
 
 def print_inputs():
     click.echo(f"Printing nodes' inputs...")
-    for ex in node_executors_from_config():
-        click.secho(f"\n{ex}", bold=True)
-        ex.run(f"tasdmc inputs {ex.node_run_name}", echo_streams=True)
+
+    def inputs(ex: NodeExecutor) -> NodeExecutorResult:
+        res = ex.run(f"tasdmc inputs {ex.node_run_name}")
+        return NodeExecutorResult.from_invoke_result(res, ex)
+
+    for res in _run_on_nodes_in_parallel(inputs):
+        click.secho(f"\n{res.node_exec_name}", bold=True)
+        click.echo(res.msg)
 
 
 def collect_system_resources_timelines(latest: bool):
+    def collect(ex: NodeExecutor) -> NodeExecutorResult:
+        return NodeExecutorResult.from_invoke_result(
+            ex.run(f"tasdmc resources {ex.node_run_name} --dump-json {'--latest' if latest else ''}"), ex
+        )
+
     click.echo(f"Collecting system monitoring data from nodes...")
     srts: List[SystemResourcesTimeline] = []
-    for ex in node_executors_from_config():
-        click.secho(f"{ex}: ", bold=True, nl=False)
-        res = ex.run(f"tasdmc resources {ex.node_run_name} --dump-json {'--latest' if latest else ''}")
-        _echo_ok()
-        srt = SystemResourcesTimeline.load(res.stdout)
-        srt.node_name = str(ex)
-        srts.append(srt)
+    some_failed = False
+    for res in _run_on_nodes_in_parallel(collect):
+        click.secho(f"{res.node_exec_name}: ", bold=True, nl=False)
+        if res.success:
+            _echo_ok()
+            srt = SystemResourcesTimeline.load(res.data)
+            srt.node_name = res.node_exec_name
+            srts.append(srt)
+        else:
+            _echo_fail()
+            some_failed = True
+    if some_failed:
+        click.secho("Error collecting data from some nodes, results are incomplete", fg="red")
     return srts
 
 
 def update_tasdmc_on_nodes():
+    cmd = (
+        "! test -z $TASDMC_SRC_DIR && "
+        + "cd $TASDMC_SRC_DIR && "
+        + "git pull && "
+        + ". scripts/reinstall.sh --no-clear"
+    )
+
+    def update_tasdmc(ex: NodeExecutor) -> NodeExecutorResult:
+        return NodeExecutorResult.from_invoke_result(ex.run(cmd), ex)
+
     click.echo(f"Updating tasdmc version on nodes")
-    for ex in node_executors_from_config():
-        click.secho(f"\n{ex}", bold=True)
-        ex.run(
-            "! test -z $TASDMC_SRC_DIR && "
-            + "cd $TASDMC_SRC_DIR && "
-            + "git pull && "
-            + ". scripts/reinstall.sh --no-clear",
-            echo_streams=True,
-        )
+    for res in _run_on_nodes_in_parallel(update_tasdmc):
+        click.secho(f"\n{res.node_exec_name}: ", bold=True, nl=False)
+        if res.success:
+            _echo_ok()
+        else:
+            _echo_fail()
+        click.echo(res.msg)
