@@ -496,6 +496,8 @@ class SystemResourcesTimeline(LogData):
         global_mem = [0.0] * global_timeline_len
         global_disk_used = [0.0] * global_timeline_len
         global_disk_avl = [0.0] * global_timeline_len
+        global_disk_read = [0.0] * global_timeline_len
+        global_disk_write = [0.0] * global_timeline_len
         is_running = {timeline.node_name: [False] * global_timeline_len for timeline in timelines}
 
         for timeline in timelines:
@@ -506,6 +508,8 @@ class SystemResourcesTimeline(LogData):
                 is_running[timeline.node_name][global_idx] = True
                 global_cpu[global_idx] += timeline.cpu[local_idx]
                 global_mem[global_idx] += timeline.mem[local_idx]
+                global_disk_read[global_idx] += timeline.disk_read_speed[local_idx]
+                global_disk_write[global_idx] += timeline.disk_write_speed[local_idx]
                 # cumulative data
                 for global_idx_between_points in range(last_seen_global_idx, global_idx):
                     global_disk_used[global_idx_between_points] += timeline.disk_used[local_idx]
@@ -547,5 +551,7 @@ class SystemResourcesTimeline(LogData):
             mem=global_mem,
             disk_used=global_disk_used,
             disk_avl=global_disk_avl,
+            disk_read_speed=global_disk_read,
+            disk_write_speed=global_disk_write,
         )
         global_timeline.display(absolute_x_axis=False, with_node_name=True)
