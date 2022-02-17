@@ -229,7 +229,7 @@ def _node_entries_from_config() -> List[NodeEntry]:
 
 def _postprocess_stream(stream: str) -> str:
     stream = stream.replace("tput: No value for $TERM and no -T specified", "")  # annoying terminal error
-    return "\n".join([line for line in stream.splitlines()])
+    return "\n".join([line for line in stream.splitlines() if line])
 
 
 def _format_stream(stream: str, is_err: bool = False, title: Optional[str] = None) -> str:
