@@ -4,8 +4,6 @@ import time
 
 from typing import Callable, Generator, List
 
-from matplotlib.pyplot import title
-
 from tasdmc import config, fileio
 from tasdmc.utils import user_confirmation
 from tasdmc.logs.display import PipelineProgress, SystemResourcesTimeline
