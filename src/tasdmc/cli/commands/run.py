@@ -4,8 +4,8 @@ from pathlib import Path
 from tasdmc import config, pipeline, fileio, nodes
 
 from tasdmc.cli.group import cli
-from ..options import run_config_option, nodes_config_option
-from ..utils import run_simulation_in_background, error_catching
+from tasdmc.cli.options import run_config_option, nodes_config_option
+from tasdmc.cli.utils import run_simulation_in_background, error_catching, echo_running_msg
 
 
 @cli.command("run-local", help="Run simulation on this machine")
@@ -57,3 +57,4 @@ def distributed_run_cmd(run_config_filename: str, nodes_config_filename: str, dr
         return
     fileio.prepare_run_dir()
     nodes.run_all()
+    echo_running_msg()
