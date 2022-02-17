@@ -4,6 +4,7 @@ from pathlib import Path
 from io import StringIO
 import click
 import copy
+from matplotlib.pyplot import title
 import yaml
 import re
 from uuid import uuid4
@@ -115,12 +116,12 @@ class NodeExecutor(ABC):
         if check_result:
             self._check_command_result(res)
         if echo_streams:
-            stdout = _postprocess_stream(res.stdout)
+            stdout = _postprocess_stream(res.stdout, title="stdout")
             if stdout:
                 click.echo(stdout)
-            stderr = _postprocess_stream(res.stdout)
-            if stderr and stderr != stdout:
-                click.secho('stderr:\n' + stderr, fg='red')
+            stderr = _postprocess_stream(res.stdout, title="stderr", is_err=True)
+            if stderr:
+                click.secho(stderr)
         return res
 
     @abstractmethod
@@ -218,8 +219,11 @@ def _node_entries_from_config() -> List[NodeEntry]:
     return NodesConfig.loaded().contents
 
 
-def _postprocess_stream(stream: str) -> str:
+def _postprocess_stream(stream: str, is_err: bool = False, title: Optional[str] = None) -> str:
     stream = stream.replace("tput: No value for $TERM and no -T specified", "")  # annoying terminal error
     stream = stream.strip()
-    stream = '\n'.join(['\t| ' + line for line in stream.splitlines()])
-    return stream
+    line_color = "red" if is_err else "blue"
+    formatted = '\n'.join([click.style('\t| ', fg=line_color) + line for line in stream.splitlines()])
+    if title is not None:
+        formatted = "\t" + click.style(title, bold=True) + "\n" + formatted
+    return formatted
