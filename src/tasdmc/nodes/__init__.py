@@ -141,8 +141,8 @@ def update_tasdmc_on_nodes():
     for ex in node_executors_from_config():
         click.secho(f"\n{ex}", bold=True)
         ex.run(
-            "test -z $TASDMC_SRC_DIR && "
-            "cd $TASDMC_SRC_DIR && "
+            "! test -z $TASDMC_SRC_DIR && "
+            + "cd $TASDMC_SRC_DIR && "
             + "git pull && "
             + ". scripts/reinstall.sh --no-clear",
             echo_streams=True,
