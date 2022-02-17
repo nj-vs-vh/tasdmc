@@ -6,7 +6,7 @@ Aborting"
     return 1
 fi
 
-if ! [ -f setup.py -f README.md -f install.sh ]; then
+if ! [ -f install.sh ]; then
     echo "install.sh script assumes running from tasdmc directory, please first 'cd' there"
     return 1
 fi
