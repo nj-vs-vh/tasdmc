@@ -130,7 +130,7 @@ class NodeExecutor(ABC):
             if stdout:
                 click.echo(_format_stream(stdout, title="stdout"))
             if stderr and stderr != stdout:
-                click.echo(_format_stream(res.stdout, title="stderr", is_err=True))
+                click.echo(_format_stream(stderr, title="stderr", is_err=True))
         return res
 
     @abstractmethod
