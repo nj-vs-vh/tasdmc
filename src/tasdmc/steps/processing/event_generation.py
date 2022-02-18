@@ -161,9 +161,9 @@ class EventsGenerationStep(PipelineStep):
                     # * log exists and ends with "Done"
                     # * dst file exists and contains the same number of events as mentioned in the log (see later)
                     epoch_log_file.exists()
-                    and check_last_line_contains(epoch_log_file, "Done")
+                    and passed(check_last_line_contains)(epoch_log_file, "Done")
                     and epoch_events_file.exists()
-                    and check_dst_file_not_empty(epoch_events_file)
+                    and passed(check_dst_file_not_empty)(epoch_events_file)
                 ):
                     log.write(f'Events for epoch {epoch} ({sdcalib_file.name}) were already generated\n')
                 else:

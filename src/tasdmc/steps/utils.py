@@ -6,10 +6,11 @@ from uuid import uuid4
 from functools import wraps
 from subprocess import CalledProcessError
 
-from typing import List, Any, Callable, TypeVar, BinaryIO, Generator, Iterable, TypeVar, Tuple
+from typing import List, Callable, TypeVar, BinaryIO, Generator, Iterable, TypeVar, Tuple
 
+from tasdmc import fileio
 from tasdmc.subprocess_utils import list_events_in_dst_file, execute_routine, Pipes
-from .exceptions import FilesCheckFailed
+from tasdmc.steps.exceptions import FilesCheckFailed
 
 
 def _read_file_backwards(f: BinaryIO, block_size: int = 1024) -> Generator[bytes, None, None]:
@@ -107,7 +108,8 @@ def check_tile_file_contents(tile_path: Path):
 
 
 def check_dst_file_not_empty(file: Path):
-    return len(list_events_in_dst_file(file)) > 0
+    if len(list_events_in_dst_file(file)) == 0:
+        raise FilesCheckFailed(f"dst file {file.relative_to(fileio.run_dir())} is empty")
 
 
 def file_contents_hash(file_path: Path, hasher_name: str = 'md5') -> str:
