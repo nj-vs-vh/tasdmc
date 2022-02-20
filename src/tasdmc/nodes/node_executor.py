@@ -74,6 +74,18 @@ class NodeExecutorResult:
             data=res.stdout,
         )
 
+    def concatenate(self, other: NodeExecutorResult) -> NodeExecutorResult:
+        assert isinstance(other, NodeExecutorResult)
+        assert other.node_exec_name == self.node_exec_name, "Can concatenate only results from the same NodeExecutor"
+        msg_concat = (self.msg or "") + (other.msg or "")
+        msg_concat = msg_concat or None
+        return NodeExecutorResult(
+            success=self.success and other.success,
+            node_exec_name=self.node_exec_name,
+            msg=msg_concat,
+            data=[self.data, other.data],
+        )
+
 
 @dataclass
 class NodeExecutor(ABC):

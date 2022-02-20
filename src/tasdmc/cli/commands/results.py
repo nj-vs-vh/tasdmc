@@ -39,14 +39,3 @@ def archive_results(output: str):
         tar.add(fileio.saved_run_config_file(), arcname=f"{in_archive_config_dir_name}/run.yaml")
         if config.is_distributed_run():
             tar.add(fileio.saved_nodes_config_file(), arcname=f"{in_archive_config_dir_name}/nodes.yaml")
-
-
-# @cli.command(
-#     "collect-results",
-#     help="Collect simulation results from distributed run nodes"
-# )
-# @loading_run_by_name
-# def update_nodes():
-#     if not config.is_distributed_run():
-#         click.echo("Command is only available for distributed runs")
-#     nodes.update_tasdmc_on_nodes()
