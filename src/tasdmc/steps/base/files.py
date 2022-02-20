@@ -146,7 +146,7 @@ class Files(ABC):
     def get_id(self, use_absolute_paths: bool = False) -> str:
         """Unique identitifer for Files instance"""
         id_paths_to_hash = self.id_paths
-        if not use_absolute_paths:  # for backwards compatibility
+        if not use_absolute_paths:  # default: id based on absolute paths retained for backwards compatibility
             id_paths_to_hash = [p.relative_to(fileio.run_dir()) for p in id_paths_to_hash]
         paths_id = concatenate_and_hash(id_paths_to_hash)
         return f"{self.__class__.__name__}.{paths_id}"

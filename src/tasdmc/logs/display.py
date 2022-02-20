@@ -133,7 +133,7 @@ class PipelineProgress(LogData):
         completed_pipelines = {
             pipeline_id
             for pipeline_id, last_completed_step in last_completed_step_by_pipeline.items()
-            if last_completed_step == final_step
+            if last_completed_step == final_step and pipeline_id not in failed_pipelines
         }
         n_completed = len(completed_pipelines)
         n_running = n_running_and_completed - n_completed

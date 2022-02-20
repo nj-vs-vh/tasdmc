@@ -26,7 +26,7 @@ class EventType(Enum):
 class PipelineStepProgress:
     event_type: EventType
     step_name: str
-    step_input_hash: str
+    step_id: str
     timestamp: datetime
     pipeline_id: str
     value: Optional[Any] = None
@@ -36,7 +36,7 @@ class PipelineStepProgress:
             datetime2str(self.timestamp),
             self.pipeline_id,
             self.step_name,
-            self.step_input_hash,
+            self.step_id,
             str(self.event_type),
         ]
         if self.value is not None:
@@ -49,7 +49,7 @@ class PipelineStepProgress:
         step_progresses = []
         for line in fileio.pipelines_log().read_text().splitlines():
             try:
-                datetime_str, pipeline_id, step_name, step_input_hash, event_type_str, *rest = line.split(' ')
+                datetime_str, pipeline_id, step_name, step_id, event_type_str, *rest = line.split(' ')
             except ValueError:
                 continue
             rest = ' '.join(rest)
@@ -65,7 +65,7 @@ class PipelineStepProgress:
                     timestamp=str2datetime(datetime_str),
                     pipeline_id=pipeline_id,
                     step_name=step_name,
-                    step_input_hash=step_input_hash,
+                    step_id=step_id,
                     event_type=event_type,
                     value=value,
                 )
@@ -77,13 +77,14 @@ class PipelineStepProgress:
         cls, step: 'PipelineStep', event_type: EventType, value: Optional[Any] = None  # type: ignore
     ) -> PipelineStepProgress:
         try:
-            input_hash = step.input_.contents_hash
-        except Exception:
-            input_hash = "CAN'T CALCULATE INPUT HASH"
+            step_id = step.get_id()
+        except Exception as e:
+            e_no_spaces = str(e).replace(" ", "-")
+            step_id = f"CANNOT-CALCULATE-STEP-ID-{e_no_spaces}"
         return PipelineStepProgress(
             event_type,
             step_name=step.name,
-            step_input_hash=input_hash,
+            step_id=step_id,
             timestamp=datetime.utcnow(),
             pipeline_id=step.pipeline_id,
             value=value,

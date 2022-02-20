@@ -52,10 +52,10 @@ class PipelineStep(ABC):
         return self.__class__.__name__
 
     def __str__(self) -> str:
-        return self.get_id()
+        return self.name + ":" + self.get_id()
 
     def get_id(self) -> str:
-        return f'{self.name}:{self.input_.get_id()}:{self.output.get_id()}'
+        return f'{self.input_.get_id()}:{self.output.get_id()}'
 
     def set_index(self, i: int):
         self._step_status_index_in_shared_array = i

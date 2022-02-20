@@ -6,7 +6,8 @@ import multiprocessing as mp
 from typing import Optional
 
 
-STEP_STATUSES_SHARED: Optional[mp.Array] = None  # array of ints, 0 for pending, 1 for completed, 2 for error
+# array of ints, 0 for pending, 1 for completed, 2 for error
+STEP_STATUSES_SHARED: Optional[mp.Array] = None
 
 
 class StepRuntimeStatus(Enum):
