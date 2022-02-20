@@ -118,7 +118,7 @@ class PipelineProgress(LogData):
         n_pending = n_total - len(started_pipelines)
         n_running_and_completed = len(started_pipelines.difference(failed_pipelines))
 
-        step_order = [
+        step_names_in_order = [
             step.name
             for step in get_steps_queue(
                 corsika_card_paths=[Path("dummy")],
@@ -127,18 +127,21 @@ class PipelineProgress(LogData):
             )
         ]
         # removing duplicates, leaving only first occurrence
-        step_order = [name for i, name in enumerate(step_order) if name not in step_order[:i]]
+        step_names_in_order = [
+            name for i, name in enumerate(step_names_in_order) if name not in step_names_in_order[:i]
+        ]
 
-        final_step = step_order[-1]
+        final_step = step_names_in_order[-1]
         completed_pipelines = {
             pipeline_id
             for pipeline_id, last_completed_step in last_completed_step_by_pipeline.items()
-            if last_completed_step == final_step and pipeline_id not in failed_pipelines
+            if pipeline_id not in failed_pipelines
+            and (last_completed_step == final_step or last_completed_step not in step_names_in_order)
         }
         n_completed = len(completed_pipelines)
         n_running = n_running_and_completed - n_completed
 
-        n_running_by_step = dict.fromkeys(step_order, 0)
+        n_running_by_step = dict.fromkeys(step_names_in_order, 0)
 
         for pipeline_id in started_pipelines:
             if pipeline_id in completed_pipelines or pipeline_id in failed_pipelines:
@@ -148,7 +151,7 @@ class PipelineProgress(LogData):
             if (
                 last_started_step is None or last_started_step == last_completed_step
             ):  # the step is waiting in queue, count nex step as started
-                running_now_step = step_order[step_order.index(last_completed_step) + 1]
+                running_now_step = step_names_in_order[step_names_in_order.index(last_completed_step) + 1]
             else:
                 running_now_step = last_started_step
             n_running_by_step[running_now_step] += 1
@@ -159,7 +162,7 @@ class PipelineProgress(LogData):
             pending=n_pending,
             failed=n_failed,
             running_now_count=n_running_by_step,
-            step_order=step_order,
+            step_order=step_names_in_order,
             node_name=None,
         )
 
