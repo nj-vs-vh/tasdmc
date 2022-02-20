@@ -29,7 +29,7 @@ DirGetter = Callable[[], Path]
 
 
 _internal_dir_getters: List[DirGetter] = []
-_internal_dir_getters_for_local_run: List[DirGetter]
+_internal_dir_getters_for_local_run: List[DirGetter] = []
 
 
 def internal_run_dir(local_only: bool = True):
