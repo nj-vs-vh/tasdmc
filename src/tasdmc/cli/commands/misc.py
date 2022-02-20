@@ -17,6 +17,7 @@ from tasdmc.cli.utils import error_catching, loading_run_by_name
     help="Update tasdmc to the latest version on all distributed run nodes"
 )
 @loading_run_by_name
+@error_catching
 def update_nodes():
     if not config.is_distributed_run():
         click.echo("Command is only available for distributed runs")

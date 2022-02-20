@@ -25,72 +25,82 @@ def run_dir(run_name: Optional[str] = None) -> Path:
     return config.Global.runs_dir / run_name
 
 
-_local_run_internal_dir_getters: List[Callable[[], Path]] = []
+DirGetter = Callable[[], Path]
 
 
-def internal_local_run_dir(fn):
-    _local_run_internal_dir_getters.append(fn)
-    return lru_cache()(fn)
+_internal_dir_getters: List[DirGetter] = []
+_internal_dir_getters_for_local_run: List[DirGetter]
 
 
-# processing results directories
+def internal_run_dir(local_only: bool = True):
+    def decorator(dg: DirGetter) -> DirGetter:
+        if local_only:
+            _internal_dir_getters_for_local_run.append(dg)
+        else:
+            _internal_dir_getters.append(dg)
+        return lru_cache()(dg)
+
+    return decorator
 
 
-@internal_local_run_dir
-def corsika_input_files_dir() -> Path:
+# processing steps' outputs directories
+
+
+@internal_run_dir()
+def corsika_input_files_dir():
     return run_dir() / 'corsika_input'
 
 
-@internal_local_run_dir
-def corsika_output_files_dir() -> Path:
+@internal_run_dir()
+def corsika_output_files_dir():
     return run_dir() / 'corsika_output'
 
 
-@internal_local_run_dir
-def dethinning_output_files_dir() -> Path:
+@internal_run_dir()
+def dethinning_output_files_dir():
     return run_dir() / 'corsika_output_dethinned'
 
 
-@internal_local_run_dir
-def c2g_output_files_dir() -> Path:
+@internal_run_dir()
+def c2g_output_files_dir():
     return run_dir() / 'corsika2geant_output'
 
 
-@internal_local_run_dir
-def events_dir() -> Path:
+@internal_run_dir()
+def events_dir():
     return run_dir() / 'events'
 
 
-@internal_local_run_dir
-def spectral_sampled_events_dir() -> Path:
+@internal_run_dir()
+def spectral_sampled_events_dir():
     return run_dir() / 'events_spectral_sampled'
 
 
-@internal_local_run_dir
-def reconstruction_dir() -> Path:
+@internal_run_dir()
+def reconstruction_dir():
     return run_dir() / 'reconstruction'
 
 
-@internal_local_run_dir
-def final_dir() -> Path:
+@internal_run_dir(local_only=False)
+def final_dir():
     return run_dir() / 'final'
 
 
 # service directories
 
 
-@internal_local_run_dir
-def input_hashes_dir() -> Path:
+@internal_run_dir()
+def input_hashes_dir():
     return run_dir() / '_input_files_hashes'
 
 
-@internal_local_run_dir
-def logs_dir() -> Path:
+@internal_run_dir()
+def logs_dir():
     return run_dir() / '_logs'
 
 
-@internal_local_run_dir
-def pipelines_failed_dir() -> Path:
+@internal_run_dir()
+def pipelines_failed_dir():
     return logs_dir() / 'failed_pipelines'
 
 
@@ -144,9 +154,6 @@ def routine_cmd_debug_log():
     return logs_dir() / 'routine_cmd_debug.log'
 
 
-# top-level functions
-
-
 def prepare_run_dir(continuing: bool = False, create_only: bool = False):
     rd = run_dir()
     if continuing:
@@ -174,9 +181,9 @@ def prepare_run_dir(continuing: bool = False, create_only: bool = False):
 
     config.RunConfig.dump(saved_run_config_file())
 
+    [dg().mkdir(exist_ok=continuing) for dg in _internal_dir_getters]
     if config.is_local_run():
-        for dir_getter in _local_run_internal_dir_getters:
-            dir_getter().mkdir(exist_ok=continuing)
+        [dg().mkdir(exist_ok=continuing) for dg in _internal_dir_getters_for_local_run]
     if config.is_distributed_run():
         config.NodesConfig.dump(saved_nodes_config_file())
 
@@ -217,7 +224,7 @@ def get_all_run_names() -> List[str]:
 
 
 def get_all_internal_dirs() -> List[Path]:
-    return [idir_getter() for idir_getter in _local_run_internal_dir_getters]
+    return [idir_getter() for idir_getter in _internal_dir_getters + _internal_dir_getters_for_local_run]
 
 
 # NOTE: THESE METHOD RELY ON HEURISTICS AND NAMING CONVENTIONS AND MAY
