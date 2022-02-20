@@ -62,6 +62,10 @@ class Files(ABC):
                 all_file_paths.append(value)
             elif is_list_of_paths(f.type) or f.type == 'List[Path]':
                 all_file_paths.extend(value)
+        if not all_file_paths:
+            raise ValueError(
+                f"Can't automatically infer all_files for {self.__class__.__name__}, please implement the property"
+            )
         return all_file_paths
 
     @property

@@ -22,8 +22,8 @@ from tasdmc.steps import (
     PipelineStep,
     ReconstructionStep,
     TawikiDumpStep,
-    TawikiDumpsMergeStep,
 )
+from tasdmc.steps.aggregation import TawikiDumpsMergeStep, ReconstructedEventsArchivingStep
 from tasdmc.steps.corsika_cards_generation import generate_corsika_cards
 from tasdmc.steps.base.step_status_shared import set_step_statuses_array
 from tasdmc.utils import batches
@@ -51,11 +51,14 @@ def get_steps_queue(
     """
     all_corsika_steps = CorsikaStep.from_corsika_cards(corsika_card_paths)
     queue: List[PipelineStep] = []
+    
+    legacy_c2g_step = bool(config.get_key("pipeline.legacy_corsika2geant", default=True))
+
+    archive_reconstructed_events = bool(config.get_key("pipeline.archive_all_reconstructed_events", default=True))
+    reconstruction_steps_by_log10Emin = defaultdict(list)
 
     add_tawiki_steps = bool(config.get_key("pipeline.produce_tawiki_dumps", default=False))
     tawiki_dump_steps_by_log10Emin = defaultdict(list)
-    
-    legacy_c2g_step = bool(config.get_key("pipeline.legacy_corsika2geant", default=True))
 
     try:
         batch_size_multiplier = float(config.get_key("pipeline.batch_size_multiplier", default=2.0))
@@ -104,20 +107,27 @@ def get_steps_queue(
             )
         )
         queue.extend(spectral_sampling_batch)
+
         reconstruction_steps_batch = [
             ReconstructionStep.from_spectral_sampling(spectral_sampling)
             for spectral_sampling in spectral_sampling_batch
         ]
         queue.extend(reconstruction_steps_batch)
 
-        if add_tawiki_steps:
-            for reco in reconstruction_steps_batch:
+        for reco in reconstruction_steps_batch:
+            reconstruction_steps_by_log10Emin[reco.input_.log10E_min].append(reco)
+            if add_tawiki_steps:
                 tawiki_dump_step = TawikiDumpStep.from_reconstruction_step(reco)
-                tawiki_dump_steps_by_log10Emin[reco.input_.log10E_min].append(tawiki_dump_step)
                 queue.append(tawiki_dump_step)
-    if add_tawiki_steps and include_aggregation_steps:
-        for log10E_min, tawiki_dump_steps in tawiki_dump_steps_by_log10Emin.items():
-            queue.append(TawikiDumpsMergeStep.from_tawiki_dump_steps(tawiki_dump_steps, log10E_min))
+                tawiki_dump_steps_by_log10Emin[reco.input_.log10E_min].append(tawiki_dump_step)
+
+    if include_aggregation_steps:
+        if add_tawiki_steps:
+            for log10E_min, tawiki_dump_steps in tawiki_dump_steps_by_log10Emin.items():
+                queue.append(TawikiDumpsMergeStep.from_tawiki_dump_steps(tawiki_dump_steps, log10E_min))
+        if archive_reconstructed_events:
+            for log10E_min, reco_steps in reconstruction_steps_by_log10Emin.items():
+                queue.append(ReconstructedEventsArchivingStep.from_reconstruction_steps(reco_steps, log10E_min))
     return queue
 
 

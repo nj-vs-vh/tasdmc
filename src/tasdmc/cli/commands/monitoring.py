@@ -17,6 +17,7 @@ def info_cmd():
     click.secho(config.run_name(), bold=True)
     click.secho("Description: ", dim=True, nl=False)
     click.echo(str(config.get_key("description", default="(none)")))
+    section_delimiter = "\n" + "=" * 30 + "\n"
     if config.is_local_run():
         click.echo("Local", nl=False)
         parent_dict = config.get_key("parent_distributed_run", default=None)
@@ -28,9 +29,10 @@ def info_cmd():
                 + f"running on {click.style(parent_dict['host'], bold=True)}"
             )
     else:
+        click.echo(section_delimiter)
         click.echo(f"Distributed across {len(config.NodesConfig.loaded().contents)} nodes:\n")
         config.NodesConfig.dump(stdout=True)
-    click.echo("\n" + "=" * 30 + "\n")
+    click.echo(section_delimiter)
     click.echo("Run config:\n")
     config.RunConfig.dump(stdout=True)
 

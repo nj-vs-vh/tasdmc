@@ -83,6 +83,9 @@ description:
   Optional detailed description of run's purpose and other info.
 
 pipeline:
+  archive_all_reconstructed_events: True  # produce a single .tar.gz archive with
+                                          # reconstructed event files (after rufldf);
+                                          # defaults to True
   produce_tawiki_dumps: True  # convert reconstructed .dst.gz files to ASCII tables
                               # in TA Wiki format; defaults to False
   legacy_corsika2geant: False # if set to True, legacy corsika2geant routine with 
