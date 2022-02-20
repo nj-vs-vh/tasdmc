@@ -86,6 +86,7 @@ def progress_cmd(follow: bool, dump_json: bool, per_node: bool, ansi_colors: boo
         plps = nodes.collect_progress_data()
         if per_node:
             for plp in plps:
+                click.echo()
                 plp.print(with_node_name=True, full_color=full_color)
         else:
             aggregated_plp = None
