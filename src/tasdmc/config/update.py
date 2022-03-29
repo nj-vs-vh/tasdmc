@@ -20,6 +20,8 @@ SAFE_TO_CHANGE = [
     'input_files.event_number_multiplier',
     'input_files.subset',
     'spectral_sampling.aux_log10E_min',
+    'pipeline.produce_tawiki_dumps',
+    'pipeline.archive_all_reconstructed_events'
     'debug',
 ]
 
