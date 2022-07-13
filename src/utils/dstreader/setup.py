@@ -70,7 +70,7 @@ core_ext = Extension(
 
 setup(
     name='dstreader',
-    version="0.0.1",
+    version="0.0.2",
     author='Igor Vaiman',
     author_email='gosha.vaiman@gmail.com',
     description='TA/HiRes DST file format reader, SWIG-generated wrapper around dst2k-ta library',
