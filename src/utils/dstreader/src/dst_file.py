@@ -13,6 +13,8 @@ class DstFile:
         self.filename = filename
 
     def open(self):
+        if not Path(self.filename).exists():
+            raise FileNotFoundError(f"DST file not found: {self.filename}")
         self.is_open = True
         self.unit = get_unit_id()
         dstc.dstOpenUnit(self.unit, self.filename, dstc.MODE_READ_DST)
