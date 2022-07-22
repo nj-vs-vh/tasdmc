@@ -10,6 +10,13 @@ from setuptools.command.install import install
 
 from swig.generate_numpy_accessors import generate_accessors
 
+# NOTE: for swigless install you'll have to pre-generate some files 
+# (maybe on a different machine with the same Python version) and place them
+# - dstreader_core_wrap.c -> swig/ dir
+# - dstreader_core.py -> src/
+# and set this flag to True
+SWIGLESS_INSTALL = False
+
 BANK_NAMES = ['rusdraw', 'rusdmc', 'rufldf']
 
 sdanalysis_dir = os.environ.get("SDANALYSIS_DIR")
@@ -44,17 +51,20 @@ class InstallWithSwig(install):
             f.write("}\n\n")  # closing bank docs dict
             f.write("supported_banks = [" + ", ".join([f"'{bank_name}'" for bank_name in BANK_NAMES]) + "]\n\n")
 
-        cmdargs = ["swig", "-python", dst2k_ta_include, f"-I{SWIG_DIR}", str(SWIG_INTERFACE_FILE)]
-        print(" ".join(cmdargs))
-        res = subprocess.run(cmdargs, capture_output=True)
-        if res.returncode != 0:
-            print(res.stdout.decode("utf-8"))
-            print(res.stderr.decode("utf-8"))
-            sys.exit(1)
+        if SWIGLESS_INSTALL:
+            print("NOT RUNNING SWIG")
+        else:
+            cmdargs = ["swig", "-python", dst2k_ta_include, f"-I{SWIG_DIR}", str(SWIG_INTERFACE_FILE)]
+            print(" ".join(cmdargs))
+            res = subprocess.run(cmdargs, capture_output=True)
+            if res.returncode != 0:
+                print(res.stdout.decode("utf-8"))
+                print(res.stderr.decode("utf-8"))
+                sys.exit(1)
+            swig_generated_module_in_src = SRC_DIR / SWIG_GENERATED_PY_MODULE.name
+            swig_generated_module_in_src.unlink(missing_ok=True)
+            shutil.move(SWIG_GENERATED_PY_MODULE, swig_generated_module_in_src)
 
-        swig_generated_module_in_src = SRC_DIR / SWIG_GENERATED_PY_MODULE.name
-        swig_generated_module_in_src.unlink(missing_ok=True)
-        shutil.move(SWIG_GENERATED_PY_MODULE, swig_generated_module_in_src)
         install.run(self)
 
 
