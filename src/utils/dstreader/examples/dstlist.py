@@ -1,6 +1,6 @@
 from pathlib import Path
-from dstreader import DstFile
 
+from dstreader import DstFile
 
 example_dst_file = Path(__file__).parent / 'example.dst.gz'
 

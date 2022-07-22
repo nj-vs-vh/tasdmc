@@ -2,8 +2,9 @@ from pathlib import Path
 from typing import Generator, List, Union
 
 from . import dstreader_core as dstc
-from .units import get_unit_id, free_unit_id
 from .bank import Bank
+from .bank_docs import supported_banks
+from .units import free_unit_id, get_unit_id
 
 
 class DstFile:
@@ -34,10 +35,14 @@ class DstFile:
     def get_bank(self, bank_name: str) -> Bank:
         if not self.event_is_read:
             raise ValueError("Banks are only available when iterating over events")
+        if bank_name not in supported_banks:
+            raise ValueError(
+                f"Bank {bank_name!r} is not supported; currently supported banks are: " + ", ".join(supported_banks)
+            )
         bank_obj_name = bank_name + '_'  # naming convention of global structs in C code
         bank_obj = getattr(dstc, bank_obj_name, None)
         if bank_obj is None:
-            raise KeyError("No such bank!")
+            raise KeyError(f"No such bank: {bank_name!r}")
         else:
             return Bank(bank_name, bank_obj)
 

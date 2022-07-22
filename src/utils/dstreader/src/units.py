@@ -1,6 +1,5 @@
 from . import dstreader_core as dstc
 
-
 FREE_UNIT_IDS = set(range(1, dstc.MAX_DST_FILE_UNITS + 1))
 
 

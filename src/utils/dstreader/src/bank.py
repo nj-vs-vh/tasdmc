@@ -1,12 +1,11 @@
 import warnings
-
-from typing import TypeVar, Union, List
 from numbers import Number
+from typing import List, TypeVar, Union
+
 from numpy.typing import NDArray
 
 from . import dstreader_core as dstc
 from .bank_docs import generated_bank_docs
-
 
 _SwigGeneratedBankObject = TypeVar("_SwigGeneratedBankObject")
 
@@ -19,7 +18,7 @@ class Bank:
     via DstFile's get_bank method.
 
     To get a field from bank, use dict-like syntax:
-    >>> rusdraw = dst.get_bak("rusdraw")
+    >>> rusdraw = dst.get_bank("rusdraw")
     >>> fadc = rusdraw["fadc"]
     """
 
@@ -33,7 +32,10 @@ class Bank:
 
     @property
     def doc(self) -> str:
-        return generated_bank_docs[self.name + "_"]
+        try:
+            return generated_bank_docs[self.name + "_"]
+        except KeyError:
+            raise RuntimeError(f"No generated documentation available for {self.name!r} bank")
 
     @property
     def keys(self) -> List[str]:

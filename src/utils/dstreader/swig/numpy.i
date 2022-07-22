@@ -1,4 +1,4 @@
-// Original: https://github.com/numpy/numpy/blob/main/tools/swig/numpy.i
+// Original: https://github.com/numpy/numpy/blob/f1e50253a3b56375e795ee72032cca90a3832cd4/tools/swig/numpy.i
 // too much hustle to add a whole of numpy as a git submodule...
 
 /* -*- C -*-  (not really, but good for syntax highlighting) */

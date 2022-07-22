@@ -32,9 +32,8 @@ This way we can then call this function from Python like this:
 """
 
 import argparse
-from pathlib import Path
 import re
-
+from pathlib import Path
 from typing import Tuple
 
 
@@ -113,7 +112,7 @@ def generate_accessors(dst_bank_header: Path, interface_file: Path, doc_file: Pa
             + "// The structure body is:\n\n"
         )
 
-        doc.write(f'\n"{global_struct_name}": """\n')
+        doc.write(f'\n    "{global_struct_name}": """\n')
         for line in struct_match.group('struct_body').splitlines():
             line = line.strip()
             if line:
@@ -131,6 +130,7 @@ def generate_accessors(dst_bank_header: Path, interface_file: Path, doc_file: Pa
 
 
 if __name__ == "__main__":
+    # for testing purposes only
     parser = argparse.ArgumentParser()
     parser.add_argument("dst_bank_header_file")
     args = parser.parse_args()
